@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { LogIn, Github, Linkedin } from 'lucide-react';
+import Link from 'next/link';
 
 export default function page() {
   const handleSubmit = (e) => {
@@ -86,12 +87,12 @@ export default function page() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a 
-                  href="#" 
+                <Link
+                  href="/changepwd" 
                   className="text-sm text-primary hover:underline"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <Input 
                 id="password" 
@@ -110,12 +111,12 @@ export default function page() {
         <CardFooter className="flex flex-col items-center gap-2">
           <div className="text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <a 
-              href="#" 
+            <Link
+              href="/register" 
               className="text-primary hover:underline"
             >
               Sign up
-            </a>
+            </Link>
           </div>
         </CardFooter>
       </Card>

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Navbar() {
   const router = useRouter();
@@ -31,10 +32,10 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-10">
-            <a href="https://www.google.com" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Home</a>
-            <a href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">About</a>
-            <a href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Events</a>
-            <a href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Clubs</a>
+            <Link href="/" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Home</Link>
+            <Link href="/about" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">About</Link>
+            <Link href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Events</Link>
+            <Link href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Clubs</Link>
           </div>
 
           {/* Desktop Actions */}
@@ -83,10 +84,10 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         <div className={`${isOpen ? 'block' : 'hidden'} md:hidden pt-4 pb-2`}>
           <div className="flex flex-col gap-4">
-            <a href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Home</a>
-            <a href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">About</a>
-            <a href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Events</a>
-            <a href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Clubs</a>
+            <Link href="/" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Home</Link>
+            <Link href="/about" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">About</Link>
+            <Link href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Events</Link>
+            <Link href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Clubs</Link>
           </div>
 
           <div className="flex flex-col gap-4 pt-4 mt-4 border-t">
