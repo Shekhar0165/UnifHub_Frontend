@@ -17,9 +17,9 @@ export default function EventDetailPage() {
   const eventData = Events.find(event => event.id === Number(params.events)) || Events[0];
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header Section */}
-      <div className="border-b bg-white dark:bg-gray-900">
+      <div className="border-b bg-background">
         <div className="container max-w-7xl mx-auto py-8 px-6 lg:px-8">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="secondary">{eventData.category}</Badge>
