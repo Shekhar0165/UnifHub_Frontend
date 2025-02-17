@@ -27,15 +27,16 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="text-2xl font-bold">
+            <Link href='/'>
             Unifhub
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-10">
             <Link href="/" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Home</Link>
             <Link href="/about" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">About</Link>
-            <Link href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Events</Link>
-            <Link href="#" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Clubs</Link>
+            <Link href="/events" className="relative font-semibold transition-colors after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-primary after:scale-x-0 after:origin-left hover:after:scale-x-100 after:transition-transform after:duration-300">Events</Link>
           </div>
 
           {/* Desktop Actions */}
@@ -86,8 +87,7 @@ export default function Navbar() {
           <div className="flex flex-col gap-4">
             <Link href="/" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Home</Link>
             <Link href="/about" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">About</Link>
-            <Link href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Events</Link>
-            <Link href="#" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Clubs</Link>
+            <Link href="/events" className="font-semibold py-2 hover:text-primary transition-all focus:bg-primary focus:text-background focus:rounded-lg focus:px-4 duration-300 ease-in-out">Events</Link>
           </div>
 
           <div className="flex flex-col gap-4 pt-4 mt-4 border-t">

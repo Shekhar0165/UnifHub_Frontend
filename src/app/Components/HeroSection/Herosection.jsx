@@ -1,8 +1,11 @@
 'use client'
 import { useIntersectionObserver } from '@/app/Useintersectionobserver';
+import { useRouter } from 'next/navigation';
+
 
 export default function Herosection() {
     const { elementRef, isVisible } = useIntersectionObserver();
+    const router = useRouter();
     return (
         <div ref={elementRef} className="relative overflow-hidden pb-44">
             {/* Main content with enhanced shadows */}
@@ -33,13 +36,13 @@ export default function Herosection() {
 
                     {/* Enhanced CTA Buttons with dynamic shadows */}
                     <div className="animate-fade-in-up flex flex-col gap-4 sm:flex-row sm:justify-center">
-                        <button className={`group inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-3 text-base font-semibold text-white shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)]  hover:shadow-[0_20px_60px_rgba(8,_112,_184,_0.5)] hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:shadow-[0_20px_50px_rgba(8,_112,_184,_0.3)] transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-32'}`}>
-                        Organizations
+                        <button onClick={()=>{router.push('/about')}} className={`group inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-3 text-base font-semibold text-white shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)]  hover:shadow-[0_20px_60px_rgba(8,_112,_184,_0.5)] hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:shadow-[0_20px_50px_rgba(8,_112,_184,_0.3)] transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-32'}`}>
+                        Know More
                             <svg className="ml-2 h-5 w-5 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>
                         </button>
-                        <button className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white/80 backdrop-blur-sm px-8 py-3 text-base font-semibold text-gray-700 shadow-lg  hover:shadow-xl hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-800/80 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700/80 transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-32'}`}>
+                        <button onClick={()=>{router.push('/events')}} className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white/80 backdrop-blur-sm px-8 py-3 text-base font-semibold text-gray-700 shadow-lg  hover:shadow-xl hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-800/80 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700/80 transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-32'}`}>
                             Events
                         </button>
                     </div>
