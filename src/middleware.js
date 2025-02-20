@@ -11,7 +11,7 @@ export function middleware(req) {
   }
 
   // If user is NOT logged in and tries to access protected routes, redirect to login
-  if (!accessToken) {
+  if (!accessToken && pathname !== '/' ) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
