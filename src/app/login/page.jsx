@@ -26,19 +26,15 @@ export default function Page() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for cookies
+        credentials: 'include',
         body: JSON.stringify({ identifier, password }),
       });
       
       const data = await response.json();
       if (response.ok) {
-        console.log('Login Successful:', data);
-        
-        // Store tokens in localStorage
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
         
-        // Show success toast
         toast({
           title: "Login successful!",
           description: "Redirecting you to events page...",
@@ -46,13 +42,11 @@ export default function Page() {
           variant: "default",
           icon: <CheckCircle className="h-4 w-4 text-green-500" />
         });
-        console.log(data)
-        // Short delay before redirect for toast to be visible
+        
         setTimeout(() => {
           router.push('/events');
         }, 1500);
       } else {
-        console.error('Login Failed:', data.message);
         toast({
           title: "Login failed",
           description: data.message || "Please check your credentials and try again.",
@@ -61,7 +55,6 @@ export default function Page() {
         });
       }
     } catch (error) {
-      console.error('Error during login:', error);
       toast({
         title: "Connection error",
         description: "An error occurred. Please try again later.",
@@ -126,6 +119,20 @@ export default function Page() {
               )}
             </Button>
           </form>
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <button 
+              onClick={() => router.push('/forgot-password')} 
+              className="hover:underline"
+            >
+              Forgot password?
+            </button>
+            <button 
+              onClick={() => router.push('/register')} 
+              className="hover:underline"
+            >
+              Create a new account
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
