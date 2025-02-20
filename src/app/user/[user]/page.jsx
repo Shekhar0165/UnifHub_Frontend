@@ -68,8 +68,7 @@ const sampleUser = {
     {
       institution: "Chandigarh Group Of Colleges",
       degree: "B.Tech in Computer Science",
-      duration: "2020 - 2024",
-      gpa: "8.9/10"
+      duration: "2020 - 2024"
     }
   ],
   experience: [
@@ -470,7 +469,7 @@ const RightComponent = ()=>{
                           <p className="text-blue-600 dark:text-blue-400">{edu.institution}</p>
                           <div className="flex justify-between mt-2">
                             <span className="text-sm text-gray-500 dark:text-gray-400">{edu.duration}</span>
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">GPA: {edu.gpa}</span>
+                            
                           </div>
                         </div>
                       ))}

@@ -1,11 +1,15 @@
 'use client'
 import { useIntersectionObserver } from '@/app/Useintersectionobserver';
 import { Users, Target, Award, BookOpen, Rocket, Heart } from 'lucide-react';
+import Navbar from '../Components/Navbar/Navbar';
+import Footer from '../Components/Footer/Footer';
 
 export default function AboutPage() {
     const { elementRef, isVisible } = useIntersectionObserver();
 
     return (
+        <>        
+        <Navbar/>
         <div ref={elementRef} className="relative overflow-hidden pb-24">
             {/* Background Gradients */}
             <div className="absolute left-0 top-1/3 h-96 w-96 -translate-y-1/2 transform rounded-full bg-gradient-to-br from-blue-100 via-purple-100 to-blue-200 opacity-20 blur-3xl dark:from-blue-900 dark:via-purple-900 dark:to-blue-800" />
@@ -149,5 +153,8 @@ export default function AboutPage() {
                 </div>
             </div>
         </div>
+        <Footer/>
+        </>
+
     );
 }
