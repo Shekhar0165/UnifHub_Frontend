@@ -50,7 +50,7 @@ export default function RegisterPage() {
     
     setIsLoading(true);
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API}/send-otp`, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API}send-otp`, {
         email: formData.email
       });
       
