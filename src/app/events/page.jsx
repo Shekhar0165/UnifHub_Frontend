@@ -433,7 +433,7 @@ const Page = () => {
                               </Badge>
                               <Badge 
                                 variant={event.status === "Open" ? "default" : "secondary"}
-                                className="bg-background/95 backdrop-blur-md px-3 py-1 text-xs rounded-full"
+                                className="bg-background/95 backdrop-blur-md hover:bg-background/70 text-primary px-3 py-1 text-xs rounded-full"
                               >
                                 {event.status}
                               </Badge>

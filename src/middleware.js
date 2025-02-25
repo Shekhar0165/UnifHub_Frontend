@@ -5,7 +5,7 @@ export function middleware(req) {
   const accessToken = req.cookies.get("accessToken")?.value;
 
   // Allow free access to home page
-  if (pathname === "/" ) {
+  if (pathname === "/" || pathname === "/home") {
     return NextResponse.next();
   }
 

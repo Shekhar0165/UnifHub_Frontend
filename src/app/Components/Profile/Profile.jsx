@@ -13,13 +13,65 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from '../ModeToggle/ModeToggle';
+import { toast } from "@/hooks/use-toast"; // Import toast if available
 
 const Profile = () => {
   const router = useRouter();
   const [theme, setTheme] = useState('light');
   
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  // Logout function
+  const handleLogout = async () => {
+    try {
+      // Get refresh token from localStorage if available
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      // Call the logout API endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API}/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important to include cookies
+        body: JSON.stringify({ refreshToken }), // Send as fallback in request body
+      });
+      
+      if (response.ok) {
+        // Clear any local storage items
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        
+        // Show success toast if available
+        if (typeof toast === 'function') {
+          toast({
+            title: "Logged out",
+            description: "You have been successfully logged out.",
+            variant: "success",
+          });
+        }
+        
+        // Redirect to login page
+        router.push('/');
+      } else {
+        console.error('Logout failed');
+        if (typeof toast === 'function') {
+          toast({
+            title: "Logout failed",
+            description: "There was a problem logging you out. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      if (typeof toast === 'function') {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
   
   return (
@@ -55,7 +107,7 @@ const Profile = () => {
           </div>
           
           <DropdownMenuItem 
-            onClick={() => router.push('/user')}
+            onClick={() => router.push('/user/2')}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
           >
             <User className="mr-2 h-4 w-4" />
@@ -90,7 +142,7 @@ const Profile = () => {
           <DropdownMenuSeparator />
           
           <DropdownMenuItem 
-            onClick={() => console.log('Logout')}
+            onClick={handleLogout}
             className="flex items-center cursor-pointer rounded-md p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20"
           >
             <LogOut className="mr-2 h-4 w-4" />
