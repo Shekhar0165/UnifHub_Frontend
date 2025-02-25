@@ -156,21 +156,36 @@ export default function RegisterPage() {
         { withCredentials: true }
       );
   
-      // Set cookies on the client side
-      const expiryDate = new Date();
-      expiryDate.setTime(expiryDate.getTime() + (24 * 60 * 60 * 1000)); // 1 day
-      
-      // Set access token cookie
-      document.cookie = `accessToken=${res.data.accessToken}; expires=${expiryDate.toUTCString()}; path=/; secure; samesite=strict`;
-      
-      // Set refresh token cookie
-      const refreshExpiryDate = new Date();
-      refreshExpiryDate.setTime(refreshExpiryDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
-      document.cookie = `refreshToken=${res.data.refreshToken}; expires=${refreshExpiryDate.toUTCString()}; path=/; secure; samesite=strict`;
-  
-      // Keep localStorage for redundancy
+      // Store in localStorage as fallback
       localStorage.setItem("accessToken", res.data.accessToken);
       localStorage.setItem("refreshToken", res.data.refreshToken);
+      
+      // Check if cookies are set properly with a timeout
+      const checkCookies = () => {
+        return new Promise((resolve) => {
+          // Check for cookies or localStorage (as fallback)
+          const hasCookiesOrTokens = document.cookie.includes('accessToken') || localStorage.getItem('accessToken');
+          
+          if (hasCookiesOrTokens) {
+            resolve(true);
+          } else {
+            // Continue checking for up to 3 seconds
+            let attempts = 0;
+            const maxAttempts = 15; // 15 * 200ms = 3 seconds max wait
+            
+            const interval = setInterval(() => {
+              attempts++;
+              if (document.cookie.includes('accessToken') || attempts >= maxAttempts) {
+                clearInterval(interval);
+                resolve(true);
+              }
+            }, 200);
+          }
+        });
+      };
+      
+      // Wait for cookies to be set
+      await checkCookies();
   
       toast({
         title: "Registration successful!",
@@ -179,9 +194,7 @@ export default function RegisterPage() {
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
   
-      setTimeout(() => {
-        router.push("/events");
-      }, 1500);
+      router.push("/events");
   
     } catch (error) {
       toast({
