@@ -114,9 +114,9 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
+  
     const { name, userid, email, password, confirmPassword } = formData;
-
+  
     // Validation
     if (!name || !userid || !email || !password || !confirmPassword) {
       toast({
@@ -127,7 +127,7 @@ export default function RegisterPage() {
       });
       return;
     }
-
+  
     if (password !== confirmPassword) {
       toast({
         title: "Validation Error",
@@ -137,7 +137,7 @@ export default function RegisterPage() {
       });
       return;
     }
-
+  
     if (password.length < 8) {
       toast({
         title: "Validation Error",
@@ -147,7 +147,7 @@ export default function RegisterPage() {
       });
       return;
     }
-
+  
     setIsLoading(true);
     try {
       const res = await axios.post(
@@ -155,21 +155,34 @@ export default function RegisterPage() {
         { name, userid, email, password },
         { withCredentials: true }
       );
-
+  
+      // Set cookies on the client side
+      const expiryDate = new Date();
+      expiryDate.setTime(expiryDate.getTime() + (24 * 60 * 60 * 1000)); // 1 day
+      
+      // Set access token cookie
+      document.cookie = `accessToken=${res.data.accessToken}; expires=${expiryDate.toUTCString()}; path=/; secure; samesite=strict`;
+      
+      // Set refresh token cookie
+      const refreshExpiryDate = new Date();
+      refreshExpiryDate.setTime(refreshExpiryDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
+      document.cookie = `refreshToken=${res.data.refreshToken}; expires=${refreshExpiryDate.toUTCString()}; path=/; secure; samesite=strict`;
+  
+      // Keep localStorage for redundancy
+      localStorage.setItem("accessToken", res.data.accessToken);
+      localStorage.setItem("refreshToken", res.data.refreshToken);
+  
       toast({
         title: "Registration successful!",
         description: "Redirecting you to events page...",
         duration: 2000,
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
-
-      localStorage.setItem("accessToken", res.data.accessToken);
-      localStorage.setItem("refreshToken", res.data.refreshToken);
-
+  
       setTimeout(() => {
         router.push("/events");
       }, 1500);
-
+  
     } catch (error) {
       toast({
         title: "Registration failed",
