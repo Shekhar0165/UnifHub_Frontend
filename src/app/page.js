@@ -7,6 +7,7 @@ import Footer from "./Components/Footer/Footer";
 
 export default function Home() {
   const router = useRouter();
+  // hello 
 
   useEffect(() => {
     // Check for token and redirect within useEffect (client-side only)

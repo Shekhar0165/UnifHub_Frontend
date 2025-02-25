@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,6 +18,62 @@ import { toast } from "@/hooks/use-toast"; // Import toast if available
 const Profile = () => {
   const router = useRouter();
   const [theme, setTheme] = useState('light');
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Check if user is authenticated (has token)
+        const accessToken = localStorage.getItem('accessToken');
+        
+        if (!accessToken) {
+          setLoading(false);
+          return; // User is not authenticated
+        }
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/user`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUserData(data);
+        } else {
+          console.error('Failed to fetch user data');
+          // Handle authentication error (e.g., token expired)
+          if (response.status === 401) {
+            // Clear tokens and redirect to login
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [router]);
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!userData || !userData.name) return 'U';
+    
+    // Get first letter of first name
+    const nameParts = userData.name.split(' ');
+    return nameParts[0].charAt(0).toUpperCase();
+  };
   
   // Logout function
   const handleLogout = async () => {
@@ -74,6 +130,28 @@ const Profile = () => {
     }
   };
   
+  // If loading or not authenticated, show loading or login button
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full">
+          <span className="sr-only">Loading</span>
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        </Button>
+      </div>
+    );
+  }
+  
+  if (!userData) {
+    return (
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" onClick={() => router.push('/')}>
+          Login
+        </Button>
+      </div>
+    );
+  }
+  
   return (
     <div className="flex items-center gap-2">
       
@@ -82,12 +160,17 @@ const Profile = () => {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-2 py-1 hover:bg-accent rounded-lg">
             <Avatar className="h-8 w-8 border-2 border-primary">
-              <AvatarImage src="/About.jpeg" alt="Profile" />
-              <AvatarFallback>JD</AvatarFallback>
+              {userData.profileImage ? (
+                <AvatarImage 
+                  src={`${process.env.NEXT_PUBLIC_API}/uploads/${userData.profileImage}`} 
+                  alt={userData.name || 'Profile'} 
+                />
+              ) : null}
+              <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
             <div className="hidden md:flex flex-col items-start">
-              <span className="text-sm font-medium">John Doe</span>
-              <span className="text-xs text-muted-foreground">Student</span>
+              <span className="text-sm font-medium">{userData.name || 'User'}</span>
+              <span className="text-xs text-muted-foreground">{userData.role || 'Student'}</span>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </Button>
@@ -96,18 +179,25 @@ const Profile = () => {
         <DropdownMenuContent align="end" className="w-64 p-2">
           <div className="flex items-center p-2 bg-accent/50 rounded-md mb-2">
             <Avatar className="h-10 w-10 border-2 border-primary">
-              <AvatarImage src="/About.jpeg" alt="Profile" />
-              <AvatarFallback>JD</AvatarFallback>
+              {userData.profileImage ? (
+                <AvatarImage 
+                  src={`${process.env.NEXT_PUBLIC_API}/uploads/${userData.profileImage}`} 
+                  alt={userData.name || 'Profile'} 
+                />
+              ) : null}
+              <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
             <div className="ml-3 space-y-0.5">
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-muted-foreground">john.doe@example.com</p>
-              <Badge variant="outline" className="text-xs px-1.5 py-0">Free Plan</Badge>
+              <p className="text-sm font-medium">{userData.name || 'User'}</p>
+              <p className="text-xs text-muted-foreground">{userData.email || ''}</p>
+              <Badge variant="outline" className="text-xs px-1.5 py-0">
+                {userData.subscription || 'Free Plan'}
+              </Badge>
             </div>
           </div>
           
           <DropdownMenuItem 
-            onClick={() => router.push('/user/2')}
+            onClick={() => router.push(`/user/${userData._id}`)}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
           >
             <User className="mr-2 h-4 w-4" />
