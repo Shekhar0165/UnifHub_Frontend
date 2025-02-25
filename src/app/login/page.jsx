@@ -19,41 +19,39 @@ export default function Page() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-      
+  
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include', // Ensures cookies are sent/received
         body: JSON.stringify({ identifier, password }),
       });
-          
+  
       const data = await response.json();
-      
-      if (response.ok) {
-        // Store in localStorage as fallback
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
+  
+      if (response.ok && data?.accessToken) {
+        // Store accessToken in localStorage (ONLY IF NECESSARY)
+        localStorage.setItem('accessToken', data.accessToken); 
         
         toast({
           title: "Login successful!",
           description: "Redirecting you to events page...",
           duration: 2000,
           variant: "default",
-          icon: <CheckCircle className="h-4 w-4 text-green-500" />
+          icon: <CheckCircle className="h-4 w-4 text-green-500" />,
         });
-              
-        setTimeout(() => {
-          router.push("/events");
-        }, 1500);
+  
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Delay before navigation
+        await router.push("/events");
       } else {
         toast({
           title: "Login failed",
           description: data.message || "Please check your credentials and try again.",
           variant: "destructive",
-          icon: <AlertCircle className="h-4 w-4" />
+          icon: <AlertCircle className="h-4 w-4" />,
         });
       }
     } catch (error) {
@@ -61,12 +59,13 @@ export default function Page() {
         title: "Connection error",
         description: "An error occurred. Please try again later.",
         variant: "destructive",
-        icon: <AlertCircle className="h-4 w-4" />
+        icon: <AlertCircle className="h-4 w-4" />,
       });
     } finally {
       setIsLoading(false);
     }
   };
+  
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
