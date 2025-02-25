@@ -159,33 +159,6 @@ export default function RegisterPage() {
       // Store in localStorage as fallback
       localStorage.setItem("accessToken", res.data.accessToken);
       localStorage.setItem("refreshToken", res.data.refreshToken);
-      
-      // Check if cookies are set properly with a timeout
-      const checkCookies = () => {
-        return new Promise((resolve) => {
-          // Check for cookies or localStorage (as fallback)
-          const hasCookiesOrTokens = document.cookie.includes('accessToken') || localStorage.getItem('accessToken');
-          
-          if (hasCookiesOrTokens) {
-            resolve(true);
-          } else {
-            // Continue checking for up to 3 seconds
-            let attempts = 0;
-            const maxAttempts = 15; // 15 * 200ms = 3 seconds max wait
-            
-            const interval = setInterval(() => {
-              attempts++;
-              if (document.cookie.includes('accessToken') || attempts >= maxAttempts) {
-                clearInterval(interval);
-                resolve(true);
-              }
-            }, 200);
-          }
-        });
-      };
-      
-      // Wait for cookies to be set
-      await checkCookies();
   
       toast({
         title: "Registration successful!",
@@ -194,7 +167,9 @@ export default function RegisterPage() {
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
   
-      router.push("/events");
+      setTimeout(() => {
+        router.push("/events");
+      }, 1500);
   
     } catch (error) {
       toast({
