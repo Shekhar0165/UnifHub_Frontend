@@ -1,24 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
 
-export function middleware(req) {
-  const { pathname } = req.nextUrl;
-  const accessToken = req.cookies.get("accessToken")?.value;
+// This function can be marked `async` if using `await` inside
 
-  // Allow free access to home page
-  if (pathname === "/" || pathname === "/home") {
-    return NextResponse.next();
+export function middleware(request) {
+  const accessToken = request.cookies.get("accessToken");
+  const tokenValue = accessToken?.value;
+  if (!tokenValue) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  // For protected routes (/events, /user, etc), check for token
-  if (!accessToken) {
-    // No token found - redirect to login
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  // User has token, allow them to proceed
   return NextResponse.next();
 }
 
+// See "Matching Paths" below to learn more
 export const config = {
-  matcher: ["/", "/events/:path*", "/user/:path*"],
-};
+  matcher: ['/events/:path*', "/user/:path*"],
+}
