@@ -19,7 +19,7 @@ export default function Page() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+      
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API}/login`, {
         method: 'POST',
@@ -29,12 +29,25 @@ export default function Page() {
         credentials: 'include',
         body: JSON.stringify({ identifier, password }),
       });
-      
+          
       const data = await response.json();
       if (response.ok) {
+        // Set cookies on the client side
+        const expiryDate = new Date();
+        expiryDate.setTime(expiryDate.getTime() + (24 * 60 * 60 * 1000)); // 1 day
+        
+        // Set access token cookie
+        document.cookie = `accessToken=${data.accessToken}; expires=${expiryDate.toUTCString()}; path=/; secure; samesite=strict`;
+        
+        // Set refresh token cookie
+        const refreshExpiryDate = new Date();
+        refreshExpiryDate.setTime(refreshExpiryDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
+        document.cookie = `refreshToken=${data.refreshToken}; expires=${refreshExpiryDate.toUTCString()}; path=/; secure; samesite=strict`;
+        
+        // You can keep localStorage as a fallback if needed
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
-        
+                      
         toast({
           title: "Login successful!",
           description: "Redirecting you to events page...",
@@ -42,10 +55,8 @@ export default function Page() {
           variant: "default",
           icon: <CheckCircle className="h-4 w-4 text-green-500" />
         });
-        
-        setTimeout(() => {
-          router.push('/events');
-        }, 1000);
+              
+        router.push('/events');
       } else {
         toast({
           title: "Login failed",
