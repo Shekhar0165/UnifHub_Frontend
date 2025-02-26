@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
+import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle,Pencil, Moon, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -162,7 +162,7 @@ const Profile = () => {
             <Avatar className="h-8 w-8 border-2 border-primary">
               {userData.profileImage ? (
                 <AvatarImage 
-                  src={`${process.env.NEXT_PUBLIC_API}/uploads/${userData.profileImage}`} 
+                  src={`${process.env.NEXT_PUBLIC_API}${userData?.profileImage}`} 
                   alt={userData.name || 'Profile'} 
                 />
               ) : null}
@@ -218,6 +218,18 @@ const Profile = () => {
             </div>
           </DropdownMenuItem>
           
+          <DropdownMenuItem 
+            onClick={() => router.push(`/user/${userData._id}/edit`)}
+            className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
+          >
+            <Pencil className="mr-2 h-4 w-4" />
+            <div className="flex flex-col">
+              <span>Edit</span>
+              <span className="text-xs text-muted-foreground">Get assistance</span>
+            </div>
+          </DropdownMenuItem>
+
+
           <DropdownMenuItem 
             onClick={() => router.push('/help')}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
