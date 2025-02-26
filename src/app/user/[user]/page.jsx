@@ -1,11 +1,13 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { 
   User, Award, FileText, Calendar, Download, Share2, MapPin, 
   Briefcase, GraduationCap, Mail, Phone, Star, Activity,
   BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight,ChevronDown
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
 
 // Sample data (in a real app, this would come from your backend)
 const sampleUser = {
@@ -115,8 +117,8 @@ const getActivityColor = (count) => {
 };
 
 
-const LeftComponent = () =>{
-  const user = sampleUser;
+const LeftComponent = ({user}) =>{
+  // const user = sampleUser;
   return (
     <>
       <div className="w-full lg:w-1/3">
@@ -125,36 +127,36 @@ const LeftComponent = () =>{
               <div className="p-6">
                 <div className="flex flex-col items-center">
                   <img 
-                    src={user.profileImage} 
-                    alt={user.name} 
+                    src={user?.profileImage} 
+                    alt={user?.name} 
                     className="h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 shadow-xl mb-4"
                   />
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name}</h1>
-                  <p className="text-blue-600 dark:text-blue-400">{user.university}</p>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{user?.name}</h1>
+                  <p className="text-blue-600 dark:text-blue-400">{user?.university}</p>
                   <div className="flex items-center mt-2 text-gray-600 dark:text-gray-400">
                     <MapPin className="h-4 w-4 mr-1" />
-                    <span className="text-sm">{user.location}</span>
+                    <span className="text-sm">{user?.location}</span>
                   </div>
                 </div>
                 
                 <div className="mt-6 space-y-4">
-                  <p className="text-gray-700 dark:text-gray-300 text-sm">{user.bio}</p>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm">{user?.bio}</p>
                   
                   <div className="flex justify-center space-x-4 pt-4">
                     <a 
-                      href={user.socialLinks.github} 
+                      href={user?.socialLinks?.github} 
                       className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors"
                     >
                       <Github className="h-5 w-5" />
                     </a>
                     <a 
-                      href={user.socialLinks.linkedin} 
+                      href={user?.socialLinks?.linkedin} 
                       className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
                     >
                       <Linkedin className="h-5 w-5" />
                     </a>
                     <a 
-                      href={user.socialLinks.twitter} 
+                      href={user?.socialLinks?.twitter} 
                       className="text-gray-500 hover:text-blue-400 dark:text-gray-400 dark:hover:text-blue-300 transition-colors"
                     >
                       <Twitter className="h-5 w-5" />
@@ -167,7 +169,7 @@ const LeftComponent = () =>{
                 <div className="grid grid-cols-1 divide-y divide-gray-200 dark:divide-gray-700">
                   <div className="flex items-center p-4">
                     <Mail className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-3" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{user?.email}</span>
                   </div>
 
                 </div>
@@ -176,7 +178,7 @@ const LeftComponent = () =>{
               <div className="p-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="font-medium text-gray-900 dark:text-white mb-3">Skills</h3>
                 <div className="flex flex-wrap gap-2">
-                  {user.skills.map((skill, index) => (
+                  {user?.skills?.map((skill, index) => (
                     <span 
                       key={index}
                       className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300"
@@ -203,9 +205,9 @@ const LeftComponent = () =>{
                   Upcoming Events
                 </h3>
                 
-                {user.upcomingEvents.length > 0 ? (
+                {user?.upcomingEvents?.length > 0 ? (
                   <div className="space-y-4">
-                    {user.upcomingEvents.map((event, index) => (
+                    {user?.upcomingEvents?.map((event, index) => (
                       <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
                         <div className="flex justify-between items-start">
                           <h4 className="text-sm font-medium text-gray-900 dark:text-white">{event.title}</h4>
@@ -248,8 +250,8 @@ const LeftComponent = () =>{
 
 
 
-const RightComponent = ()=>{
-  const user = sampleUser;
+const RightComponent = ({user})=>{
+  // const user = sampleUser;
   const [activeTab, setActiveTab] = useState('achievements');
 
 
@@ -263,7 +265,7 @@ const RightComponent = ()=>{
         
         // Simulate loading with a slight delay for better UX
         setTimeout(() => {
-            setVisibleEvents(prev => Math.min(prev + 3, user.events.length));
+            setVisibleEvents(prev => Math.min(prev + 3, user?.events?.length));
             setIsLoading(false);
         }, 300);
     };
@@ -279,7 +281,7 @@ const RightComponent = ()=>{
     return (
         <div className="space-y-2">
             <div className="space-y-3">
-                {user.events.slice(0, visibleEvents).map((event, index) => {
+                {user?.events?.slice(0, visibleEvents).map((event, index) => {
                     const { icon, bg } = getMedalInfo(index);
                     
                     return (
@@ -319,7 +321,7 @@ const RightComponent = ()=>{
                 })}
             </div>
             
-            {visibleEvents < user.events.length && (
+            {visibleEvents < user?.events?.length && (
                 <div className="py-4 flex justify-center">
                     <button 
                         onClick={handleShowMore}
@@ -338,7 +340,7 @@ const RightComponent = ()=>{
                 </div>
             )}
             
-            {visibleEvents >= user.events.length && user.events.length > 3 && (
+            {visibleEvents >= user?.events?.length && user?.events?.length > 3 && (
                 <div className="py-3 text-center">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         No more events to show
@@ -463,7 +465,7 @@ const RightComponent = ()=>{
                         Education
                       </h3>
                       
-                      {user.education.map((edu, index) => (
+                      {user?.education?.map((edu, index) => (
                         <div key={index} className="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <h4 className="text-md font-medium text-gray-900 dark:text-white">{edu.degree}</h4>
                           <p className="text-blue-600 dark:text-blue-400">{edu.institution}</p>
@@ -482,7 +484,7 @@ const RightComponent = ()=>{
                         Work Experience
                       </h3>
                       
-                      {user.experience.map((exp, index) => (
+                      {user?.experience?.map((exp, index) => (
                         <div key={index} className="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <h4 className="text-md font-medium text-gray-900 dark:text-white">{exp.role}</h4>
                           <p className="text-blue-600 dark:text-blue-400">{exp.company}</p>
@@ -505,7 +507,7 @@ const RightComponent = ()=>{
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {user.events.map((event, index) => (
+                      {user?.events?.map((event, index) => (
                         <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                           <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
                             <h3 className="font-medium text-gray-900 dark:text-white truncate">{event.title}</h3>
@@ -549,22 +551,22 @@ const RightComponent = ()=>{
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400">This Month</p>
-                    <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{user.activities.thisMonth}</p>
+                    <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{user?.activities?.thisMonth}</p>
                   </div>
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Last Month</p>
-                    <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{user.activities.lastMonth}</p>
+                    <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{user?.activities?.lastMonth}</p>
                   </div>
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Current Streak</p>
                     <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                      {user.activities.streakDays} days
+                      {user?.activities?.streakDays} days
                     </p>
                   </div>
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Longest Streak</p>
                     <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                      {user.activities.longestStreak} days
+                      {user?.activities?.longestStreak} days
                     </p>
                   </div>
                 </div>    
@@ -572,7 +574,7 @@ const RightComponent = ()=>{
                 <div className="mt-8">
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Monthly Activity</h4>
                   <div className="flex items-end h-32 gap-1 relative">
-                    {user.activities.contributions.map((count, index) => (
+                    {user?.activities?.contributions?.map((count, index) => (
                       <div key={index} className="relative group flex-1">
                         <div 
                           style={{ height: `${(count / Math.max(...user.activities.contributions)) * 100}%` }}
@@ -601,7 +603,7 @@ const RightComponent = ()=>{
                 </div>
                 
                 <div className="mt-6 flex justify-center">
-                  <a href={user.socialLinks.github} className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center">
+                  <a href={user?.socialLinks?.github} className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center">
                     View full activity on GitHub
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </a>
@@ -615,16 +617,64 @@ const RightComponent = ()=>{
 
 export default function ProfilePage() {
   const { userId } = useParams();
-  
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Check if user is authenticated (has token)
+        const accessToken = localStorage.getItem('accessToken');
+        
+        if (!accessToken) {
+          setLoading(false);
+          return; // User is not authenticated
+        }
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/user`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+        } else {
+          console.error('Failed to fetch user data');
+          // Handle authentication error (e.g., token expired)
+          if (response.status === 401) {
+            // Clear tokens and redirect to login
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [router]);
+
   // Load user data (using sample data for now)
-  const user = sampleUser;
+  // const user = sampleUser;
   
   return (
     <div className="min-h-screen bg-background">
       {/* Header with cover image */}
       <div className="relative h-60 w-full overflow-hidden">
         <img 
-          src={user.coverImage} 
+          src={user?.coverImage} 
           alt="Cover" 
           className="w-full h-full object-cover"
         />
@@ -634,10 +684,10 @@ export default function ProfilePage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative -mt-16 flex flex-col lg:flex-row gap-8">
           {/* Left Column - Profile Info */}
-          <LeftComponent/>
+          <LeftComponent user={user}/>
           
           {/* Right Column - Content Area */}
-          <RightComponent/>
+          <RightComponent user={user}/>
         </div>
       </div>
     </div>

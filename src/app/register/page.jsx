@@ -23,17 +23,20 @@ export default function RegisterPage() {
     userid: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    phone: "",
+    university: "",
+    location: ""
   });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setFormData({ ...formData, userType: tab });
-  };
+  // const handleTabChange = (tab) => {
+  //   setActiveTab(tab);
+  //   setFormData({ ...formData, userType: tab });
+  // };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -115,13 +118,13 @@ export default function RegisterPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
   
-    const { name, userid, email, password, confirmPassword } = formData;
+    const { name, userid, email, password, confirmPassword, phone, university, location } = formData;
   
     // Validation
     if (!name || !userid || !email || !password || !confirmPassword) {
       toast({
         title: "Validation Error",
-        description: "All fields are required",
+        description: "All required fields must be filled",
         variant: "destructive",
         icon: <AlertCircle className="h-4 w-4" />
       });
@@ -152,7 +155,7 @@ export default function RegisterPage() {
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API}/register`,
-        { name, userid, email, password },
+        { name, userid, email, password, phone, university, location },
         { withCredentials: true }
       );
   
@@ -187,32 +190,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Toaster />
       <div className="w-full max-w-md space-y-6">
-        {/* Tab Selection */}
-        <div className="flex w-full rounded-lg border p-1 gap-1">
-          <button
-            onClick={() => handleTabChange('individual')}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'individual' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'hover:bg-muted'
-            }`}
-            disabled={isLoading}
-          >
-            Join as Individual
-          </button>
-          <button
-            onClick={() => handleTabChange('organization')}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'organization' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'hover:bg-muted'
-            }`}
-            disabled={isLoading}
-          >
-            Join as Organization
-          </button>
-        </div>
-
+      
         <Card className="border-none shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
@@ -299,33 +277,18 @@ export default function RegisterPage() {
 
             {step === 3 && (
               <form onSubmit={handleRegister} className="space-y-4">
-                {activeTab === 'organization' ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Organization Name</Label>
-                    <Input 
-                      id="name" 
-                      name="name"
-                      placeholder="Enter organization name" 
-                      value={formData.name}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                      required 
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input 
-                      id="name" 
-                      name="name"
-                      placeholder="Enter your full name" 
-                      value={formData.name}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                      required 
-                    />
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input 
+                    id="name" 
+                    name="name"
+                    placeholder="Enter your full name" 
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    required 
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="userid">User ID</Label>
@@ -339,6 +302,45 @@ export default function RegisterPage() {
                     required 
                   />
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input 
+                    id="phone" 
+                    name="phone"
+                    type="tel" 
+                    placeholder="Enter your phone number" 
+                    value={formData.phone}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="university">University</Label>
+                  <Input 
+                    id="university" 
+                    name="university"
+                    placeholder="Enter your university" 
+                    value={formData.university}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input 
+                    id="location" 
+                    name="location"
+                    placeholder="City, Country" 
+                    value={formData.location}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <Separator className="my-2" />
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
