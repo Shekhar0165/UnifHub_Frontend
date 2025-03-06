@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('individual');
+  const [userType, setUserType] = useState('');
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState("");
   const [formData, setFormData] = useState({
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    phone: "",
+    phone: "", // Optional
     university: "",
     location: ""
   });
@@ -33,10 +33,10 @@ export default function RegisterPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // const handleTabChange = (tab) => {
-  //   setActiveTab(tab);
-  //   setFormData({ ...formData, userType: tab });
-  // };
+  const handleUserTypeSelect = (type) => {
+    setUserType(type);
+    setStep(2);
+  };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -63,7 +63,7 @@ export default function RegisterPage() {
         duration: 2000,
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
-      setStep(2);
+      setStep(3);
     } catch (error) {
       toast({
         title: "Error",
@@ -102,7 +102,7 @@ export default function RegisterPage() {
         duration: 2000,
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
-      setStep(3);
+      setStep(4);
     } catch (error) {
       toast({
         title: "Error",
@@ -153,8 +153,13 @@ export default function RegisterPage() {
   
     setIsLoading(true);
     try {
+      // Choose endpoint based on user type
+      const endpoint = userType === 'individual' 
+        ? `${process.env.NEXT_PUBLIC_API}/student/register` 
+        : `${process.env.NEXT_PUBLIC_API}/org/register`;
+      
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API}/register`,
+        endpoint,
         { name, userid, email, password, phone, university, location },
         { withCredentials: true }
       );
@@ -162,6 +167,7 @@ export default function RegisterPage() {
       // Store in localStorage as fallback
       localStorage.setItem("accessToken", res.data.accessToken);
       localStorage.setItem("refreshToken", res.data.refreshToken);
+      localStorage.setItem('UserType', data.user.usertype);
   
       toast({
         title: "Registration successful!",
@@ -194,14 +200,16 @@ export default function RegisterPage() {
         <Card className="border-none shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
-              {step === 1 && "Email Verification"}
-              {step === 2 && "Enter OTP"}
-              {step === 3 && "Create Account"}
+              {step === 1 && "Account Type"}
+              {step === 2 && "Email Verification"}
+              {step === 3 && "Enter OTP"}
+              {step === 4 && "Create Account"}
             </CardTitle>
             <CardDescription>
-              {step === 1 && "First, let's verify your email address"}
-              {step === 2 && "Enter the verification code sent to your email"}
-              {step === 3 && activeTab === 'individual' 
+              {step === 1 && "First, tell us who you are"}
+              {step === 2 && "Let's verify your email address"}
+              {step === 3 && "Enter the verification code sent to your email"}
+              {step === 4 && userType === 'individual' 
                 ? "Complete your profile to join amazing events"
                 : "Set up your organization profile to host events"
               }
@@ -209,6 +217,25 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {step === 1 && (
+              <div className="grid grid-cols-1 gap-4">
+                <Button 
+                  onClick={() => handleUserTypeSelect('individual')}
+                  className="h-24 text-lg"
+                  variant="outline"
+                >
+                  I'm an Individual
+                </Button>
+                <Button 
+                  onClick={() => handleUserTypeSelect('organization')}
+                  className="h-24 text-lg"
+                  variant="outline"
+                >
+                  I'm an Organization
+                </Button>
+              </div>
+            )}
+
+            {step === 2 && (
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
@@ -236,7 +263,7 @@ export default function RegisterPage() {
               </form>
             )}
 
-            {step === 2 && (
+            {step === 3 && (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="otp">Verification Code</Label>
@@ -275,7 +302,7 @@ export default function RegisterPage() {
               </form>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
@@ -304,7 +331,7 @@ export default function RegisterPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">Phone Number (Optional)</Label>
                   <Input 
                     id="phone" 
                     name="phone"
@@ -317,11 +344,13 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="university">University</Label>
+                  <Label htmlFor="university">
+                    {userType === 'individual' ? "University" : "Organization Type"}
+                  </Label>
                   <Input 
                     id="university" 
                     name="university"
-                    placeholder="Enter your university" 
+                    placeholder={userType === 'individual' ? "Enter your university" : "e.g., Club, Company, Non-profit"} 
                     value={formData.university}
                     onChange={handleChange}
                     disabled={isLoading}
@@ -397,7 +426,7 @@ export default function RegisterPage() {
               </form>
             )}
 
-            {step === 1 && (
+            {step < 4 && (
               <p className="text-center text-sm">
                 Already have an account?{' '}
                 <a href="/login" className="text-primary hover:underline">

@@ -36,6 +36,7 @@ export default function Page() {
         // Store in localStorage as fallback
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('UserType', data.user.usertype);
         
         toast({
           title: "Login successful!",

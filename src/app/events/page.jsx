@@ -8,8 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import events from './events';
-import dummyOrganizations from './Organization';
 import { useRouter } from 'next/navigation';
 import Profile from '../Components/Profile/Profile';
 import { ModeToggle } from '../Components/ModeToggle/ModeToggle';
@@ -20,16 +18,114 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewType, setViewType] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
+  const [org,setorg] = useState(null)
+  const [Loading,setLoading] = useState(true)
+  const[events,SetEvents] = useState(null);
   
   // Filter states
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
 
+
   // Available filter options
   const categories = ["Academic", "Social", "Sports", "Workshop", "Hackathon"];
   const statuses = ["Open", "Closed", "Upcoming"];
   const tags = ["Engineering", "Business", "Arts", "Technology", "Research"];
+
+  useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          // Check if user is authenticated (has token)
+          const accessToken = localStorage.getItem('accessToken');
+  
+          if (!accessToken) {
+            setLoading(false);
+            return; // User is not authenticated
+          }
+  
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API}/events/all`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            credentials: 'include',
+          });
+          console.log(response)
+  
+          if (response.ok) {
+            const data = await response.json();
+            SetEvents(data);
+            console.log(data)
+          } else {
+            console.error('Failed to fetch user data');
+            // Handle authentication error (e.g., token expired)
+            if (response.status === 401) {
+              // Clear tokens and redirect to login
+              localStorage.removeItem('user');
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              router.push('/');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchUserData();
+    }, [router]);
+
+
+  useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          // Check if user is authenticated (has token)
+          const accessToken = localStorage.getItem('accessToken');
+  
+          if (!accessToken) {
+            setLoading(false);
+            return; // User is not authenticated
+          }
+  
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org/all`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            credentials: 'include',
+          });
+  
+          if (response.ok) {
+            const data = await response.json();
+            setorg(data);
+          } else {
+            console.error('Failed to fetch user data');
+            // Handle authentication error (e.g., token expired)
+            if (response.status === 401) {
+              // Clear tokens and redirect to login
+              localStorage.removeItem('user');
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              router.push('/');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchUserData();
+    }, [router]);
+
+    console.log(org)
+    
 
   // Handle category filter toggle
   const toggleCategory = (category) => {
@@ -66,17 +162,17 @@ const Page = () => {
   };
 
   // Apply filters to events
-  const filteredEvents = events.filter(event => {
+  const filteredEvents = events?.filter(event => {
     // Search query filter
     const matchesSearch = 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
+      event?.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event?.content?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Category filter
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.category);
+    const matchesCategory = selectedCategories?.length === 0 || selectedCategories?.includes(event.category);
     
     // Status filter
-    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(event.status);
+    const matchesStatus = selectedStatuses?.length === 0 || selectedStatuses?.includes(event?.status);
     
     // Tag filter (assuming events have tags property)
     const matchesTags = selectedTags.length === 0 || 
@@ -86,11 +182,11 @@ const Page = () => {
   });
 
   // Apply filters to organizations
-  const filteredOrganizations = dummyOrganizations.filter(org => {
+  const filteredOrganizations = org?.filter(org => {
     // Search query filter
     const matchesSearch = 
-      org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      org.description.toLowerCase().includes(searchQuery.toLowerCase());
+      org?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      org?.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Category filter
     const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(org.category);
@@ -127,6 +223,8 @@ const Page = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  
 
   // Count active filters
   const activeFilterCount = selectedCategories.length + selectedStatuses.length + selectedTags.length;
@@ -205,6 +303,8 @@ const Page = () => {
       </div>
     </div>
   );
+
+  // console.log()
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -341,10 +441,10 @@ const Page = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="w-full md:w-auto p-1 bg-muted/50 rounded-full">
                 <TabsTrigger value="events" className="rounded-full px-6 py-1.5 data-[state=active]:bg-background">
-                  Events {filteredEvents.length > 0 && `(${filteredEvents.length})`}
+                  Events {filteredEvents?.length > 0 && `(${filteredEvents?.length})`}
                 </TabsTrigger>
                 <TabsTrigger value="organizations" className="rounded-full px-6 py-1.5 data-[state=active]:bg-background">
-                  Organizations {filteredOrganizations.length > 0 && `(${filteredOrganizations.length})`}
+                  Organizations {filteredOrganizations?.length > 0 && `(${filteredOrganizations?.length})`}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -413,29 +513,30 @@ const Page = () => {
           {/* Events Grid/List View */}
           {activeTab === "events" && (
             <>
-              {filteredEvents.length > 0 ? (
+              {filteredEvents?.length > 0 ? (
                 viewType === "grid" ? (
                   // Grid view
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredEvents.map(event => (
+                    {filteredEvents?.map(event => (
                       <Card key={event.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                         <CardHeader className="p-0">
                           <div className="relative aspect-video overflow-hidden">
                             <img 
-                              src={event.image} 
-                              alt={event.title}
+                              src={`${process.env.NEXT_PUBLIC_API}/events${event?.image_path}`} 
+                              alt={`${event?.eventName }`}
+                              
                               className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                             <div className="absolute top-3 right-3 flex gap-2 flex-wrap justify-end">
                               <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-3 py-1 text-xs rounded-full">
-                                {event.category}
+                                {event?.category}
                               </Badge>
                               <Badge 
                                 variant={event.status === "Open" ? "default" : "secondary"}
                                 className="bg-background/95 backdrop-blur-md hover:bg-background/70 text-primary px-3 py-1 text-xs rounded-full"
                               >
-                                {event.status}
+                                {event?.status}
                               </Badge>
                             </div>
                           </div>
@@ -443,7 +544,7 @@ const Page = () => {
                         
                         <CardContent className="p-5 space-y-3">
                           <CardTitle className="text-lg font-bold line-clamp-1">
-                            {event.title}
+                            {event.eventName}
                           </CardTitle>
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {event.description}
@@ -456,14 +557,14 @@ const Page = () => {
                             </div>
                             <div className="flex items-center gap-1.5">
                               <Users className="h-3.5 w-3.5 text-primary" />
-                              <span>{event.participants}</span>
+                              {/* <span>{event?.participants}</span> */}
                             </div>
                           </div>
                         </CardContent>
 
                         <CardFooter className="px-5 pb-5 pt-0">
                           <Button 
-                            onClick={() => handleOpenEvent(event.id)} 
+                            onClick={() => handleOpenEvent(event._id)} 
                             className="w-full gap-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-sm h-9"
                           >
                             View Details
@@ -476,13 +577,13 @@ const Page = () => {
                 ) : (
                   // List view
                   <div className="space-y-4">
-                    {filteredEvents.map(event => (
+                    {filteredEvents?.map(event => (
                       <Card key={event.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-md transition-all">
                         <div className="flex flex-col md:flex-row">
                           <div className="md:w-64 shrink-0">
                             <div className="relative h-full aspect-video md:aspect-square overflow-hidden">
                               <img 
-                                src={event.image} 
+                                src={`${process.env.NEXT_PUBLIC_API}${event?.image_path}`} 
                                 alt={event.title}
                                 className="object-cover w-full h-full"
                               />
@@ -513,11 +614,11 @@ const Page = () => {
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1.5">
                                   <Calendar className="h-3.5 w-3.5 text-primary" />
-                                  <span>{new Date(event.date).toLocaleDateString()}</span>
+                                  <span>{new Date(event?.date).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Users className="h-3.5 w-3.5 text-primary" />
-                                  <span>{event.participants} participants</span>
+                                  {/* <span>{event?.participants} participants</span> */}
                                 </div>
                               </div>
                               
@@ -567,7 +668,7 @@ const Page = () => {
                         <CardHeader className="p-0">
                           <div className="relative aspect-video overflow-hidden">
                             <img 
-                              src={org.image} 
+                              src={`${process.env.NEXT_PUBLIC_API}${org.profileImage}`} 
                               alt={org.name}
                               className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                             />

@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle,Pencil, Moon, Sun } from 'lucide-react';
+import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle, Pencil, Moon, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -20,20 +20,27 @@ const Profile = () => {
   const [theme, setTheme] = useState('light');
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
+  const UserType = localStorage.getItem('UserType');
+
+  const endpoint = UserType === 'individual'
+    ? `${process.env.NEXT_PUBLIC_API}/user`
+    : `${process.env.NEXT_PUBLIC_API}/org`;
+
+
   // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         // Check if user is authenticated (has token)
         const accessToken = localStorage.getItem('accessToken');
-        
+
         if (!accessToken) {
           setLoading(false);
           return; // User is not authenticated
         }
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/user`, {
+
+        const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -41,7 +48,7 @@ const Profile = () => {
           },
           credentials: 'include',
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setUserData(data);
@@ -62,25 +69,25 @@ const Profile = () => {
         setLoading(false);
       }
     };
-    
+
     fetchUserData();
   }, [router]);
 
   // Get user initials for avatar fallback
   const getUserInitials = () => {
     if (!userData || !userData.name) return 'U';
-    
+
     // Get first letter of first name
     const nameParts = userData.name.split(' ');
     return nameParts[0].charAt(0).toUpperCase();
   };
-  
+
   // Logout function
   const handleLogout = async () => {
     try {
       // Get refresh token from localStorage if available
       const refreshToken = localStorage.getItem('refreshToken');
-      
+
       // Call the logout API endpoint
       const response = await fetch(`${process.env.NEXT_PUBLIC_API}/logout`, {
         method: 'POST',
@@ -90,13 +97,13 @@ const Profile = () => {
         credentials: 'include', // Important to include cookies
         body: JSON.stringify({ refreshToken }), // Send as fallback in request body
       });
-      
+
       if (response.ok) {
         // Clear any local storage items
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        
+
         // Show success toast if available
         if (typeof toast === 'function') {
           toast({
@@ -105,7 +112,7 @@ const Profile = () => {
             variant: "success",
           });
         }
-        
+
         // Redirect to login page
         router.push('/');
       } else {
@@ -129,7 +136,7 @@ const Profile = () => {
       }
     }
   };
-  
+
   // If loading or not authenticated, show loading or login button
   if (loading) {
     return (
@@ -141,7 +148,7 @@ const Profile = () => {
       </div>
     );
   }
-  
+
   if (!userData) {
     return (
       <div className="flex items-center gap-2">
@@ -151,38 +158,51 @@ const Profile = () => {
       </div>
     );
   }
-  
+
+  const HandleSendToProfile = () => {
+    const newroute = UserType === 'individual'
+      ? `/user/${userData._id}`
+      : `/organization/${userData._id}`
+    router.push(newroute)
+  }
+
+  const HandleEditButton = () => {
+    const newEdit = UserType === 'individual'
+      ? `/user/${userData._id}`
+      : `/organization/${userData._id}`
+    router.push(`${newEdit}/edit`)
+  }
   return (
     <div className="flex items-center gap-2">
-      
+
       {/* Profile Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-2 py-1 hover:bg-accent rounded-lg">
             <Avatar className="h-8 w-8 border-2 border-primary">
               {userData.profileImage ? (
-                <AvatarImage 
-                  src={`${process.env.NEXT_PUBLIC_API}${userData?.profileImage}`} 
-                  alt={userData.name || 'Profile'} 
+                <AvatarImage
+                  src={`${process.env.NEXT_PUBLIC_API}${userData?.profileImage}`}
+                  alt={userData.name || 'Profile'}
                 />
               ) : null}
               <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
             <div className="hidden md:flex flex-col items-start">
               <span className="text-sm font-medium">{userData.name || 'User'}</span>
-              <span className="text-xs text-muted-foreground">{userData.role || 'Student'}</span>
+              <span className="text-xs text-muted-foreground">{UserType || 'Student'}</span>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
-        
+
         <DropdownMenuContent align="end" className="w-64 p-2">
           <div className="flex items-center p-2 bg-accent/50 rounded-md mb-2">
             <Avatar className="h-10 w-10 border-2 border-primary">
               {userData.profileImage ? (
-                <AvatarImage 
-                  src={`${process.env.NEXT_PUBLIC_API}/uploads/${userData.profileImage}`} 
-                  alt={userData.name || 'Profile'} 
+                <AvatarImage
+                  src={`${process.env.NEXT_PUBLIC_API}/uploads/${userData.profileImage}`}
+                  alt={userData.name || 'Profile'}
                 />
               ) : null}
               <AvatarFallback>{getUserInitials()}</AvatarFallback>
@@ -195,9 +215,9 @@ const Profile = () => {
               </Badge>
             </div>
           </div>
-          
-          <DropdownMenuItem 
-            onClick={() => router.push(`/user/${userData._id}`)}
+
+          <DropdownMenuItem
+            onClick={HandleSendToProfile}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
           >
             <User className="mr-2 h-4 w-4" />
@@ -206,8 +226,8 @@ const Profile = () => {
               <span className="text-xs text-muted-foreground">View and edit your profile</span>
             </div>
           </DropdownMenuItem>
-          
-          <DropdownMenuItem 
+
+          <DropdownMenuItem
             onClick={() => router.push('/settings')}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
           >
@@ -217,9 +237,9 @@ const Profile = () => {
               <span className="text-xs text-muted-foreground">Manage your preferences</span>
             </div>
           </DropdownMenuItem>
-          
-          <DropdownMenuItem 
-            onClick={() => router.push(`/user/${userData._id}/edit`)}
+
+          <DropdownMenuItem
+            onClick={HandleEditButton}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
           >
             <Pencil className="mr-2 h-4 w-4" />
@@ -230,7 +250,7 @@ const Profile = () => {
           </DropdownMenuItem>
 
 
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => router.push('/help')}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
           >
@@ -240,10 +260,10 @@ const Profile = () => {
               <span className="text-xs text-muted-foreground">Get assistance</span>
             </div>
           </DropdownMenuItem>
-          
+
           <DropdownMenuSeparator />
-          
-          <DropdownMenuItem 
+
+          <DropdownMenuItem
             onClick={handleLogout}
             className="flex items-center cursor-pointer rounded-md p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20"
           >
