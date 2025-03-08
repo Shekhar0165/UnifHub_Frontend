@@ -36,7 +36,6 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
         if (response.ok) {
           const data = await response.json();
           SetEvents(data);
-          console.log(data)
         } else {
           console.error('Failed to fetch user data');
           // Handle authentication error (e.g., token expired)

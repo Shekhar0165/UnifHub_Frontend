@@ -513,10 +513,11 @@ const RightComponent = ({ user }) => {
 }
 
 export default function ProfilePage() {
-  const { userId } = useParams();
+  const userId = useParams();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  console.log(userId.user)
 
 
   useEffect(() => {
@@ -530,7 +531,7 @@ export default function ProfilePage() {
           return; // User is not authenticated
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/user`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/user/profile/${userId.user}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

@@ -24,7 +24,7 @@ const Profile = () => {
   const UserType = localStorage.getItem('UserType');
 
   const endpoint = UserType === 'individual'
-    ? `${process.env.NEXT_PUBLIC_API}/user`
+    ? `${process.env.NEXT_PUBLIC_API}/user/one`
     : `${process.env.NEXT_PUBLIC_API}/org`;
 
 
@@ -73,6 +73,8 @@ const Profile = () => {
     fetchUserData();
   }, [router]);
 
+  console.log('userData', userData);
+
   // Get user initials for avatar fallback
   const getUserInitials = () => {
     if (!userData || !userData.name) return 'U';
@@ -103,6 +105,8 @@ const Profile = () => {
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('UserType');
+        localStorage.removeItem('UserId');
 
         // Show success toast if available
         if (typeof toast === 'function') {
@@ -161,15 +165,15 @@ const Profile = () => {
 
   const HandleSendToProfile = () => {
     const newroute = UserType === 'individual'
-      ? `/user/${userData._id}`
-      : `/organization/${userData._id}`
+      ? `/user/${userData.userid}`
+      : `/organization/${userData.userid}`
     router.push(newroute)
   }
 
   const HandleEditButton = () => {
     const newEdit = UserType === 'individual'
-      ? `/user/${userData._id}`
-      : `/organization/${userData._id}`
+      ? `/user/${userData.userid}`
+      : `/organization/${userData.userid}`
     router.push(`${newEdit}/edit`)
   }
   return (

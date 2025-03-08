@@ -168,6 +168,7 @@ export default function RegisterPage() {
       localStorage.setItem("accessToken", res.data.accessToken);
       localStorage.setItem("refreshToken", res.data.refreshToken);
       localStorage.setItem('UserType', data.user.usertype);
+      localStorage.setItem('UserId', data.user.userid);
   
       toast({
         title: "Registration successful!",
@@ -177,7 +178,7 @@ export default function RegisterPage() {
       });
   
       setTimeout(() => {
-        router.push("/events");
+        router.push("/");
       }, 1500);
   
     } catch (error) {

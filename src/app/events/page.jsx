@@ -11,22 +11,21 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useRouter } from 'next/navigation';
 import Profile from '../Components/Profile/Profile';
 import { ModeToggle } from '../Components/ModeToggle/ModeToggle';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const Page = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("events");
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewType, setViewType] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
-  const [org,setorg] = useState(null)
-  const [Loading,setLoading] = useState(true)
-  const[events,SetEvents] = useState(null);
+  const [org, setorg] = useState(null);
+  const [Loading, setLoading] = useState(true);
+  const [events, SetEvents] = useState(null);
   
   // Filter states
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-
 
   // Available filter options
   const categories = ["Academic", "Social", "Sports", "Workshop", "Hackathon"];
@@ -34,98 +33,93 @@ const Page = () => {
   const tags = ["Engineering", "Business", "Arts", "Technology", "Research"];
 
   useEffect(() => {
-      const fetchUserData = async () => {
-        try {
-          // Check if user is authenticated (has token)
-          const accessToken = localStorage.getItem('accessToken');
-  
-          if (!accessToken) {
-            setLoading(false);
-            return; // User is not authenticated
-          }
-  
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API}/events/all`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`
-            },
-            credentials: 'include',
-          });
-          console.log(response)
-  
-          if (response.ok) {
-            const data = await response.json();
-            SetEvents(data);
-            console.log(data)
-          } else {
-            console.error('Failed to fetch user data');
-            // Handle authentication error (e.g., token expired)
-            if (response.status === 401) {
-              // Clear tokens and redirect to login
-              localStorage.removeItem('user');
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
-              router.push('/');
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        } finally {
+    const fetchUserData = async () => {
+      try {
+        // Check if user is authenticated (has token)
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (!accessToken) {
           setLoading(false);
+          return; // User is not authenticated
         }
-      };
-  
-      fetchUserData();
-    }, [router]);
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/events/all`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          SetEvents(data);
+        } else {
+          console.error('Failed to fetch user data');
+          // Handle authentication error (e.g., token expired)
+          if (response.status === 401) {
+            // Clear tokens and redirect to login
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
 
 
   useEffect(() => {
-      const fetchUserData = async () => {
-        try {
-          // Check if user is authenticated (has token)
-          const accessToken = localStorage.getItem('accessToken');
-  
-          if (!accessToken) {
-            setLoading(false);
-            return; // User is not authenticated
-          }
-  
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org/all`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`
-            },
-            credentials: 'include',
-          });
-  
-          if (response.ok) {
-            const data = await response.json();
-            setorg(data);
-          } else {
-            console.error('Failed to fetch user data');
-            // Handle authentication error (e.g., token expired)
-            if (response.status === 401) {
-              // Clear tokens and redirect to login
-              localStorage.removeItem('user');
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
-              router.push('/');
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      fetchUserData();
-    }, [router]);
+    const fetchUserData = async () => {
+      try {
+        // Check if user is authenticated (has token)
+        const accessToken = localStorage.getItem('accessToken');
 
-    console.log(org)
-    
+        if (!accessToken) {
+          setLoading(false);
+          return; // User is not authenticated
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org/all`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setorg(data);
+        } else {
+          console.error('Failed to fetch user data');
+          // Handle authentication error (e.g., token expired)
+          if (response.status === 401) {
+            // Clear tokens and redirect to login
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
 
   // Handle category filter toggle
   const toggleCategory = (category) => {
@@ -175,7 +169,7 @@ const Page = () => {
     const matchesStatus = selectedStatuses?.length === 0 || selectedStatuses?.includes(event?.status);
     
     // Tag filter (assuming events have tags property)
-    const matchesTags = selectedTags.length === 0 || 
+    const matchesTags = selectedTags?.length === 0 || 
       (event.tags && selectedTags.some(tag => event.tags.includes(tag)));
     
     return matchesSearch && matchesCategory && matchesStatus && matchesTags;
@@ -206,25 +200,6 @@ const Page = () => {
   const handleOpenOrganization = (id) => {
     router.push(`/organization/${id}`);
   };
-
-  // Automatically hide filters on mobile when screen resizes
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setShowFilters(true);
-      } else {
-        setShowFilters(false);
-      }
-    };
-
-    // Set initial state
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  
 
   // Count active filters
   const activeFilterCount = selectedCategories.length + selectedStatuses.length + selectedTags.length;
@@ -304,8 +279,6 @@ const Page = () => {
     </div>
   );
 
-  // console.log()
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation Bar */}
@@ -337,12 +310,14 @@ const Page = () => {
         </div>
       </header>
 
-      {/* Two-column layout for desktop */}
+      {/* Two-column layout */}
       <div className="flex-1 flex flex-col lg:flex-row container mx-auto px-4 py-6">
-        {/* Sidebar for filters (desktop) */}
+        {/* Sidebar for filters - now can toggle on all screen sizes */}
         <aside className={cn(
-          "lg:block lg:w-64 lg:mr-8 lg:flex-shrink-0",
-          showFilters ? "block mb-8" : "hidden"
+          "transition-all duration-300 transform",
+          showFilters 
+            ? "translate-x-0 opacity-100 max-h-full overflow-visible w-full lg:w-64 lg:mr-8 lg:flex-shrink-0 mb-6 lg:mb-0" 
+            : "-translate-x-full opacity-0 max-h-0 overflow-hidden w-0 lg:w-0"
         )}>
           <div className="lg:sticky lg:top-24">
             <FiltersComponent />
@@ -350,7 +325,7 @@ const Page = () => {
         </aside>
 
         {/* Main content area */}
-        <main className="flex-1">
+        <main className={cn("flex-1", showFilters ? "lg:ml-0" : "ml-0")}>
           {/* Mobile search */}
           <div className="lg:hidden mb-6">
             <div className="relative group">
@@ -373,11 +348,11 @@ const Page = () => {
               </h1>
               
               <div className="flex items-center gap-3">
-                {/* Filter toggle for mobile/tablet */}
+                {/* Filter toggle for all screen sizes */}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="lg:hidden rounded-full gap-2"
+                  className="rounded-full gap-2"
                   onClick={() => setShowFilters(!showFilters)}
                 >
                   {showFilters ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
@@ -388,53 +363,6 @@ const Page = () => {
                     </Badge>
                   )}
                 </Button>
-                
-                {/* Mobile sheet filter for smaller screens */}
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="lg:hidden md:hidden rounded-full gap-2 sm:hidden"
-                    >
-                      <Filter className="h-4 w-4" />
-                      Filters
-                      {activeFilterCount > 0 && (
-                        <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center rounded-full">
-                          {activeFilterCount}
-                        </Badge>
-                      )}
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-full sm:max-w-md">
-                    <SheetHeader>
-                      <SheetTitle>Filters</SheetTitle>
-                    </SheetHeader>
-                    <div className="py-6">
-                      <FiltersComponent />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-                
-                {/* View toggle */}
-                <div className="bg-muted/50 rounded-full p-1 hidden md:flex">
-                  <Button 
-                    variant={viewType === "grid" ? "default" : "ghost"} 
-                    size="sm" 
-                    onClick={() => setViewType("grid")}
-                    className="rounded-full h-8 px-3"
-                  >
-                    Grid
-                  </Button>
-                  <Button 
-                    variant={viewType === "list" ? "default" : "ghost"} 
-                    size="sm" 
-                    onClick={() => setViewType("list")}
-                    className="rounded-full h-8 px-3"
-                  >
-                    List
-                  </Button>
-                </div>
               </div>
             </div>
             
@@ -510,137 +438,71 @@ const Page = () => {
             )}
           </div>
 
-          {/* Events Grid/List View */}
+          {/* Events Grid View - Only Grid View now */}
           {activeTab === "events" && (
             <>
               {filteredEvents?.length > 0 ? (
-                viewType === "grid" ? (
-                  // Grid view
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredEvents?.map(event => (
-                      <Card key={event.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <CardHeader className="p-0">
-                          <div className="relative aspect-video overflow-hidden">
-                            <img 
-                              src={`${process.env.NEXT_PUBLIC_API}/events${event?.image_path}`} 
-                              alt={`${event?.eventName }`}
-                              
-                              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                            <div className="absolute top-3 right-3 flex gap-2 flex-wrap justify-end">
-                              <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-3 py-1 text-xs rounded-full">
-                                {event?.category}
-                              </Badge>
-                              <Badge 
-                                variant={event.status === "Open" ? "default" : "secondary"}
-                                className="bg-background/95 backdrop-blur-md hover:bg-background/70 text-primary px-3 py-1 text-xs rounded-full"
-                              >
-                                {event?.status}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        
-                        <CardContent className="p-5 space-y-3">
-                          <CardTitle className="text-lg font-bold line-clamp-1">
-                            {event.eventName}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {event.description}
-                          </p>
-                          
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5 text-primary" />
-                              <span>{new Date(event.date).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Users className="h-3.5 w-3.5 text-primary" />
-                              {/* <span>{event?.participants}</span> */}
-                            </div>
-                          </div>
-                        </CardContent>
-
-                        <CardFooter className="px-5 pb-5 pt-0">
-                          <Button 
-                            onClick={() => handleOpenEvent(event._id)} 
-                            className="w-full gap-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-sm h-9"
-                          >
-                            View Details
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  // List view
-                  <div className="space-y-4">
-                    {filteredEvents?.map(event => (
-                      <Card key={event.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-md transition-all">
-                        <div className="flex flex-col md:flex-row">
-                          <div className="md:w-64 shrink-0">
-                            <div className="relative h-full aspect-video md:aspect-square overflow-hidden">
-                              <img 
-                                src={`${process.env.NEXT_PUBLIC_API}${event?.image_path}`} 
-                                alt={event.title}
-                                className="object-cover w-full h-full"
-                              />
-                              <div className="absolute top-2 left-2 flex gap-2">
-                                <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-2 py-0.5 text-xs rounded-full">
-                                  {event.category}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col flex-1 p-5">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="text-lg font-bold">{event.title}</h3>
-                              <Badge 
-                                variant={event.status === "Open" ? "default" : "secondary"}
-                                className="ml-2 shrink-0"
-                              >
-                                {event.status}
-                              </Badge>
-                            </div>
-                            
-                            <p className="text-sm text-muted-foreground mb-4">
-                              {event.description}
-                            </p>
-                            
-                            <div className="mt-auto flex items-center justify-between">
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                                  <span>{new Date(event?.date).toLocaleDateString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="h-3.5 w-3.5 text-primary" />
-                                  {/* <span>{event?.participants} participants</span> */}
-                                </div>
-                              </div>
-                              
-                              <Button 
-                                onClick={() => handleOpenEvent(event.id)} 
-                                size="sm"
-                                className="gap-1 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                              >
-                                Details
-                                <ExternalLink className="h-3 w-3" />
-                              </Button>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredEvents?.map(event => (
+                    <Card key={event.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                      <CardHeader className="p-0">
+                        <div className="relative aspect-video overflow-hidden">
+                          <img 
+                            src={`${process.env.NEXT_PUBLIC_API}/events${event?.image_path}`} 
+                            alt={`${event?.eventName }`}
+                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                          <div className="absolute top-3 right-3 flex gap-2 flex-wrap justify-end">
+                            <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-3 py-1 text-xs rounded-full">
+                              {event?.category}
+                            </Badge>
+                            <Badge 
+                              variant={event.status === "Open" ? "default" : "secondary"}
+                              className="bg-background/95 backdrop-blur-md hover:bg-background/70 text-primary px-3 py-1 text-xs rounded-full"
+                            >
+                              {event?.status}
+                            </Badge>
                           </div>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )
+                      </CardHeader>
+                      
+                      <CardContent className="p-5 space-y-3">
+                        <CardTitle className="text-lg font-bold line-clamp-1">
+                          {event.eventName}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {event.description}
+                        </p>
+                        
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-primary" />
+                            <span>{new Date(event.date).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5 text-primary" />
+                            {/* <span>{event?.participants}</span> */}
+                          </div>
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="px-5 pb-5 pt-0">
+                        <Button 
+                          onClick={() => handleOpenEvent(event.eventName)} 
+                          className="w-full gap-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-sm h-9"
+                        >
+                          View Details
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                   <Search className="h-12 w-12 mb-4 text-muted-foreground/50" />
-                  <p className="text-lg">No events found with your current filters.</p>
+                  <p className="text-lg"><LoadingSpinner/></p>
                   {activeFilterCount > 0 && (
                     <Button 
                       variant="outline" 
@@ -656,105 +518,55 @@ const Page = () => {
             </>
           )}
 
-          {/* Organizations List/Grid View */}
+          {/* Organizations Grid View - Only Grid View now */}
           {activeTab === "organizations" && (
             <>
-              {filteredOrganizations.length > 0 ? (
-                viewType === "grid" ? (
-                  // Grid view for organizations
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredOrganizations.map(org => (
-                      <Card key={org.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <CardHeader className="p-0">
-                          <div className="relative aspect-video overflow-hidden">
-                            <img 
-                              src={`${process.env.NEXT_PUBLIC_API}${org.profileImage}`} 
-                              alt={org.name}
-                              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                            <div className="absolute top-3 right-3">
-                              <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-3 py-1 text-xs rounded-full">
-                                {org.category}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        
-                        <CardContent className="p-5 space-y-3">
-                          <CardTitle className="text-lg font-bold line-clamp-1">
-                            {org.name}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {org.description}
-                          </p>
-                          
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Users className="h-3.5 w-3.5 text-primary" />
-                            <span>{org.members} members</span>
-                          </div>
-                        </CardContent>
-
-                        <CardFooter className="px-5 pb-5 pt-0">
-                          <Button 
-                            onClick={() => handleOpenOrganization(org.id)} 
-                            className="w-full gap-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-sm h-9"
-                          >
-                            View Organization
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  // List view for organizations
-                  <div className="space-y-4">
-                    {filteredOrganizations.map(org => (
-                      <Card key={org.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-md transition-all">
-                        <div className="flex flex-col md:flex-row">
-                          <div className="md:w-64 shrink-0">
-                            <div className="relative h-full aspect-video md:aspect-square overflow-hidden">
-                              <img 
-                                src={org.image} 
-                                alt={org.name}
-                                className="object-cover w-full h-full"
-                              />
-                              <div className="absolute top-2 left-2">
-                                <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-2 py-0.5 text-xs rounded-full">
-                                  {org.category}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col flex-1 p-5">
-                            <h3 className="text-lg font-bold mb-2">{org.name}</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                              {org.description}
-                            </p>
-                            
-                            <div className="mt-auto flex items-center justify-between">
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Users className="h-3.5 w-3.5 text-primary" />
-                                <span>{org.members} members</span>
-                              </div>
-                              
-                              <Button 
-                                onClick={() => handleOpenOrganization(org.id)} 
-                                size="sm"
-                                className="gap-1 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                              >
-                                View Details
-                                <ExternalLink className="h-3 w-3" />
-                              </Button>
-                            </div>
+              {filteredOrganizations?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredOrganizations.map(org => (
+                    <Card key={org.id} className="group bg-background border border-border/40 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                      <CardHeader className="p-0">
+                        <div className="relative aspect-video overflow-hidden">
+                          <img 
+                            src={`${process.env.NEXT_PUBLIC_API}${org.profileImage}`} 
+                            alt={org.name}
+                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                          <div className="absolute top-3 right-3">
+                            <Badge variant="secondary" className="bg-background/95 backdrop-blur-md px-3 py-1 text-xs rounded-full">
+                              {org.category}
+                            </Badge>
                           </div>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )
+                      </CardHeader>
+                      
+                      <CardContent className="p-5 space-y-3">
+                        <CardTitle className="text-lg font-bold line-clamp-1">
+                          {org.name}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {org.description}
+                        </p>
+                        
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Users className="h-3.5 w-3.5 text-primary" />
+                          <span>{org.members} members</span>
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="px-5 pb-5 pt-0">
+                        <Button 
+                          onClick={() => handleOpenOrganization(org.userid)} 
+                          className="w-full gap-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-sm h-9"
+                        >
+                          View Organization
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                   <Search className="h-12 w-12 mb-4 text-muted-foreground/50" />

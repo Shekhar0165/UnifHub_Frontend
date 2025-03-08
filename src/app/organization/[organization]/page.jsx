@@ -6,11 +6,11 @@ import {
     Briefcase, GraduationCap, Mail, Phone, Star, Activity,
     BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, X,BriefcaseIcon,ChevronDown
 } from 'lucide-react'
-import sampleUser from '../Data'
 import { useRouter } from 'next/navigation';
 import Header from '@/app/Components/Header/Header'
 import { Chart } from "react-google-charts";
-import NewEventCreate from '@/app/Components/Events/CreateNewEvents'
+import EventComponent from '@/app/Components/Organization/CreatePost'
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 
 
@@ -171,7 +171,7 @@ const RightComponent = ({user}) => {
     };
 
     const HandleCreateEvents = ()=>{
-        router.push(`/organization/${user._id}/create-event`)
+        router.push(`/organization/${user.userid}/create-event`)
     }
 
     
@@ -377,7 +377,7 @@ const RightComponent = ({user}) => {
                             className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium rounded-lg transition-colors group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                         >
                             {isLoading ? (
-                                <span className="animate-spin h-5 w-5 border-2 border-blue-600 dark:border-blue-400 border-t-transparent dark:border-t-transparent rounded-full"></span>
+                                <LoadingSpinner/>
                             ) : (
                                 <>
                                     <span>Show More</span>
@@ -577,6 +577,7 @@ const RightComponent = ({user}) => {
                 </div>
                 {/* <AddEvetns/> */}
                 {/* Activity Section */}
+                <EventComponent user={user}/>
                 <UserActivity user={user}/>
             </div>
 
@@ -727,7 +728,6 @@ export default function ProfilePage() {
     
         fetchUserData();
       }, [router]);
-      console.log(`${process.env.NEXT_PUBLIC_API}${user?.coverImage}`)
 
 
     return (
@@ -757,9 +757,7 @@ export default function ProfilePage() {
                     </div>
                 </>
             ) : loading ? (
-                <div className="flex justify-center items-center h-60">
-                    <p>Loading...</p>
-                </div>
+                <LoadingSpinner/>
             ) : (
                 <div className="flex justify-center items-center h-60">
                     <p>Please log in to view this profile</p>

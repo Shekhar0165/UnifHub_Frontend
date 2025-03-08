@@ -12,8 +12,127 @@ import { toast } from '@/hooks/use-toast'
 import axios from 'axios'
 import Header from '@/app/Components/Header/Header'
 import Footer from '@/app/Components/Footer/Footer'
+import Link from 'next/link'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
+
+const apiUrl = process.env.NEXT_PUBLIC_API;
+
+
+
+
+
+const ShowParticiPants = ({ eventid, currentUser }) => {
+  const [participants, setParticipants] = useState({ teamName: "", participants: [] });
+  const [newUserId, setNewUserId] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const accessToken = localStorage.getItem("accessToken");
+      try {
+        const data = {
+          eventid: eventid,
+          userid: currentUser._id,
+        };
+        const response = await axios.post(
+          `${apiUrl}/participants/user`,
+          data,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        setParticipants(response.data.newParticipants);
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+      }
+    };
+
+    fetchData();
+  }, [eventid, currentUser]);
+
+  console.log(participants?.participants); // Debugging check
+
+  // Function to add a new participant
+  const handleAddParticipant = async () => {
+    if (!newUserId) return alert("Please enter a user ID!");
+
+    const accessToken = localStorage.getItem("accessToken");
+    try {
+      const response = await axios.post(
+        `${apiUrl}/participants/add`,
+        { eventid, userid: newUserId },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      // Add new participant to the existing list
+      setParticipants(prev => ({
+        ...prev,
+        participants: [...prev.participants, response.data.participant]
+      }));
+
+      setNewUserId(""); // Reset input field
+    } catch (error) {
+      console.error("Error adding participant:", error);
+    }
+  };
+  if (!participants.participants.length > 0) return null;
+  return (
+    <div className="max-w-2xl mx-auto mt-10">
+      <Card className="p-6 shadow-lg border-t-4 border-primary">
+        <h2 className="text-xl font-semibold mb-4">Participants for Event</h2>
+
+        {participants.participants.length > 0 ? (
+          <div>
+            <p className="font-semibold text-lg mb-2">Team Name: {participants.teamName}</p>
+            <ul className="space-y-3">
+              {participants.participants.map((participant) => (
+                <Link href={`/user/${participant.userid}`} key={participant.id}>
+                  <li className="p-3 border rounded-lg flex items-center gap-3">
+                    <img
+                      src={`${apiUrl}${participant.profileImage}`}
+                      alt={participant.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-semibold">{participant.name}</p>
+                      <p className="text-gray-500">{participant.userid}</p>
+                    </div>
+                  </li>
+                </Link>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-gray-500">No participants yet.</p>
+        )}
+
+        {/* Add Participant Section */}
+        <div className="mt-6 flex gap-2">
+          <Input
+            type="text"
+            placeholder="Enter User ID"
+            value={newUserId}
+            onChange={(e) => setNewUserId(e.target.value)}
+          />
+          <Button onClick={handleAddParticipant} className="bg-primary">
+            Add User
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToast }) => {
   // State management
   const [invited, setInvited] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -22,75 +141,15 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [teamName, setTeamName] = useState("");
-  const [currentUser, setCurrentUser] = useState(null);
+
   const [teamNameCheck, setTeamNameCheck] = useState({ result: undefined, checkedName: "" });
   const [loading, setLoading] = useState(false);
-  
+
   const router = useRouter();
-  const apiUrl = process.env.NEXT_PUBLIC_API;
 
-  // Toast notification handler for consistent notifications
-  const showToast = (type, title, description = "") => {
-    toast({
-      variant: type === "success" ? "default" : "destructive",
-      title,
-      description
-    });
-  };
 
-  // Fetch current user data on component mount
-  useEffect(() => {
-    const fetchUserData = async () => {
-      setIsLoading(true);
-      const accessToken = localStorage.getItem('accessToken');
 
-      if (!accessToken) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${apiUrl}/user`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          
-          // Process user data
-          const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
-          setCurrentUser(user);
-          
-          // Add current user to invited list automatically
-          if (user._id) {
-            setInvited([user._id]);
-          }
-        } else {
-          showToast("error", "Authentication Error", "Failed to fetch user data");
-          
-          // Handle authentication error
-          if (response.status === 401) {
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            router.push('/');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        showToast("error", "Error", "Failed to load user data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [apiUrl, router]);
+  // Fetch current user data on component moun
 
   // Search for members
   const searchMembers = async () => {
@@ -144,7 +203,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
       );
 
       const data = response.data;
-      
+
       setTeamNameCheck({
         result: data.result,
         checkedName: teamName
@@ -166,13 +225,13 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
   const handleInvite = (member) => {
     if (!invited.includes(member._id)) {
       const newInvited = [...invited, member._id];
-      
+
       // Check team size constraints
       if (eventData?.maxTeamMembers && newInvited.length > eventData.maxTeamMembers) {
         showToast("error", "Team size limit reached", `Maximum team size is ${eventData.maxTeamMembers}`);
         return;
       }
-      
+
       setInvited(newInvited);
     }
   };
@@ -234,7 +293,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
 
   // Event handlers
   const handleSearch = (e) => setSearchQuery(e.target.value);
-  
+
   const handleSearchKeyPress = (e) => {
     if (e.key === 'Enter') {
       searchMembers();
@@ -269,7 +328,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
             <p className="text-sm text-muted-foreground">
               Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members
             </p>
-            
+
             <div className="flex flex-col space-y-4 p-4 rounded-lg border">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold">Create New Team</h3>
@@ -292,7 +351,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                     </div>
                   )}
                 </div>
-                
+
                 <Button
                   onClick={checkTeamAvailability}
                   disabled={loading || !teamName}
@@ -323,7 +382,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                 >
                   Add Team Members
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={closePopup}
@@ -346,7 +405,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                     onKeyPress={handleSearchKeyPress}
                     className="flex-1"
                   />
-                  
+
                   <Button
                     size="icon"
                     onClick={searchMembers}
@@ -383,7 +442,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                               <p className="text-xs text-muted-foreground">{member.email}</p>
                             </div>
                           </div>
-                          
+
                           <Button
                             size="sm"
                             variant={invited.includes(member._id) ? "outline" : "default"}
@@ -443,7 +502,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                               </div>
                               <span>{member.name}</span>
                             </div>
-                            
+
                             <Button
                               size="icon"
                               variant="ghost"
@@ -469,7 +528,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                 <Button variant="outline" onClick={() => setShowSearch(false)}>
                   Back
                 </Button>
-                
+
                 <Button
                   onClick={handleSubmit}
                   disabled={
@@ -497,7 +556,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData }) => {
                   You need at least {eventData.minTeamMembers} team members to apply
                 </p>
               )}
-              
+
               {teamNameCheck.result === false && (
                 <p className="text-xs text-amber-500 mt-2 text-center">
                   You need to choose an available team name
@@ -515,7 +574,69 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
   const [ApplyForEvent, SetApplyForEvent] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [visible, setVisible] = useState(true);
   const router = useRouter()
+
+  // Toast notification handler for consistent notifications
+  const showToast = (type, title, description = "") => {
+    toast({
+      variant: type === "success" ? "default" : "destructive",
+      title,
+      description
+    });
+  };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setIsLoading(true);
+      const accessToken = localStorage.getItem('accessToken');
+
+      if (!accessToken) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${apiUrl}/user/one`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+
+          // Process user data
+          const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
+          setCurrentUser(user);
+
+
+        } else {
+          showToast("error", "Authentication Error", "Failed to fetch user data");
+
+          // Handle authentication error
+          if (response.status === 401) {
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        showToast("error", "Error", "Failed to load user data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [apiUrl, router]);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -540,7 +661,6 @@ export default function EventDetailPage() {
         if (response.ok) {
           const data = await response.json()
           setEvents(data)
-          console.log(data)
         } else {
           console.error('Failed to fetch event data')
           // Handle authentication error (e.g., token expired)
@@ -562,13 +682,15 @@ export default function EventDetailPage() {
     fetchEventData()
   }, [router])
 
+
   // Find the event from our events data
-  const eventData = events?.find(event => event._id === params.events)
-  console.log("Event data:", eventData)
+  const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim());
+
+
 
   // Show loading state
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading event details...</div>
+    return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner /></div>
   }
 
   // Show message if event not found
@@ -601,159 +723,182 @@ export default function EventDetailPage() {
     SetApplyForEvent(false);
   };
 
+  const UserType = localStorage.getItem("UserType");
+
   return (
     <>
-    <Header/>
-    <div className="min-h-screen bg-background">
-      {/* Header Section */}
-      <div className="border-b bg-background">
-        <div className="container max-w-7xl mx-auto py-8 px-6 lg:px-8">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Badge variant="secondary">{eventData?.category}</Badge>
-            <Badge variant="default" className={getStatusColor(eventData?.status)}>
-              {eventData?.status}
-            </Badge>
+      <Header />
+      <div className="min-h-screen bg-background">
+      {visible && UserType === "Organization" && (
+        <div className='flex justify-end items-end'>
+        <Alert className="bg-red-100 border-red-500 mt-2 text-red-700 mx-10 flex items-end w-[70%] justify-between">
+          <div>
+            <AlertDescription>
+              You cannot participate. Please switch from Organization to User mode.
+            </AlertDescription>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-4">{eventData?.eventName}</h1>
-          <p className="text-lg text-muted-foreground max-w-3xl">
-            {eventData?.description}
-          </p>
+          <button
+            onClick={() => setVisible(false)}
+            className="text-red-700 hover:text-red-900"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </Alert>
         </div>
-      </div>
+      )}
 
-      {/* Main content container with 70-30 split */}
-      <div className="container max-w-7xl mx-auto py-8">
-        <div className="flex flex-col lg:flex-row gap-8 px-6 lg:px-8">
-          {/* Left content area (70%) */}
-          <div className="w-full lg:w-[70%]">
-            <div className="rounded-lg p-2 border-1 border-primary">
-              <img className='rounded-lg shadow-lg h-96 w-[100%]'
-                src={`${process.env.NEXT_PUBLIC_API}/events${eventData?.image_path}` || '/event-placeholder.jpg'}
-                alt={eventData?.eventName || 'Event image'} />
+        {/* Header Section */}
+        <div className="border-b bg-background">
+          <div className="container max-w-7xl mx-auto py-8 px-6 lg:px-8">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Badge variant="secondary">{eventData?.category}</Badge>
+              <Badge variant="default" className={getStatusColor(eventData?.status)}>
+                {eventData?.status}
+              </Badge>
             </div>
-            <Card className="p-6 lg:p-8 shadow-lg">
-              {/* Action buttons */}
-              <div className="flex gap-4 mb-6">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <BookmarkPlus className="h-4 w-4" />
-                  Save
-                </Button>
-              </div>
-
-              {/* Event overview section */}
-              <div className="space-y-6">
-                <div
-                  className="prose dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: eventData?.content }}
-                />
-              </div>
-            </Card>
+            <h1 className="text-4xl font-bold tracking-tight mb-4">{eventData?.eventName}</h1>
+            <p className="text-lg text-muted-foreground max-w-3xl">
+              {eventData?.description}
+            </p>
           </div>
+        </div>
 
-          {/* Right sidebar (30%) */}
-          <div className="w-full lg:w-[30%]">
-            <div className="lg:sticky lg:top-8">
-              <Card className="p-6 shadow-lg border-t-4 border-primary">
+        {/* Main content container with 70-30 split */}
+        <div className="container max-w-7xl mx-auto py-8">
+          <div className="flex flex-col lg:flex-row gap-8 px-6 lg:px-8">
+            {/* Left content area (70%) */}
+            <div className="w-full lg:w-[70%]">
+              <div className="rounded-lg p-2 border-1 border-primary">
+                <img className='rounded-lg shadow-lg h-96 w-[100%]'
+                  src={`${process.env.NEXT_PUBLIC_API}/events${eventData?.image_path}` || '/event-placeholder.jpg'}
+                  alt={eventData?.eventName || 'Event image'} />
+              </div>
+              <Card className="p-6 lg:p-8 shadow-lg">
+                {/* Action buttons */}
+                <div className="flex gap-4 mb-6">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <BookmarkPlus className="h-4 w-4" />
+                    Save
+                  </Button>
+                </div>
+
+                {/* Event overview section */}
                 <div className="space-y-6">
-                  {/* Date and Time */}
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">Date</h3>
-                      <p className="text-muted-foreground">
-                        {eventData?.eventDate ? new Date(eventData.eventDate).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) : 'Date not available'}
-                      </p>
-                      <p className="text-muted-foreground mt-1">{eventData?.time}</p>
-                    </div>
-                  </div>
-
-                  {/* Location */}
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">Location</h3>
-                      <p className="text-muted-foreground">{eventData?.venue}</p>
-                    </div>
-                  </div>
-
-                  {/* Participants */}
-                  <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">Participants</h3>
-                      {/* <p className="text-muted-foreground">
-                        {eventData?.participants?.length || 0} registered
-                      </p> */}
-                      <p className="text-sm mt-1">Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members</p>
-                    </div>
-                  </div>
-
-                  {/* Prizes Section */}
-                  {(eventData?.firstPrize || eventData?.secondPrize || eventData?.thirdPrize) && (
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 mt-1 text-primary" />
-                      <div>
-                        <h3 className="font-semibold">Prizes</h3>
-                        {eventData?.firstPrize && <p className="text-muted-foreground">🥇 {eventData.firstPrize}</p>}
-                        {eventData?.secondPrize && <p className="text-muted-foreground">🥈 {eventData.secondPrize}</p>}
-                        {eventData?.thirdPrize && <p className="text-muted-foreground">🥉 {eventData.thirdPrize}</p>}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3 pt-2">
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={HandleOpenApply}
-                      disabled={eventData?.status === "completed" || eventData?.status === "cancelled"}
-                    >
-                      {eventData?.status === "upcoming"
-                        ? "Apply Now"
-                        : eventData?.status === "ongoing"
-                          ? "Event In Progress"
-                          : eventData?.status === "completed"
-                            ? "Event Completed"
-                            : "Event Cancelled"}
-                    </Button>
-                    <p className="text-sm text-center text-muted-foreground">
-                      {eventData?.status === "upcoming" ? "Registration is open" :
-                        eventData?.status === "ongoing" ? "Registration closed" :
-                          eventData?.status === "completed" ? "Event has ended" :
-                            "Event was cancelled"}
-                    </p>
-                  </div>
+                  <div
+                    className="prose dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: typeof eventData?.content === 'string' ? eventData.content : JSON.stringify(eventData?.content) }}
+                  />
                 </div>
               </Card>
             </div>
+
+            {/* Right sidebar (30%) */}
+            <div className="w-full lg:w-[30%]">
+              <div className="lg:sticky lg:top-8">
+                <Card className="p-6 shadow-lg border-t-4 border-primary">
+                  <div className="space-y-6">
+                    {/* Date and Time */}
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 mt-1 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">Date</h3>
+                        <p className="text-muted-foreground">
+                          {eventData?.eventDate ? new Date(eventData.eventDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : 'Date not available'}
+                        </p>
+                        <p className="text-muted-foreground mt-1">{eventData?.time}</p>
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 mt-1 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">Location</h3>
+                        <p className="text-muted-foreground">{eventData?.venue}</p>
+                      </div>
+                    </div>
+
+                    {/* Participants */}
+                    <div className="flex items-start gap-3">
+                      <Users className="h-5 w-5 mt-1 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">Participants</h3>
+                        {/* <p className="text-muted-foreground">
+                        {eventData?.participants?.length || 0} registered
+                      </p> */}
+                        <p className="text-sm mt-1">Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members</p>
+                      </div>
+                    </div>
+
+                    {/* Prizes Section */}
+                    {(eventData?.firstPrize || eventData?.secondPrize || eventData?.thirdPrize) && (
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 mt-1 text-primary" />
+                        <div>
+                          <h3 className="font-semibold">Prizes</h3>
+                          {eventData?.firstPrize && <p className="text-muted-foreground">🥇 {eventData.firstPrize}</p>}
+                          {eventData?.secondPrize && <p className="text-muted-foreground">🥈 {eventData.secondPrize}</p>}
+                          {eventData?.thirdPrize && <p className="text-muted-foreground">🥉 {eventData.thirdPrize}</p>}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-3 pt-2">
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={HandleOpenApply}
+                        disabled={eventData?.status === "completed" || eventData?.status === "cancelled" || UserType === "Organization"}
+                      >
+                        {eventData?.status === "upcoming"
+                          ? "Apply Now"
+                          : eventData?.status === "ongoing"
+                            ? "Event In Progress"
+                            : eventData?.status === "completed"
+                              ? "Event Completed"
+                              : "Event Cancelled"}
+                      </Button>
+                      <p className="text-sm text-center text-muted-foreground">
+                        {eventData?.status === "upcoming" ? "Registration is open" :
+                          eventData?.status === "ongoing" ? "Registration closed" :
+                            eventData?.status === "completed" ? "Event has ended" :
+                              "Event was cancelled"}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+                <ShowParticiPants eventid={eventData._id} currentUser={currentUser} />
+
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* More Events Section */}
-      <div className='flex flex-col lg:flex gap-8 px-6 lg:px-8'>
-        <div>
-          <MoreEvents currentEventId={eventData?._id} currentCategory={eventData?.category} />
+        {/* More Events Section */}
+        <div className='flex flex-col lg:flex gap-8 px-6 lg:px-8'>
+          <div>
+            <MoreEvents currentEventId={eventData?._id} currentCategory={eventData?.category} />
+          </div>
         </div>
-      </div>
 
-      {/* Apply Event Popup */}
-      <ApplyEvent
-        ApplyForEvent={ApplyForEvent}
-        closePopup={HandleCloseApply}
-        eventData={eventData}
-      />
-    </div>
-    <Footer/>
+        {/* Apply Event Popup */}
+        <ApplyEvent
+          ApplyForEvent={ApplyForEvent}
+          closePopup={HandleCloseApply}
+          eventData={eventData}
+          currentUser={currentUser}
+        />
+      </div>
+      <Footer />
     </>
   )
 }

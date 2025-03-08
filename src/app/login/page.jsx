@@ -37,6 +37,7 @@ export default function Page() {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('UserType', data.user.usertype);
+        localStorage.setItem('UserId', data.user.userid);
         
         toast({
           title: "Login successful!",
@@ -47,7 +48,7 @@ export default function Page() {
         });
               
         setTimeout(() => {
-          router.push("/events");
+          router.push("/");
         }, 1500);
       } else {
         toast({

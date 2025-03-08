@@ -49,7 +49,7 @@ const ProfileEditForm = () => {
       try {
         const token = localStorage.getItem('accessToken');
         
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/user`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/user/one`, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
