@@ -678,92 +678,96 @@ const UserActivity = ({ user }) => {
         </div>
     );
 };
-
 export default function ProfilePage() {
-    const { userId } = useParams();
-    const [user, setUser] = useState(null);
+    const { organization } = useParams();
+    const [user, setUser] = useState("");
     const [loading, setLoading] = useState(true);
     const router = useRouter();
-    
+
     useEffect(() => {
         const fetchUserData = async () => {
-          try {
-            // Check if user is authenticated (has token)
-            const accessToken = localStorage.getItem('accessToken');
-    
-            if (!accessToken) {
-              setLoading(false);
-              return; // User is not authenticated
-            }
-    
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`
-              },
-              credentials: 'include',
-            });
-    
-            if (response.ok) {
-              const data = await response.json();
-              setUser(data);
-            } else {
-              console.error('Failed to fetch user data');
-              // Handle authentication error (e.g., token expired)
-              if (response.status === 401) {
-                // Clear tokens and redirect to login
-                localStorage.removeItem('user');
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                router.push('/');
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-    
-        fetchUserData();
-      }, [router]);
+            try {
+                const accessToken = localStorage.getItem('accessToken');
 
+                if (!accessToken) {
+                    setLoading(false);
+                    return; // User not authenticated
+                }
+
+                if (!organization) {
+                    console.error('organization is missing');
+                    setLoading(false);
+                    return;
+                }
+                console.log("working from here")
+
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org/one`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`,
+                    },
+                    credentials: 'include', // Equivalent to withCredentials: true in axios
+                    body: JSON.stringify({ userid: organization })
+                });
+                
+                const data = await response.json();
+                
+                setUser(data); // Axios auto-parses JSON
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+
+                if (error.response?.status === 401) {
+                    // Token expired, clear storage and redirect
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    router.push('/');
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [organization]);
+
+    console.log('user', user);
 
     return (
         <>
-        <Header/>
-        <div className="min-h-screen bg-background">
-            {/* Header with cover image */}
-            {user ? (
-                <>
-                    <div className="relative h-60 w-full overflow-hidden">
-                        <img
-                            src={`${process.env.NEXT_PUBLIC_API}${user?.coverImage}`}
-                            alt="Cover"
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                    </div>
-
-                    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="relative -mt-16 flex flex-col lg:flex-row gap-8">
-                            {/* Left Column - Profile Info */}
-                            <LeftComponent user={user}/>
-
-                            {/* Right Column - Content Area */}
-                            <RightComponent user={user}/>
+            <Header />
+            <div className="min-h-screen bg-background">
+                {/* Header with cover image */}
+                {user ? (
+                    <>
+                        <div className="relative h-60 w-full overflow-hidden">
+                            <img
+                                src={`${process.env.NEXT_PUBLIC_API}${user?.coverImage}`}
+                                alt="Cover"
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                         </div>
+
+                        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="relative -mt-16 flex flex-col lg:flex-row gap-8">
+                                {/* Left Column - Profile Info */}
+                                <LeftComponent user={user} />
+
+                                {/* Right Column - Content Area */}
+                                <RightComponent user={user} />
+                            </div>
+                        </div>
+                    </>
+                ) : loading ? (
+                    <LoadingSpinner />
+                ) : (
+                    <div className="flex justify-center items-center h-60">
+                        <p>Please log in to view this profile</p>
                     </div>
-                </>
-            ) : loading ? (
-                <LoadingSpinner/>
-            ) : (
-                <div className="flex justify-center items-center h-60">
-                    <p>Please log in to view this profile</p>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
         </>
-    )
+    );
 }

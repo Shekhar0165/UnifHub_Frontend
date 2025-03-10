@@ -26,10 +26,22 @@ const apiUrl = process.env.NEXT_PUBLIC_API;
 const ShowParticiPants = ({ eventid, currentUser }) => {
   const [participants, setParticipants] = useState({ teamName: "", participants: [] });
   const [newUserId, setNewUserId] = useState("");
+  const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
     const fetchData = async () => {
+      // Ensure we have the necessary data to make the request
+      if (!eventid || !currentUser || !currentUser._id) {
+        setLoading(false);
+        return;
+      }
+
       const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = {
           eventid: eventid,
@@ -45,22 +57,33 @@ const ShowParticiPants = ({ eventid, currentUser }) => {
             },
           }
         );
-        setParticipants(response.data.newParticipants);
+        // Ensure response.data.newParticipants is an object with participants array
+        if (response.data && response.data.newParticipants) {
+          setParticipants({
+            teamName: response.data.newParticipants.teamName || "",
+            participants: Array.isArray(response.data.newParticipants.participants) 
+              ? response.data.newParticipants.participants 
+              : []
+          });
+        }
       } catch (error) {
         console.error("Error fetching participants:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
   }, [eventid, currentUser]);
 
-  console.log(participants?.participants); // Debugging check
-
   // Function to add a new participant
   const handleAddParticipant = async () => {
     if (!newUserId) return alert("Please enter a user ID!");
+    if (!eventid) return alert("Event ID is missing!");
 
     const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return alert("You need to be logged in!");
+
     try {
       const response = await axios.post(
         `${apiUrl}/participants/add`,
@@ -73,38 +96,58 @@ const ShowParticiPants = ({ eventid, currentUser }) => {
         }
       );
 
-      // Add new participant to the existing list
-      setParticipants(prev => ({
-        ...prev,
-        participants: [...prev.participants, response.data.participant]
-      }));
+      // Safely update the participants state
+      if (response.data && response.data.participant) {
+        setParticipants(prev => ({
+          ...prev,
+          participants: Array.isArray(prev.participants) 
+            ? [...prev.participants, response.data.participant]
+            : [response.data.participant]
+        }));
+      }
 
       setNewUserId(""); // Reset input field
     } catch (error) {
       console.error("Error adding participant:", error);
+      alert("Failed to add participant. Please try again.");
     }
   };
-  if (!participants.participants.length > 0) return null;
+
+  // Show loading state
+  if (loading) {
+    return <div className="max-w-2xl mx-auto mt-10">
+      <Card className="p-6 shadow-lg border-t-4 border-primary">
+        <p className="text-center">Loading participants...</p>
+      </Card>
+    </div>;
+  }
+
+  // Fixed the condition - proper way to check if array has items
+  const hasParticipants = Array.isArray(participants?.participants) && participants.participants.length > 0;
+
+  // If no participants and we're not loading, don't render anything
+  if (!hasParticipants) return null;
+
   return (
     <div className="max-w-2xl mx-auto mt-10">
       <Card className="p-6 shadow-lg border-t-4 border-primary">
         <h2 className="text-xl font-semibold mb-4">Participants for Event</h2>
 
-        {participants.participants.length > 0 ? (
+        {hasParticipants ? (
           <div>
             <p className="font-semibold text-lg mb-2">Team Name: {participants.teamName}</p>
             <ul className="space-y-3">
               {participants.participants.map((participant) => (
-                <Link href={`/user/${participant.userid}`} key={participant.id}>
+                <Link href={`/user/${participant.userid}`} key={participant.userid || participant._id || Math.random().toString()}>
                   <li className="p-3 border rounded-lg flex items-center gap-3">
                     <img
-                      src={`${apiUrl}${participant.profileImage}`}
-                      alt={participant.name}
+                      src={participant.profileImage ? `${apiUrl}${participant.profileImage}` : '/default-avatar.png'}
+                      alt={participant.name || "User"}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>
-                      <p className="font-semibold">{participant.name}</p>
-                      <p className="text-gray-500">{participant.userid}</p>
+                      <p className="font-semibold">{participant.name || "Unknown User"}</p>
+                      <p className="text-gray-500">{participant.userid || "No ID"}</p>
                     </div>
                   </li>
                 </Link>
@@ -147,10 +190,6 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
 
   const router = useRouter();
 
-
-
-  // Fetch current user data on component moun
-
   // Search for members
   const searchMembers = async () => {
     if (!searchQuery.trim()) return;
@@ -170,7 +209,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
       const data = response.data;
 
       if (data.success) {
-        setSearchResults(data.members);
+        setSearchResults(data.members || []);
       } else {
         showToast("error", "Search Error", data.message || "Failed to search members");
       }
@@ -194,7 +233,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
       const response = await axios.post(
         `${apiUrl}/Participants/check-team`,
         {
-          eventid: eventData._id,
+          eventid: eventData?._id,
           teamName: teamName,
         },
         {
@@ -223,7 +262,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
 
   // Handle member invitation
   const handleInvite = (member) => {
-    if (!invited.includes(member._id)) {
+    if (!invited.some(id => id === member._id)) {
       const newInvited = [...invited, member._id];
 
       // Check team size constraints
@@ -261,7 +300,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     try {
       const authToken = localStorage.getItem('accessToken');
       const applicationData = {
-        eventid: eventData._id,
+        eventid: eventData?._id,
         teamName: teamName,
         participant_id: invited
       };
@@ -276,7 +315,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
 
       const data = response.data;
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         showToast("success", "Success", "Application submitted successfully!");
         closePopup();
       } else {
@@ -311,11 +350,11 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
         {!showSearch ? (
           // Initial screen - Team setup
           <div className="space-y-4">
-            <p>You'll be applying as the team admin. Click below to search for additional team members to invite to this event.</p>
+            <div className="text-sm">You'll be applying as the team admin. Click below to search for additional team members to invite to this event.</div>
 
             {currentUser && (
               <div className="p-3 bg-primary/10 rounded-md">
-                <p className="font-medium">Team Leader:</p>
+                <div className="font-medium">Team Leader:</div>
                 <div className="flex items-center mt-2">
                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2">
                     {currentUser.name?.charAt(0).toUpperCase() || 'U'}
@@ -325,9 +364,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
               </div>
             )}
 
-            <p className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members
-            </p>
+            </div>
 
             <div className="flex flex-col space-y-4 p-4 rounded-lg border">
               <div className="flex items-center justify-between mb-2">
@@ -427,19 +466,19 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                       </div>
                     )}
 
-                    {!isLoading && searchResults.length > 0 ? (
+                    {!isLoading && searchResults && searchResults.length > 0 ? (
                       searchResults.map((member) => (
                         <div
                           key={member._id}
-                          className="flex justify-between  items-center p-2 border-b hover:bg-primary/5 transition-colors"
+                          className="flex justify-between items-center p-2 border-b hover:bg-primary/5 transition-colors"
                         >
                           <div className="flex items-center">
                             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2">
                               {member.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>
-                              <p className="font-medium">{member.name}</p>
-                              <p className="text-xs text-muted-foreground">{member.email}</p>
+                              <div className="font-medium">{member.name}</div>
+                              <div className="text-xs text-muted-foreground">{member.email}</div>
                             </div>
                           </div>
 
@@ -458,9 +497,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                       ))
                     ) : (
                       !isLoading && (
-                        <p className="p-4 text-center text-muted-foreground">
+                        <div className="p-4 text-center text-muted-foreground">
                           {searchQuery.trim() ? "No members found" : "Enter a name or email to search"}
-                        </p>
+                        </div>
                       )
                     )}
                   </div>
@@ -468,9 +507,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
               </div>
 
               <div className="border-t pt-4 mt-2">
-                <p className="text-sm font-medium mb-2">
+                <div className="text-sm font-medium mb-2">
                   Team Members ({invited.length}/{eventData?.maxTeamMembers || 1}):
-                </p>
+                </div>
 
                 {/* Display current user (admin) */}
                 {currentUser && (
@@ -480,15 +519,15 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                         {currentUser.name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                       <div>
-                        <p className="font-medium">{currentUser.name}</p>
-                        <p className="text-xs">Team Admin</p>
+                        <div className="font-medium">{currentUser.name}</div>
+                        <div className="text-xs">Team Admin</div>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* Display other invited members */}
-                {invited.filter(id => currentUser && id !== currentUser._id).length > 0 ? (
+                {invited.length > 0 && currentUser && invited.filter(id => id !== currentUser._id).length > 0 ? (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {invited
                       .filter(id => currentUser && id !== currentUser._id)
@@ -517,9 +556,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                   </div>
                 ) : (
                   invited.length <= 1 && (
-                    <p className="text-sm text-muted-foreground p-2">
+                    <div className="text-sm text-muted-foreground p-2">
                       No additional team members added yet
-                    </p>
+                    </div>
                   )
                 )}
               </div>
@@ -552,15 +591,15 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
 
               {/* Error messages */}
               {eventData?.minTeamMembers > 1 && invited.length < eventData.minTeamMembers && (
-                <p className="text-xs text-amber-500 mt-2 text-center">
+                <div className="text-xs text-amber-500 mt-2 text-center">
                   You need at least {eventData.minTeamMembers} team members to apply
-                </p>
+                </div>
               )}
 
               {teamNameCheck.result === false && (
-                <p className="text-xs text-amber-500 mt-2 text-center">
+                <div className="text-xs text-amber-500 mt-2 text-center">
                   You need to choose an available team name
-                </p>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -569,6 +608,8 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     </div>
   );
 };
+
+
 export default function EventDetailPage() {
   const params = useParams()
   const [loading, setLoading] = useState(true)
@@ -614,8 +655,6 @@ export default function EventDetailPage() {
           // Process user data
           const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
           setCurrentUser(user);
-
-
         } else {
           showToast("error", "Authentication Error", "Failed to fetch user data");
 
@@ -686,8 +725,6 @@ export default function EventDetailPage() {
   // Find the event from our events data
   const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim());
 
-
-
   // Show loading state
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner /></div>
@@ -723,7 +760,15 @@ export default function EventDetailPage() {
     SetApplyForEvent(false);
   };
 
-  const UserType = localStorage.getItem("UserType");
+  // Safely get UserType from localStorage (client-side only)
+  const getUserType = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("UserType") || "";
+    }
+    return "";
+  };
+  
+  const UserType = getUserType();
 
   return (
     <>
@@ -748,7 +793,7 @@ export default function EventDetailPage() {
       )}
 
         {/* Header Section */}
-        <div className="border-b bg-background">
+        {/* <div className="border-b bg-background">
           <div className="container max-w-7xl mx-auto py-8 px-6 lg:px-8">
             <div className="flex flex-wrap gap-2 mb-4">
               <Badge variant="secondary">{eventData?.category}</Badge>
@@ -761,7 +806,7 @@ export default function EventDetailPage() {
               {eventData?.description}
             </p>
           </div>
-        </div>
+        </div> */}
 
         {/* Main content container with 70-30 split */}
         <div className="container max-w-7xl mx-auto py-8">
@@ -770,7 +815,7 @@ export default function EventDetailPage() {
             <div className="w-full lg:w-[70%]">
               <div className="rounded-lg p-2 border-1 border-primary">
                 <img className='rounded-lg shadow-lg h-96 w-[100%]'
-                  src={`${process.env.NEXT_PUBLIC_API}/events${eventData?.image_path}` || '/event-placeholder.jpg'}
+                  src={eventData?.image_path ? `${process.env.NEXT_PUBLIC_API}/events${eventData.image_path}` : '/event-placeholder.jpg'}
                   alt={eventData?.eventName || 'Event image'} />
               </div>
               <Card className="p-6 lg:p-8 shadow-lg">
@@ -788,9 +833,16 @@ export default function EventDetailPage() {
 
                 {/* Event overview section */}
                 <div className="space-y-6">
+                  {/* Fix for potentially invalid HTML in content */}
                   <div
                     className="prose dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: typeof eventData?.content === 'string' ? eventData.content : JSON.stringify(eventData?.content) }}
+                    dangerouslySetInnerHTML={{ 
+                      __html: typeof eventData?.content === 'string' 
+                        ? eventData.content
+                            .replace(/<p>\s*<p>/g, '<p>')  // Fix nested <p> tags
+                            .replace(/<\/p>\s*<\/p>/g, '</p>') 
+                        : JSON.stringify(eventData?.content) 
+                    }}
                   />
                 </div>
               </Card>
@@ -832,9 +884,7 @@ export default function EventDetailPage() {
                       <Users className="h-5 w-5 mt-1 text-primary" />
                       <div>
                         <h3 className="font-semibold">Participants</h3>
-                        {/* <p className="text-muted-foreground">
-                        {eventData?.participants?.length || 0} registered
-                      </p> */}
+                        {/* Fix for undefined .length property */}
                         <p className="text-sm mt-1">Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members</p>
                       </div>
                     </div>
@@ -877,26 +927,31 @@ export default function EventDetailPage() {
                   </div>
                 </Card>
                 <ShowParticiPants eventid={eventData._id} currentUser={currentUser} />
-
               </div>
             </div>
           </div>
         </div>
 
         {/* More Events Section */}
+            {/* Fix for potentially undefined _id and category */}
         <div className='flex flex-col lg:flex gap-8 px-6 lg:px-8'>
           <div>
-            <MoreEvents currentEventId={eventData?._id} currentCategory={eventData?.category} />
+            {eventData && <MoreEvents 
+              currentEventId={eventData?._id || ""} 
+              currentCategory={eventData?.category || ""} 
+            />}
           </div>
         </div>
 
         {/* Apply Event Popup */}
-        <ApplyEvent
-          ApplyForEvent={ApplyForEvent}
-          closePopup={HandleCloseApply}
-          eventData={eventData}
-          currentUser={currentUser}
-        />
+        {eventData && (
+          <ApplyEvent
+            ApplyForEvent={ApplyForEvent}
+            closePopup={HandleCloseApply}
+            eventData={eventData}
+            currentUser={currentUser}
+          />
+        )}
       </div>
       <Footer />
     </>

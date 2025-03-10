@@ -76,6 +76,8 @@ const Page = () => {
     fetchUserData();
   }, [router]);
 
+  console.log(events)
+
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -499,10 +501,27 @@ const Page = () => {
                     </Card>
                   ))}
                 </div>
+              ) : Loading ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <Search className="h-12 w-12 mb-4 text-muted-foreground/50" />
+                  <p className="text-lg">
+                    <LoadingSpinner />
+                  </p>
+                  {activeFilterCount > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={clearFilters} 
+                      className="mt-4"
+                    >
+                      Clear all filters
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                   <Search className="h-12 w-12 mb-4 text-muted-foreground/50" />
-                  <p className="text-lg"><LoadingSpinner/></p>
+                  <p className="text-lg">No events found with your current filters.</p>
                   {activeFilterCount > 0 && (
                     <Button 
                       variant="outline" 
@@ -515,6 +534,7 @@ const Page = () => {
                   )}
                 </div>
               )}
+              
             </>
           )}
 

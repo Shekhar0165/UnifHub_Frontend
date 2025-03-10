@@ -160,15 +160,23 @@ export default function RegisterPage() {
       
       const res = await axios.post(
         endpoint,
-        { name, userid, email, password, phone, university, location },
-        { withCredentials: true }
+        { name, userid, email, password, phone, university, location, userType },
+        { 
+          withCredentials: true,
+          validateStatus: (status) => status < 400 // Accept 201 as success
+        }
       );
-  
+
+      // Check if response contains required data
+      if (!res.data || !res.data.user || !res.data.accessToken) {
+        throw new Error("Invalid response from server");
+      }
+
       // Store in localStorage as fallback
       localStorage.setItem("accessToken", res.data.accessToken);
       localStorage.setItem("refreshToken", res.data.refreshToken);
-      localStorage.setItem('UserType', data.user.usertype);
-      localStorage.setItem('UserId', data.user.userid);
+      localStorage.setItem('UserType', res.data.user.userType);
+      localStorage.setItem('UserId', res.data.user.userid);
   
       toast({
         title: "Registration successful!",
@@ -176,22 +184,24 @@ export default function RegisterPage() {
         duration: 2000,
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
-  
+
       setTimeout(() => {
         router.push("/");
       }, 1500);
   
     } catch (error) {
+      console.error("Registration Error:", error.response?.data || error.message);
       toast({
         title: "Registration failed",
-        description: error.response?.data?.message || "An error occurred during registration",
+        description: error.response?.data?.message || error.message || "An error occurred during registration",
         variant: "destructive",
         icon: <AlertCircle className="h-4 w-4" />
       });
     } finally {
       setIsLoading(false);
     }
-  };
+};
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

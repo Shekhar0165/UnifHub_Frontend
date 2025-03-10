@@ -5,7 +5,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from 'next/navigation';
-import events from '@/app/events/events';
 
 const MoreEvents = ({ currentEventId, currentCategory }) => {
   const router = useRouter();
@@ -60,8 +59,8 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
   // Filter events to show only those from the same category, excluding current event
   const relatedEvents = events
     ?.filter(event =>
-      event.category === currentCategory &&
-      event.id !== currentEventId
+      event?.category === currentCategory &&
+      event?._id !== currentEventId
     )
     .slice(0, 3); // Limit to 3 events
 
@@ -69,7 +68,7 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
     router.push(`/events/${id}`);
   };
 
-  if (relatedEvents?.length === 0) {
+  if (!relatedEvents || relatedEvents.length === 0) {
     return null;
   }
 
@@ -84,24 +83,24 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {relatedEvents?.map(event => (
-            <Card key={event.id} className="group overflow-hidden">
+          {relatedEvents.map(event => (
+            <Card key={event._id} className="group overflow-hidden">
               <CardHeader className="p-0">
                 <div className="relative aspect-video overflow-hidden">
                   <img
-                    src={event.image}
-                    alt={event.title}
+                    src={event?.image}
+                    alt={event?.title}
                     className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute top-2 right-2 flex gap-2">
                     <Badge variant="secondary" className="bg-background/95 backdrop-blur-sm">
-                      {event.category}
+                      {event?.category}
                     </Badge>
                     <Badge
-                      variant={event.status === "Open" ? "default" : "secondary"}
+                      variant={event?.status === "Open" ? "default" : "secondary"}
                       className="bg-background/95 text-primary backdrop-blur-sm"
                     >
-                      {event.status}
+                      {event?.status}
                     </Badge>
                   </div>
                 </div>
@@ -109,26 +108,26 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
 
               <CardContent className="p-6">
                 <CardTitle className="text-xl mb-2 line-clamp-1">
-                  {event.title}
+                  {event?.title}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {event.description}
+                  {event?.description}
                 </p>
 
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{new Date(event.date).toLocaleDateString()}</span>
+                    <span>{new Date(event?.date).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>{event.participants.length} participants</span>
+                    <span>{event?.participants?.length || 0} participants</span>
                   </div>
                 </div>
               </CardContent>
 
               <CardFooter className="px-6 pb-6">
-                <Button onClick={() => handleOpenEvent(event._id)} className="w-full gap-2">
+                <Button onClick={() => handleOpenEvent(event?._id)} className="w-full gap-2">
                   View Event
                   <ExternalLink className="h-4 w-4" />
                 </Button>
