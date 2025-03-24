@@ -9,6 +9,15 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [...compat.extends("next/core-web-vitals")];
-
-export default eslintConfig;
+// Export a simplified config that can be serialized
+export default [
+  ...compat.extends("next/core-web-vitals"),
+  {
+    rules: {
+      // Add any custom rules here
+    },
+    settings: {
+      // Add any custom settings here
+    }
+  }
+];

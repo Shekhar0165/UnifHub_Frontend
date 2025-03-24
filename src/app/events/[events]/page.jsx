@@ -1,6 +1,6 @@
 'use client'
 import { useParams } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Calendar, MapPin, Users, AlertCircle, Share2, BookmarkPlus, Search, UserPlus, Loader2, X, Circle, Flag, CheckCircle, ChevronLeft, Send, Check, UserX, XCircle, CalendarX, ArrowLeft,AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,9 +19,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const apiUrl = process.env.NEXT_PUBLIC_API;
 
-
-
-
+// This prevents this page from being pre-rendered statically
+export const dynamic = 'force-dynamic';
 
 const ShowParticipants = ({ eventid, currentUser, event }) => {
   const [participants, setParticipants] = useState({ teamName: "", participants: [] });
@@ -36,7 +35,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
         return;
       }
 
-      const accessToken = localStorage.getItem("accessToken");
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
       if (!accessToken) {
         setLoading(false);
         return;
@@ -93,7 +92,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
       return alert(`Cannot remove member. Minimum ${event.minTeamMembers} members required.`);
     }
 
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
     if (!accessToken) return alert("You need to be logged in!");
 
     setIsRemoving(true);
@@ -130,7 +129,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const handleRemoveTeam = async () => {
     if (!eventid) return alert("Event ID is missing!");
 
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
     if (!accessToken) return alert("You need to be logged in!");
 
     if (!confirm("Are you sure you want to remove the entire team?")) return;
@@ -323,7 +322,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken');
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await axios.get(
         `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
         {
@@ -429,7 +428,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken');
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const applicationData = {
         eventid: eventData?._id,
         teamName: teamName,
@@ -828,7 +827,7 @@ export default function EventDetailPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       setIsLoading(true)
-      const accessToken = localStorage.getItem('accessToken')
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
       if (!accessToken) {
         setIsLoading(false)
@@ -877,7 +876,7 @@ export default function EventDetailPage() {
     const fetchEventData = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken')
+        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
         if (!accessToken) {
           setLoading(false)

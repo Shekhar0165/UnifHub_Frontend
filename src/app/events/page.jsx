@@ -14,6 +14,9 @@ import NoResultsFound from '../Components/Events/NoResultsFound';
 import EventsGrid from '../Components/Events/EventsGrid';
 import OrganizationsGrid from '../Components/Events/OrganizationsGrid';
 
+// This prevents this page from being pre-rendered statically
+export const dynamic = 'force-dynamic';
+
 const Page = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("events");
@@ -37,7 +40,7 @@ const Page = () => {
     const fetchEvents = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
+        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
         if (!accessToken) {
           setLoading(false);
@@ -59,7 +62,7 @@ const Page = () => {
         } else {
           console.error('Failed to fetch events data');
           // Handle authentication error (e.g., token expired)
-          if (response.status === 401) {
+          if (response.status === 401 && typeof window !== 'undefined') {
             // Clear tokens and redirect to login
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');
@@ -81,7 +84,7 @@ const Page = () => {
     const fetchOrganizations = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
+        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
         if (!accessToken) {
           setLoading(false);
@@ -103,7 +106,7 @@ const Page = () => {
         } else {
           console.error('Failed to fetch organization data');
           // Handle authentication error (e.g., token expired)
-          if (response.status === 401) {
+          if (response.status === 401 && typeof window !== 'undefined') {
             // Clear tokens and redirect to login
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');

@@ -14,9 +14,9 @@ export default function Home() {
     // Check for token and redirect within useEffect (client-side only)
     const checkAuthAndRedirect = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        const UserType = localStorage.getItem("UserType");
-        const UserID = localStorage.getItem("UserId");
+        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+        const UserType = typeof window !== 'undefined' ? localStorage.getItem("UserType") : null;
+        const UserID = typeof window !== 'undefined' ? localStorage.getItem("UserId") : null;
         
         if (token && UserType === "individual") {
           await router.replace(`/events`);
