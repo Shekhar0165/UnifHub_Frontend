@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Header from '@/app/Components/Header/Header'
+import EventsList from '@/app/Components/UserProfile/Eventslist'
 
 // Helper function to get activity level color
 const getActivityColor = (count) => {
@@ -155,115 +156,6 @@ const RightComponent = ({ user }) => {
   const [activeTab, setActiveTab] = useState('achievements');
 
 
-  const EventsList = () => {
-    const [visibleEvents, setVisibleEvents] = useState(3);
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Function to handle showing more events
-    const handleShowMore = () => {
-      setIsLoading(true);
-
-      // Simulate loading with a slight delay for better UX
-      setTimeout(() => {
-        setVisibleEvents(prev => Math.min(prev + 3, user?.events?.length));
-        setIsLoading(false);
-      }, 300);
-    };
-
-    // Get medal icon and color based on position
-    const getMedalInfo = (position) => {
-      if (position === 0) return { icon: <Award className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />, bg: "bg-yellow-100 dark:bg-yellow-900/30" };
-      if (position === 1) return { icon: <Award className="h-6 w-6 text-gray-600 dark:text-gray-400" />, bg: "bg-gray-100 dark:bg-gray-700/50" };
-      if (position === 2) return { icon: <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />, bg: "bg-amber-100 dark:bg-amber-900/30" };
-      return { icon: <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />, bg: "bg-blue-100 dark:bg-blue-900/30" };
-    };
-
-    return (
-      <div className="space-y-2">
-        <div className="space-y-3">
-          {user?.events?.slice(0, visibleEvents).map((event, index) => {
-            const { icon, bg } = getMedalInfo(index);
-
-            return (
-              <div
-                onClick={() => handleEventClick(event)}
-                key={index}
-                className="cursor-pointer flex items-start space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 group transform transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-md"
-                style={{
-                  animation: `fadeSlideIn 0.5s ease-out ${index * 0.1}s both`
-                }}
-              >
-                <div className={`flex-shrink-0 p-3 ${bg} rounded-full group-hover:scale-110 transition-transform`}>
-                  {icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-lg font-medium text-gray-900 dark:text-white">
-                    {event.title}
-                  </p>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                    Position:{event.position}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {event.date}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a
-                    href={event.certificate}
-                    className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-xs font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 dark:bg-transparent dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Certificate
-                  </a>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {visibleEvents < user?.events?.length && (
-          <div className="py-4 flex justify-center">
-            <button
-              onClick={handleShowMore}
-              disabled={isLoading}
-              className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium rounded-lg transition-colors group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-            >
-              {isLoading ? (
-                <span className="animate-spin h-5 w-5 border-2 border-blue-600 dark:border-blue-400 border-t-transparent dark:border-t-transparent rounded-full"></span>
-              ) : (
-                <>
-                  <span>Show More</span>
-                  <ChevronDown className="h-5 w-5 group-hover:translate-y-1 transition-transform duration-300" />
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {visibleEvents >= user?.events?.length && user?.events?.length > 3 && (
-          <div className="py-3 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No more events to show
-            </p>
-          </div>
-        )}
-
-        <style jsx>{`
-                @keyframes fadeSlideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-            `}</style>
-      </div>
-    );
-  };
-
 
   return (
     <>
@@ -340,7 +232,7 @@ const RightComponent = ({ user }) => {
                           </a>
                         </div>
                       ))} */}
-                  <EventsList />
+                  <EventsList user={user} />
                 </div>
               </div>
             )}

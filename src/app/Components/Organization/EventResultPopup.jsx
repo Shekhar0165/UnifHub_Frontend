@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Award, ArrowUp, Search, Check, X } from 'lucide-react';
+import { Award, ArrowUp, Search, Check, X, Save, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,17 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Toaster } from '@/components/ui/toaster';
-
 
 const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
     const [participants, setParticipants] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedTeam, setSelectedTeam] = useState(null);
-    const [newPosition, setNewPosition] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [duplicatePositions, setDuplicatePositions] = useState([]);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -56,6 +54,25 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
         fetchParticipants();    
     }, [selectedResult?._id, toast]);
 
+    // Check for duplicate positions whenever participants change
+    useEffect(() => {
+        // Find duplicate positions
+        const positionCounts = {};
+        const duplicates = [];
+        
+        participants.forEach(team => {
+            if (team.position) {
+                if (positionCounts[team.position]) {
+                    duplicates.push(team.position);
+                } else {
+                    positionCounts[team.position] = true;
+                }
+            }
+        });
+        
+        setDuplicatePositions([...new Set(duplicates)]);
+    }, [participants]);
+
     if (!selectedResult) return null;
 
     const sortedParticipants = [...participants].sort((a, b) => (a.position || 999) - (b.position || 999));
@@ -70,47 +87,104 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
         )
         : sortedParticipants;
 
-    // Position update handler
-    console.log(selectedTeam?._id)
-    const handleUpdatePosition = async () => {
-        if (!selectedTeam || newPosition === "") return;
+    // Check if a position is already taken by another team
+    const isPositionTaken = (position, currentTeamId) => {
+        return participants.some(team => 
+            team.position === Number(position) && team._id !== currentTeamId
+        );
+    };
 
+    // Handle position change for individual team
+    const handlePositionChange = (teamId, newPosition) => {
+        // If position is already taken by another team, show toast warning
+        if (newPosition && isPositionTaken(newPosition, teamId)) {
+            toast({
+                title: "Position Already Taken",
+                description: `Position ${newPosition} is already assigned to another team. Each position must be unique.`,
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setParticipants(prevParticipants =>
+            prevParticipants.map(team =>
+                team._id === teamId ? { ...team, position: newPosition ? Number(newPosition) : null } : team
+            )
+        );
+        setHasUnsavedChanges(true);
+    };
+
+    // Save all positions at once
+    const saveAllPositions = async () => {
+        // Check for duplicate positions first
+        if (duplicatePositions.length > 0) {
+            toast({
+                title: "Duplicate Positions",
+                description: `Positions must be unique. Please fix duplicate positions: ${duplicatePositions.join(', ')}`,
+                variant: "destructive",
+            });
+            return;
+        }
+        
+        // Prepare data in the format expected by backend
+        const validTeams = participants.filter(team => team.position !== null && team.position !== undefined);
+        
+        // Format data according to the backend API
+        const results = validTeams.map(team => ({
+            teamName: team.teamName,
+            position: team.position
+        }));
+        
+        const requestData = {
+            eventid: selectedResult._id,
+            results: results
+        };
+        
+        console.log("Saving positions data:", requestData);
+        
+        if (results.length === 0) {
+            toast({
+                title: "Warning",
+                description: "No positions have been assigned to any teams",
+                variant: "destructive",
+            });
+            return;
+        }
+        
         setIsLoading(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API}/Participants/addresult/${selectedTeam._id}`,
+                `${process.env.NEXT_PUBLIC_API}/Participants/declareResult`,
                 {
-                    method: "PATCH",
+                    method: "POST",
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ position: Number(newPosition) }),
+                    body: JSON.stringify(requestData),
                 }
             );
-
-            if (!response.ok) throw new Error('Failed to update position');
             
-            // Update position in local state
-            setParticipants(prevParticipants =>
-                prevParticipants.map(team =>
-                    team._id === selectedTeam._id ? { ...team, position: Number(newPosition) } : team
-                )
-            );
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to update positions');
+            }
             
             toast({
-                title: "Position Updated",
-                description: `${selectedTeam.teamName} is now in position ${newPosition}`,
+                title: "Positions Saved",
+                description: `Updated positions for ${results.length} teams`,
             });
             
-            setNewPosition("");
-            setSelectedTeam(null);
-            setShowUpdateDialog(false);
+            setHasUnsavedChanges(false);
+            
+            // Close the popup after successful save
+            closeResultPopup();
         } catch (error) {
-            console.error("Error updating position:", error);
+            console.error("Error saving positions:", error);
             toast({
-                title: "Update Failed",
-                description: "Could not update team position. Please try again.",
+                title: "Save Failed",
+                description: error.message || "Could not update team positions. Please try again.",
                 variant: "destructive",
             });
         } finally {
@@ -118,20 +192,13 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
         }
     };
 
-    const openUpdateDialog = (team) => {
-        setSelectedTeam(team);
-        setNewPosition(team.position || "");
-        setShowUpdateDialog(true);
-    };
-
-
     const renderTable = (teams) => (
         <Table>
             <TableHeader>
                 <TableRow>
                     <TableHead className="w-20">Rank</TableHead>
                     <TableHead>Team Name</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="text-right">Position</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,20 +210,20 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                     </TableRow>
                 ) : (
                     teams.map((team) => (
-                        <TableRow key={team._id}>
+                        <TableRow key={team._id} className={duplicatePositions.includes(team.position) ? "bg-red-50" : ""}>
                             <TableCell>
                                 {team.position || "-"}
                             </TableCell>
                             <TableCell>{team.teamName}</TableCell>
                             <TableCell className="text-right">
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => openUpdateDialog(team)}
-                                >
-                                    <Award className="h-4 w-4 mr-1" />
-                                    Rank
-                                </Button>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Position"
+                                    value={team.position || ""}
+                                    onChange={(e) => handlePositionChange(team._id, e.target.value)}
+                                    className={`w-24 inline-block ${duplicatePositions.includes(team.position) ? "border-red-500" : ""}`}
+                                />
                             </TableCell>
                         </TableRow>
                     ))
@@ -182,6 +249,15 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                 </CardHeader>
                 
                 <CardContent className="p-6">
+                    {duplicatePositions.length > 0 && (
+                        <Alert variant="destructive" className="mb-4">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>
+                                Duplicate positions detected: {duplicatePositions.join(', ')}. Each position must be unique.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                
                     <div className="flex items-center mb-4">
                         <Search className="h-4 w-4 mr-2 text-muted-foreground" />
                         <Input
@@ -198,8 +274,11 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                             {renderTable(filteredTeams)}
                         </div>
                     ) : (
-                        <Tabs defaultValue="ranked" className="mt-4">
+                        <Tabs defaultValue="all" className="mt-4">
                             <TabsList className="mb-4">
+                                <TabsTrigger value="all">
+                                    All Teams ({sortedParticipants.length})
+                                </TabsTrigger>
                                 <TabsTrigger value="ranked">
                                     Ranked Teams ({rankedTeams.length})
                                 </TabsTrigger>
@@ -207,6 +286,10 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                                     Unranked Teams ({unrankedTeams.length})
                                 </TabsTrigger>
                             </TabsList>
+                            
+                            <TabsContent value="all">
+                                {renderTable(sortedParticipants)}
+                            </TabsContent>
                             
                             <TabsContent value="ranked">
                                 {renderTable(rankedTeams)}
@@ -220,7 +303,17 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                     
                     <Separator className="my-6" />
                     
-                    <div className="flex justify-end">
+                    <div className="flex justify-between">
+                        <Button 
+                            variant="default" 
+                            onClick={saveAllPositions} 
+                            disabled={isLoading || !hasUnsavedChanges || duplicatePositions.length > 0}
+                            className="px-6 gap-2"
+                        >
+                            <Save className="h-4 w-4" />
+                            Save All Positions
+                        </Button>
+                        
                         <Button 
                             variant="outline" 
                             onClick={closeResultPopup} 
@@ -231,54 +324,6 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                     </div>
                 </CardContent>
             </Card>
-            
-            {/* Update Position Dialog */}
-            <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Update Team Ranking</DialogTitle>
-                    </DialogHeader>
-                    
-                    {selectedTeam && (
-                        <div className="space-y-4 py-2">
-                            <div className="bg-accent/30 p-3 rounded-md">
-                                <p className="text-sm font-medium">Team: <span className="text-primary">{selectedTeam.teamName}</span></p>
-                                <p className="text-sm text-muted-foreground">
-                                    Current position: {selectedTeam.position || "Not ranked"}
-                                </p>
-                            </div>
-                            
-                            <div className="flex flex-col space-y-2">
-                                <label htmlFor="position" className="text-sm font-medium">
-                                    New Position
-                                </label>
-                                <Input
-                                    id="position"
-                                    type="number"
-                                    min="1"
-                                    placeholder="Enter position number"
-                                    value={newPosition}
-                                    onChange={(e) => setNewPosition(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    )}
-                    
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowUpdateDialog(false)}>
-                            Cancel
-                        </Button>
-                        <Button 
-                            onClick={handleUpdatePosition} 
-                            disabled={isLoading || newPosition === ""}
-                            className="gap-1"
-                        >
-                            <Check className="h-4 w-4" />
-                            Confirm
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 };

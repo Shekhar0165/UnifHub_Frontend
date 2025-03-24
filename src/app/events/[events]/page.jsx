@@ -1,7 +1,7 @@
 'use client'
 import { useParams } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
-import { Calendar, MapPin, Users, Clock, Share2, BookmarkPlus, Search, UserPlus, Loader2, X } from 'lucide-react'
+import { Calendar, MapPin, Users, AlertCircle, Share2, BookmarkPlus, Search, UserPlus, Loader2, X, Circle, Flag, CheckCircle, ChevronLeft, Send, Check, UserX, XCircle, CalendarX, ArrowLeft,AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,14 +23,14 @@ const apiUrl = process.env.NEXT_PUBLIC_API;
 
 
 
-const ShowParticiPants = ({ eventid, currentUser }) => {
+const ShowParticipants = ({ eventid, currentUser, event }) => {
   const [participants, setParticipants] = useState({ teamName: "", participants: [] });
-  const [newUserId, setNewUserId] = useState("");
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [removingUserId, setRemovingUserId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      // Ensure we have the necessary data to make the request
       if (!eventid || !currentUser || !currentUser._id) {
         setLoading(false);
         return;
@@ -57,12 +57,12 @@ const ShowParticiPants = ({ eventid, currentUser }) => {
             },
           }
         );
-        // Ensure response.data.newParticipants is an object with participants array
+
         if (response.data && response.data.newParticipants) {
           setParticipants({
             teamName: response.data.newParticipants.teamName || "",
-            participants: Array.isArray(response.data.newParticipants.participants) 
-              ? response.data.newParticipants.participants 
+            participants: Array.isArray(response.data.newParticipants.participants)
+              ? response.data.newParticipants.participants
               : []
           });
         }
@@ -76,18 +76,33 @@ const ShowParticiPants = ({ eventid, currentUser }) => {
     fetchData();
   }, [eventid, currentUser]);
 
-  // Function to add a new participant
-  const handleAddParticipant = async () => {
-    if (!newUserId) return alert("Please enter a user ID!");
+  // Check if current user is admin
+  const isAdmin = currentUser && currentUser.role === "admin";
+
+  // Count current participants
+  const currentParticipantsCount = Array.isArray(participants?.participants) 
+    ? participants.participants.length 
+    : 0;
+
+  const handleRemoveMember = async (userId) => {
+    if (!userId) return;
     if (!eventid) return alert("Event ID is missing!");
+
+    // Check if removing member would violate minimum team size
+    if (event && event.minTeamMembers && currentParticipantsCount <= event.minTeamMembers) {
+      return alert(`Cannot remove member. Minimum ${event.minTeamMembers} members required.`);
+    }
 
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) return alert("You need to be logged in!");
 
+    setIsRemoving(true);
+    setRemovingUserId(userId);
+
     try {
-      const response = await axios.post(
-        `${apiUrl}/participants/add`,
-        { eventid, userid: newUserId },
+      await axios.post(
+        `${apiUrl}/participants/remove-member`,
+        { eventid, userid: userId },
         {
           headers: {
             "Content-Type": "application/json",
@@ -96,80 +111,181 @@ const ShowParticiPants = ({ eventid, currentUser }) => {
         }
       );
 
-      // Safely update the participants state
-      if (response.data && response.data.participant) {
-        setParticipants(prev => ({
-          ...prev,
-          participants: Array.isArray(prev.participants) 
-            ? [...prev.participants, response.data.participant]
-            : [response.data.participant]
-        }));
-      }
+      // Update local state by removing the member
+      setParticipants(prev => ({
+        ...prev,
+        participants: prev.participants.filter(p => p.userid !== userId)
+      }));
 
-      setNewUserId(""); // Reset input field
     } catch (error) {
-      console.error("Error adding participant:", error);
-      alert("Failed to add participant. Please try again.");
+      console.error("Error removing team member:", error);
+      alert("Failed to remove team member. Please try again.");
+    } finally {
+      setIsRemoving(false);
+      setRemovingUserId(null);
     }
   };
 
-  // Show loading state
+  // Function to remove entire team
+  const handleRemoveTeam = async () => {
+    if (!eventid) return alert("Event ID is missing!");
+
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return alert("You need to be logged in!");
+
+    if (!confirm("Are you sure you want to remove the entire team?")) return;
+
+    setIsRemoving(true);
+
+    try {
+      await axios.post(
+        `${apiUrl}/participants/remove-team`,
+        { eventid },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      // Update local state by clearing participants
+      setParticipants({ teamName: "", participants: [] });
+
+    } catch (error) {
+      console.error("Error removing team:", error);
+      alert("Failed to remove team. Please try again.");
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  // Get initials from name
+  const getInitials = (name) => {
+    if (!name) return "?";
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Show loading state with a skeleton loader
   if (loading) {
-    return <div className="max-w-2xl mx-auto mt-10">
-      <Card className="p-6 shadow-lg border-t-4 border-primary">
-        <p className="text-center">Loading participants...</p>
-      </Card>
-    </div>;
+    return (
+      <div className="max-w-2xl mx-auto mt-10">
+        <Card className="p-6 shadow-lg border-t-4 border-primary overflow-hidden">
+          <div className="h-8 w-64 bg-gray-200 rounded-md mb-6 animate-pulse"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-3 w-24 bg-gray-200 rounded-md animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
   }
 
-  // Fixed the condition - proper way to check if array has items
   const hasParticipants = Array.isArray(participants?.participants) && participants.participants.length > 0;
 
-  // If no participants and we're not loading, don't render anything
   if (!hasParticipants) return null;
 
   return (
     <div className="max-w-2xl mx-auto mt-10">
-      <Card className="p-6 shadow-lg border-t-4 border-primary">
-        <h2 className="text-xl font-semibold mb-4">Participants for Event</h2>
-
-        {hasParticipants ? (
-          <div>
-            <p className="font-semibold text-lg mb-2">Team Name: {participants.teamName}</p>
-            <ul className="space-y-3">
-              {participants.participants.map((participant) => (
-                <Link href={`/user/${participant.userid}`} key={participant.userid || participant._id || Math.random().toString()}>
-                  <li className="p-3 border rounded-lg flex items-center gap-3">
-                    <img
-                      src={participant.profileImage ? `${apiUrl}${participant.profileImage}` : '/default-avatar.png'}
-                      alt={participant.name || "User"}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold">{participant.name || "Unknown User"}</p>
-                      <p className="text-gray-500">{participant.userid || "No ID"}</p>
-                    </div>
-                  </li>
-                </Link>
-              ))}
-            </ul>
+      <Card className="p-6 shadow-lg border-t-4 border-primary overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Participants</h2>
+          <div className="flex items-center gap-3">
+            {participants.teamName && (
+              <div className="px-3 py-1 bg-primary/10 rounded-full">
+                <p className="font-medium text-primary">Team: {participants.teamName}</p>
+              </div>
+            )}
+            {isAdmin && (
+              <Button 
+                variant="destructive" 
+                onClick={handleRemoveTeam}
+                disabled={isRemoving}
+                className="text-sm"
+              >
+                {isRemoving ? "Removing..." : "Remove Team"}
+              </Button>
+            )}
           </div>
-        ) : (
-          <p className="text-gray-500">No participants yet.</p>
-        )}
-
-        {/* Add Participant Section */}
-        <div className="mt-6 flex gap-2">
-          <Input
-            type="text"
-            placeholder="Enter User ID"
-            value={newUserId}
-            onChange={(e) => setNewUserId(e.target.value)}
-          />
-          <Button onClick={handleAddParticipant} className="bg-primary">
-            Add User
-          </Button>
         </div>
+
+        <div className="space-y-3 mb-6">
+          {participants.participants.map((participant) => (
+            <div key={participant.userid || participant._id || Math.random().toString()}
+                 className="p-4 border rounded-lg flex items-center gap-4 hover:bg-white/5 transition-colors duration-200">
+              <Link
+                href={`/user/${participant.userid}`}
+                className="flex items-center gap-4 flex-grow"
+              >
+                {participant.profileImage ? (
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_API}${participant.profileImage}`}
+                    alt={participant.name || "User"}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-primary"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                    {getInitials(participant.name)}
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-lg">{participant.name || "Unknown User"}</p>
+                  <p className="text-gray-500 text-sm">{participant.userid || "No ID"}</p>
+                </div>
+              </Link>
+              
+              {/* Remove user button for admin or team members */}
+              {(isAdmin || currentUser._id === participant.userid) && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-700"
+                  onClick={() => handleRemoveMember(participant.userid)}
+                  disabled={isRemoving || removingUserId === participant.userid}
+                >
+                  {isRemoving && removingUserId === participant.userid ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-1 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </span>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Team status display */}
+        <div className="mb-4 flex justify-between items-center">
+          <div className="text-sm text-gray-500">
+            {event && event.maxTeamMembers && (
+              <span>
+                Participants: {currentParticipantsCount}/{event.maxTeamMembers}
+              </span>
+            )}
+          </div>
+          
+          {event && event.minTeamMembers && (
+            <div className="text-sm text-gray-500">
+              Minimum required: {event.minTeamMembers}
+            </div>
+          )}
+        </div>
+
+        
       </Card>
     </div>
   );
@@ -184,11 +300,20 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [teamName, setTeamName] = useState("");
-
   const [teamNameCheck, setTeamNameCheck] = useState({ result: undefined, checkedName: "" });
   const [loading, setLoading] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState([]); // New state to track selected members
 
   const router = useRouter();
+  
+  // Initialize the invited array with the current user
+  useEffect(() => {
+    if (currentUser) {
+      setInvited([currentUser._id]);
+      // Also add current user to selected members for display purposes
+      setSelectedMembers([currentUser]);
+    }
+  }, [currentUser]);
 
   // Search for members
   const searchMembers = async () => {
@@ -209,7 +334,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
       const data = response.data;
 
       if (data.success) {
-        setSearchResults(data.members || []);
+        // Mark members that are already selected
+        const results = data.members || [];
+        setSearchResults(results);
       } else {
         showToast("error", "Search Error", data.message || "Failed to search members");
       }
@@ -262,7 +389,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
 
   // Handle member invitation
   const handleInvite = (member) => {
-    if (!invited.some(id => id === member._id)) {
+    if (!invited.includes(member._id)) {
       const newInvited = [...invited, member._id];
 
       // Check team size constraints
@@ -271,7 +398,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
         return;
       }
 
+      // Update both the invited IDs and the selected members object array
       setInvited(newInvited);
+      setSelectedMembers([...selectedMembers, member]);
     }
   };
 
@@ -279,7 +408,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
   const handleRemoveMember = (memberId) => {
     // Don't allow removing the current user (admin)
     if (currentUser && memberId === currentUser._id) return;
+    
     setInvited(invited.filter(id => id !== memberId));
+    setSelectedMembers(selectedMembers.filter(member => member._id !== memberId));
   };
 
   // Form submission handler
@@ -302,14 +433,17 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
       const applicationData = {
         eventid: eventData?._id,
         teamName: teamName,
-        participant_id: invited
+        participant_ids: invited
       };
 
       const response = await axios.post(
         `${apiUrl}/participants/register`,
         applicationData,
         {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json"
+          },
         }
       );
 
@@ -321,7 +455,6 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
       } else {
         showToast("error", "Submission Error", data.message || "Failed to submit application");
       }
-      // window.location.reload();
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
       showToast("error", "Submission Error", errorMessage);
@@ -331,293 +464,356 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
   };
 
   // Event handlers
-  const handleSearch = (e) => setSearchQuery(e.target.value);
-
-  const handleSearchKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      searchMembers();
-    }
+  const handleSearchInputChange = (e) => {
+    setSearchQuery(e.target.value);
+    searchMembers();
   };
 
   // Return null if not showing
   if (!ApplyForEvent) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background p-6 rounded-lg max-w-md w-full ">
-        <h2 className="text-xl font-bold mb-4">Apply for Event</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-background p-6 rounded-xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto border border-primary/20 animate-in fade-in duration-300 sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Apply for Event
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={closePopup}
+            className="rounded-full hover:bg-primary/10"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
 
         {!showSearch ? (
-          // Initial screen - Team setup
-          <div className="space-y-4">
-            <div className="text-sm">You'll be applying as the team admin. Click below to search for additional team members to invite to this event.</div>
+          <div className="space-y-5">
+            <div className="text-sm bg-primary/5 p-3 rounded-lg border border-primary/10">
+              You'll be applying as the team leader. Add team members after setting up your team name.
+            </div>
 
             {currentUser && (
-              <div className="p-3 bg-primary/10 rounded-md">
-                <div className="font-medium">Team Leader:</div>
-                <div className="flex items-center mt-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2">
-                    {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+              <div className="p-4 bg-primary/10 rounded-lg shadow-sm border border-primary/20">
+                <div className="font-medium text-sm text-primary/80 mb-2">Team Leader:</div>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
+                    {currentUser.profileImage ? (
+                      <img className="w-12 h-12 rounded-full object-cover border-2 border-primary" src={`${process.env.NEXT_PUBLIC_API}${currentUser.profileImage}`} alt="" />
+                    ) :
+                      currentUser.name?.charAt(0).toUpperCase() || 'U'
+                    }
                   </div>
-                  <span>{currentUser.name || 'Current User'}</span>
+                  <div>
+                    <span className="font-semibold">{currentUser.name || 'Current User'}</span>
+                    <div className="text-xs text-muted-foreground">leader</div>
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="text-sm text-muted-foreground">
-              Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members
+            <div className="flex items-center gap-2 bg-primary/5 p-2 rounded-lg">
+              <Users className="h-4 w-4 text-primary" />
+              <div className="text-sm">
+                Required team size: <span className="font-semibold">{eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members</span>
+              </div>
             </div>
 
-            <div className="flex flex-col space-y-4 p-4 rounded-lg border">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold">Create New Team</h3>
+            <div className="flex flex-col space-y-4 p-5 rounded-xl border border-primary/20 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                  <Flag className="h-4 w-4" />
+                </div>
+                <h3 className="text-lg font-semibold">Create Your Team</h3>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="Enter team name"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    disabled={loading}
-                    className="w-full"
-                  />
-                  {teamName && teamNameCheck.result !== undefined && (
-                    <div className="absolute right-0 -bottom-6">
-                      <span className={`text-sm ${teamNameCheck.result ? 'text-green-500' : 'text-destructive'} font-medium`}>
-                        {teamNameCheck.result ? "✓ Available" : "✗ Not Available"}
-                      </span>
-                    </div>
-                  )}
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Team Name</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Enter a unique team name"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      disabled={loading}
+                      className="w-full pr-8 focus-within:ring-1 focus-within:ring-primary/50"
+                    />
+                    {teamName && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        {teamNameCheck.result === true && (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        )}
+                        {teamNameCheck.result === false && (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    )}
+                    {teamName && teamNameCheck.result !== undefined && (
+                      <div className="absolute left-0 -bottom-5">
+                        <span className={`text-xs ${teamNameCheck.result ? 'text-green-500' : 'text-destructive'} font-medium`}>
+                          {teamNameCheck.result ? "✓ Available" : "✗ Name already taken"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                <Button
-                  onClick={checkTeamAvailability}
-                  disabled={loading || !teamName}
-                  variant="default"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-1">
-                      <div className="h-4 w-4 border-2 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Checking</span>
-                    </div>
-                  ) : (
-                    "Check"
-                  )}
-                </Button>
+                  <Button
+                    onClick={checkTeamAvailability}
+                    disabled={loading || !teamName}
+                    variant="default"
+                    size="sm"
+                    className="min-w-20"
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Checking</span>
+                      </div>
+                    ) : (
+                      "Check Name"
+                    )}
+                  </Button>
+                </div>
               </div>
 
               <div className="my-2"></div>
 
-              <div className="flex gap-3 mt-4">
-                <Button
-                  disabled={
-                    teamNameCheck.result === false ||
-                    !teamNameCheck.result ||
-                    teamName !== teamNameCheck.checkedName
-                  }
-                  className="flex-1"
-                  onClick={() => setShowSearch(true)}
-                >
-                  Add Team Members
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={closePopup}
-                >
-                  Cancel
-                </Button>
-              </div>
+              <Button
+                disabled={
+                  teamNameCheck.result === false ||
+                  !teamNameCheck.result ||
+                  teamName !== teamNameCheck.checkedName
+                }
+                className="w-full"
+                onClick={() => setShowSearch(true)}
+                size="lg"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Team Members
+              </Button>
             </div>
+
+            <Button
+              variant="outline"
+              onClick={closePopup}
+              className="w-full mt-2"
+            >
+              Cancel
+            </Button>
           </div>
         ) : (
-          // Member search screen
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-4 mb-4">
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="Search members by name or email..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    onKeyPress={handleSearchKeyPress}
-                    className="flex-1"
-                  />
-
-                  <Button
-                    size="icon"
-                    onClick={searchMembers}
-                    disabled={isLoading || !searchQuery.trim()}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-
-                {isSearching && (
-                  <div className="max-h-64 overflow-y-auto border rounded-md">
-                    {isLoading && (
-                      <div className="p-4 text-center">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                      </div>
-                    )}
-
-                    {!isLoading && searchResults && searchResults.length > 0 ? (
-                      searchResults.map((member) => (
-                        <div
-                          key={member._id}
-                          className="flex justify-between items-center p-2 border-b hover:bg-primary/5 transition-colors"
-                        >
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2">
-                              {member.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                              <div className="font-medium">{member.name}</div>
-                              <div className="text-xs text-muted-foreground">{member.email}</div>
-                            </div>
-                          </div>
-
-                          <Button
-                            size="sm"
-                            variant={invited.includes(member._id) ? "outline" : "default"}
-                            onClick={() => handleInvite(member)}
-                            disabled={invited.includes(member._id)}
-                          >
-                            {invited.includes(member._id) ? "Added" : "Add"}
-                            {!invited.includes(member._id) && (
-                              <UserPlus className="ml-2 w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      ))
-                    ) : (
-                      !isLoading && (
-                        <div className="p-4 text-center text-muted-foreground">
-                          {searchQuery.trim() ? "No members found" : "Enter a name or email to search"}
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search members by userid"
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
+                  className="pl-10 pr-10"
+                />
               </div>
+            </div>
 
-              <div className="border-t pt-4 mt-2">
-                <div className="text-sm font-medium mb-2">
-                  Team Members ({invited.length}/{eventData?.maxTeamMembers || 1}):
-                </div>
-
-                {/* Display current user (admin) */}
-                {currentUser && (
-                  <div className="flex justify-between items-center p-2 bg-primary/5 rounded-md mb-2">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2">
-                        {currentUser.name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div>
-                        <div className="font-medium">{currentUser.name}</div>
-                        <div className="text-xs">Team Admin</div>
-                      </div>
-                    </div>
+            {isSearching && (
+              <div className="max-h-64 overflow-y-auto border rounded-lg bg-background shadow-sm">
+                {isLoading && (
+                  <div className="p-6 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                    <p className="text-sm text-muted-foreground mt-2">Searching members...</p>
                   </div>
                 )}
 
-                {/* Display other invited members */}
-                {invited.length > 0 && currentUser && invited.filter(id => id !== currentUser._id).length > 0 ? (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {invited
-                      .filter(id => currentUser && id !== currentUser._id)
-                      .map(id => {
-                        const member = searchResults.find(m => m._id === id);
-                        return member ? (
-                          <div key={id} className="flex justify-between items-center p-2 border rounded-md">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                {member.name?.charAt(0).toUpperCase() || 'U'}
-                              </div>
-                              <span>{member.name}</span>
-                            </div>
-
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleRemoveMember(id)}
-                              className="hover:text-destructive"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                {!isLoading && searchResults && searchResults.length > 0 ? (
+                  <div className="divide-y">
+                    {searchResults.map((member) => (
+                      <div
+                        key={member._id}
+                        className="flex justify-between items-center p-3 hover:bg-primary/5 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
+                            {member.name?.charAt(0).toUpperCase() || 'U'}
                           </div>
-                        ) : null;
-                      })}
+                          <div>
+                            <div className="font-medium">{member.name}</div>
+                            <div className="text-xs text-muted-foreground">{member.userid}</div>
+                          </div>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          variant={invited.includes(member._id) ? "outline" : "default"}
+                          onClick={() => handleInvite(member)}
+                          disabled={invited.includes(member._id)}
+                          className={invited.includes(member._id) ? "opacity-70" : ""}
+                        >
+                          {invited.includes(member._id) ? (
+                            <>
+                              <Check className="mr-1 w-3 h-3" />
+                              Added
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="mr-1 w-3 h-3" />
+                              Add
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  invited.length <= 1 && (
-                    <div className="text-sm text-muted-foreground p-2">
-                      No additional team members added yet
+                  !isLoading && (
+                    <div className="p-6 text-center text-muted-foreground">
+                      {searchQuery.trim() ? (
+                        <>
+                          <UserX className="h-8 w-8 mx-auto mb-2 text-muted-foreground/70" />
+                          <p>No members found matching "{searchQuery}"</p>
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/70" />
+                          <p>Enter a name or email to search</p>
+                        </>
+                      )}
                     </div>
                   )
                 )}
               </div>
+            )}
 
-              <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setShowSearch(false)}>
-                  Back
-                </Button>
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  Team Members ({invited.length}/{eventData?.maxTeamMembers || 1})
+                </div>
 
-                <Button
-                  onClick={handleSubmit}
-                  disabled={
-                    isLoading ||
-                    invited.length < (eventData?.minTeamMembers || 1) ||
-                    invited.length > (eventData?.maxTeamMembers || 1) ||
-                    !teamNameCheck.result ||
-                    teamName !== teamNameCheck.checkedName
-                  }
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit Application"
-                  )}
-                </Button>
+                <div className="text-xs px-2 py-1 rounded bg-primary/10 text-primary/80">
+                  Min: {eventData?.minTeamMembers || 1} members
+                </div>
               </div>
 
-              {/* Error messages */}
-              {eventData?.minTeamMembers > 1 && invited.length < eventData.minTeamMembers && (
-                <div className="text-xs text-amber-500 mt-2 text-center">
-                  You need at least {eventData.minTeamMembers} team members to apply
+              {currentUser && (
+                <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg mb-3 border border-primary/10">
+                  <div className="flex items-center">
+                    <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
+                      {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <div className="font-medium">{currentUser.name}</div>
+                      <div className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary inline-block">Team Leader</div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {teamNameCheck.result === false && (
-                <div className="text-xs text-amber-500 mt-2 text-center">
-                  You need to choose an available team name
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <div className="space-y-2 max-h-40">
+                {selectedMembers.length > 1 ? (
+                  selectedMembers
+                    .filter(member => currentUser && member._id !== currentUser._id)
+                    .map(member => (
+                      <div key={member._id} className="flex justify-between items-center p-2.5 border rounded-lg hover:bg-primary/5 transition-colors">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2 shadow-sm">
+                            {member.name?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <div className="font-medium">{member.name}</div>
+                            <div className="text-xs text-muted-foreground">{member.userid}</div>
+                          </div>
+                        </div>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleRemoveMember(member._id)}
+                          className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground bg-primary/5 rounded-lg border border-dashed border-primary/20">
+                    <UserPlus className="h-8 w-8 mb-2 text-primary/40" />
+                    <p className="text-sm">No additional team members added yet</p>
+                    <p className="text-xs mt-1">
+                      {eventData?.minTeamMembers > 1 ?
+                        `You need to add at least ${eventData.minTeamMembers - 1} more members` :
+                        "Add team members if needed"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {eventData?.minTeamMembers > 1 && invited.length < eventData.minTeamMembers && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-500 py-1.5 px-3 bg-amber-500/10 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                You need at least {eventData.minTeamMembers} team members to apply
+              </div>
+            )}
+
+            {teamNameCheck.result === false && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-500 py-1.5 px-3 bg-amber-500/10 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                You need to choose an available team name
+              </div>
+            )}
+
+            <div className="flex justify-between gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowSearch(false)}
+                className="flex-1"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Back
+              </Button>
+
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  isLoading ||
+                  invited.length < (eventData?.minTeamMembers || 1) ||
+                  invited.length > (eventData?.maxTeamMembers || 1) ||
+                  !teamNameCheck.result ||
+                  teamName !== teamNameCheck.checkedName
+                }
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Submit Application
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-
 export default function EventDetailPage() {
   const params = useParams()
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
-  const [ApplyForEvent, SetApplyForEvent] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [visible, setVisible] = useState(true);
+  const [ApplyForEvent, SetApplyForEvent] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [visible, setVisible] = useState(true)
   const router = useRouter()
 
   // Toast notification handler for consistent notifications
@@ -626,17 +822,17 @@ export default function EventDetailPage() {
       variant: type === "success" ? "default" : "destructive",
       title,
       description
-    });
-  };
+    })
+  }
 
   useEffect(() => {
     const fetchUserData = async () => {
-      setIsLoading(true);
-      const accessToken = localStorage.getItem('accessToken');
+      setIsLoading(true)
+      const accessToken = localStorage.getItem('accessToken')
 
       if (!accessToken) {
-        setIsLoading(false);
-        return;
+        setIsLoading(false)
+        return
       }
 
       try {
@@ -647,35 +843,35 @@ export default function EventDetailPage() {
             'Authorization': `Bearer ${accessToken}`
           },
           credentials: 'include',
-        });
+        })
 
         if (response.ok) {
-          const userData = await response.json();
+          const userData = await response.json()
 
           // Process user data
-          const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
-          setCurrentUser(user);
+          const user = typeof userData === 'string' ? JSON.parse(userData) : userData
+          setCurrentUser(user)
         } else {
-          showToast("error", "Authentication Error", "Failed to fetch user data");
+          showToast("error", "Authentication Error", "Failed to fetch user data")
 
           // Handle authentication error
           if (response.status === 401) {
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            router.push('/');
+            localStorage.removeItem('user')
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('refreshToken')
+            router.push('/')
           }
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        showToast("error", "Error", "Failed to load user data");
+        console.error('Error fetching user data:', error)
+        showToast("error", "Error", "Failed to load user data")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchUserData();
-  }, [apiUrl, router]);
+    fetchUserData()
+  }, [apiUrl, router])
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -721,22 +917,34 @@ export default function EventDetailPage() {
     fetchEventData()
   }, [router])
 
-
   // Find the event from our events data
-  const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim());
+  const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim())
 
   // Show loading state
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner /></div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center">
+          <LoadingSpinner className="h-12 w-12" />
+          <p className="mt-4 text-muted-foreground animate-pulse">Loading event details...</p>
+        </div>
+      </div>
+    )
   }
 
   // Show message if event not found
   if (!eventData && !loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <h1 className="text-2xl font-bold mb-4">Event not found</h1>
-        <p className="text-muted-foreground mb-6">The event you're looking for doesn't exist or you may not have access.</p>
-        <Button onClick={() => router.push('/events')}>Back to Events</Button>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <div className="text-center max-w-md mx-auto">
+          <CalendarX className="h-16 w-16 mx-auto mb-4 text-primary opacity-70" />
+          <h1 className="text-3xl font-bold mb-2">Event not found</h1>
+          <p className="text-muted-foreground mb-8">The event you're looking for doesn't exist or you may not have access.</p>
+          <Button onClick={() => router.push('/events')} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Events
+          </Button>
+        </div>
       </div>
     )
   }
@@ -748,198 +956,254 @@ export default function EventDetailPage() {
       case 'ongoing': return 'bg-blue-600'
       case 'completed': return 'bg-gray-600'
       case 'cancelled': return 'bg-red-600'
+      case 'Add Member': return 'bg-yello-600'
+      case 'Team Full': return  'bg-green-600' 
       default: return 'bg-gray-600'
     }
   }
 
   const HandleOpenApply = () => {
-    SetApplyForEvent(true);
-  };
+    SetApplyForEvent(true)
+  }
 
   const HandleCloseApply = () => {
-    SetApplyForEvent(false);
-  };
+    SetApplyForEvent(false)
+  }
 
   // Safely get UserType from localStorage (client-side only)
   const getUserType = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem("UserType") || "";
+      return localStorage.getItem("UserType") || ""
     }
-    return "";
-  };
-  
-  const UserType = getUserType();
+    return ""
+  }
+
+  const UserType = getUserType()
 
   return (
     <>
       <Header />
       <div className="min-h-screen bg-background">
-      {visible && UserType === "Organization" && (
-        <div className='flex justify-end items-end'>
-        <Alert className="bg-red-100 border-red-500 mt-2 text-red-700 mx-10 flex items-end w-[70%] justify-between">
-          <div>
-            <AlertDescription>
-              You cannot participate. Please switch from Organization to User mode.
-            </AlertDescription>
-          </div>
-          <button
-            onClick={() => setVisible(false)}
-            className="text-red-700 hover:text-red-900"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </Alert>
-        </div>
-      )}
-
-        {/* Header Section */}
-        {/* <div className="border-b bg-background">
-          <div className="container max-w-7xl mx-auto py-8 px-6 lg:px-8">
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Badge variant="secondary">{eventData?.category}</Badge>
-              <Badge variant="default" className={getStatusColor(eventData?.status)}>
-                {eventData?.status}
-              </Badge>
+        {/* Hero section with event cover image and overlay */}
+        <div className="relative h-80 lg:h-96 w-full overflow-hidden">
+          <img
+            className="object-cover w-full h-full"
+            src={eventData?.image_path ? `${process.env.NEXT_PUBLIC_API}/events${eventData.image_path}` : '/event-placeholder.jpg'}
+            alt={eventData?.eventName || 'Event image'}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10">
+            <div className="container max-w-7xl mx-auto">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(eventData?.status)} text-white`}>
+                  {eventData?.status?.toUpperCase()}
+                </span>
+                {eventData?.category && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
+                    {eventData.category}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-2xl md:text-4xl font-bold text-white drop-shadow-md">{eventData?.eventName}</h1>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight mb-4">{eventData?.eventName}</h1>
-            <p className="text-lg text-muted-foreground max-w-3xl">
-              {eventData?.description}
-            </p>
           </div>
-        </div> */}
+        </div>
+
+        {/* Organization User Alert */}
+        {visible && UserType === "Organization" && (
+          <div className="container max-w-7xl mx-auto px-6 lg:px-8 mt-4">
+            <Alert className="bg-red-100 border-red-500 text-red-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                <AlertDescription>
+                  You cannot participate. Please switch from Organization to User mode.
+                </AlertDescription>
+              </div>
+              <button
+                onClick={() => setVisible(false)}
+                className="text-red-700 hover:text-red-900 p-1 rounded-full hover:bg-red-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </Alert>
+          </div>
+        )}
 
         {/* Main content container with 70-30 split */}
         <div className="container max-w-7xl mx-auto py-8">
           <div className="flex flex-col lg:flex-row gap-8 px-6 lg:px-8">
             {/* Left content area (70%) */}
             <div className="w-full lg:w-[70%]">
-              <div className="rounded-lg p-2 border-1 border-primary">
-                <img className='rounded-lg shadow-lg h-96 w-[100%]'
-                  src={eventData?.image_path ? `${process.env.NEXT_PUBLIC_API}/events${eventData.image_path}` : '/event-placeholder.jpg'}
-                  alt={eventData?.eventName || 'Event image'} />
-              </div>
-              <Card className="p-6 lg:p-8 shadow-lg">
+              <Card className="overflow-hidden shadow-lg border-0 mb-8">
                 {/* Action buttons */}
-                <div className="flex gap-4 mb-6">
-                  <Button variant="outline" size="sm" className="gap-2">
+                <div className="flex gap-4 p-6 border-b">
+                  <Button variant="outline" size="sm" className="gap-2 rounded-full">
                     <Share2 className="h-4 w-4" />
                     Share
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="outline" size="sm" className="gap-2 rounded-full">
                     <BookmarkPlus className="h-4 w-4" />
                     Save
                   </Button>
                 </div>
 
                 {/* Event overview section */}
-                <div className="space-y-6">
-                  {/* Fix for potentially invalid HTML in content */}
-                  <div
-                    className="prose dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ 
-                      __html: typeof eventData?.content === 'string' 
-                        ? eventData.content
+                <CardContent className="p-6 lg:p-8">
+                  <div className="prose dark:prose-invert max-w-none">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: typeof eventData?.content === 'string'
+                          ? eventData.content
                             .replace(/<p>\s*<p>/g, '<p>')  // Fix nested <p> tags
-                            .replace(/<\/p>\s*<\/p>/g, '</p>') 
-                        : JSON.stringify(eventData?.content) 
-                    }}
-                  />
-                </div>
+                            .replace(/<\/p>\s*<\/p>/g, '</p>')
+                          : JSON.stringify(eventData?.content)
+                      }}
+                    />
+                  </div>
+                </CardContent>
               </Card>
             </div>
 
             {/* Right sidebar (30%) */}
             <div className="w-full lg:w-[30%]">
-              <div className="lg:sticky lg:top-8">
-                <Card className="p-6 shadow-lg border-t-4 border-primary">
-                  <div className="space-y-6">
-                    {/* Date and Time */}
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 mt-1 text-primary" />
-                      <div>
-                        <h3 className="font-semibold">Date</h3>
-                        <p className="text-muted-foreground">
-                          {eventData?.eventDate ? new Date(eventData.eventDate).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          }) : 'Date not available'}
-                        </p>
-                        <p className="text-muted-foreground mt-1">{eventData?.time}</p>
-                      </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-5 w-5 mt-1 text-primary" />
-                      <div>
-                        <h3 className="font-semibold">Location</h3>
-                        <p className="text-muted-foreground">{eventData?.venue}</p>
-                      </div>
-                    </div>
-
-                    {/* Participants */}
-                    <div className="flex items-start gap-3">
-                      <Users className="h-5 w-5 mt-1 text-primary" />
-                      <div>
-                        <h3 className="font-semibold">Participants</h3>
-                        {/* Fix for undefined .length property */}
-                        <p className="text-sm mt-1">Team size: {eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members</p>
-                      </div>
-                    </div>
-
-                    {/* Prizes Section */}
-                    {(eventData?.firstPrize || eventData?.secondPrize || eventData?.thirdPrize) && (
-                      <div className="flex items-start gap-3">
-                        <Clock className="h-5 w-5 mt-1 text-primary" />
+              <div className="lg:sticky lg:top-8 space-y-6">
+                {/* Event Details Card */}
+                <Card className="overflow-hidden shadow-lg border-t-4 border-primary">
+                  <CardContent className="p-6">
+                    <div className="space-y-6">
+                      {/* Date and Time */}
+                      <div className="flex items-start gap-4">
+                        <div className="bg-primary/10 p-2 rounded-lg">
+                          <Calendar className="h-5 w-5 text-primary" />
+                        </div>
                         <div>
-                          <h3 className="font-semibold">Prizes</h3>
-                          {eventData?.firstPrize && <p className="text-muted-foreground">🥇 {eventData.firstPrize}</p>}
-                          {eventData?.secondPrize && <p className="text-muted-foreground">🥈 {eventData.secondPrize}</p>}
-                          {eventData?.thirdPrize && <p className="text-muted-foreground">🥉 {eventData.thirdPrize}</p>}
+                          <h3 className="font-semibold">Date & Time</h3>
+                          <p className="text-muted-foreground">
+                            {eventData?.eventDate ? new Date(eventData.eventDate).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            }) : 'Date not available'}
+                          </p>
+                          <p className="text-muted-foreground mt-1">{eventData?.time}</p>
                         </div>
                       </div>
-                    )}
 
-                    <div className="space-y-3 pt-2">
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={HandleOpenApply}
-                        disabled={eventData?.status === "completed" || eventData?.status === "cancelled" || UserType === "Organization"}
-                      >
-                        {eventData?.status === "upcoming"
-                          ? "Apply Now"
-                          : eventData?.status === "ongoing"
-                            ? "Event In Progress"
-                            : eventData?.status === "completed"
-                              ? "Event Completed"
-                              : "Event Cancelled"}
-                      </Button>
-                      <p className="text-sm text-center text-muted-foreground">
-                        {eventData?.status === "upcoming" ? "Registration is open" :
-                          eventData?.status === "ongoing" ? "Registration closed" :
-                            eventData?.status === "completed" ? "Event has ended" :
-                              "Event was cancelled"}
-                      </p>
+                      {/* Location */}
+                      <div className="flex items-start gap-4">
+                        <div className="bg-primary/10 p-2 rounded-lg">
+                          <MapPin className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Location</h3>
+                          <p className="text-muted-foreground">{eventData?.venue}</p>
+                        </div>
+                      </div>
+
+                      {/* Participants */}
+                      <div className="flex items-start gap-4">
+                        <div className="bg-primary/10 p-2 rounded-lg">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Team Size</h3>
+                          <p className="text-muted-foreground">{eventData?.minTeamMembers || 1} - {eventData?.maxTeamMembers || 1} members</p>
+                        </div>
+                      </div>
+
+                      {/* Prizes Section */}
+                      {(eventData?.firstPrize || eventData?.secondPrize || eventData?.thirdPrize) && (
+                        <div className="flex items-start gap-4">
+                          <div className="bg-primary/10 p-2 rounded-lg">
+                            <Trophy className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Prizes</h3>
+                            <div className="space-y-2 mt-2">
+                              {eventData?.firstPrize && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-yellow-500 text-lg">🥇</span>
+                                  <p className="text-muted-foreground">{eventData.firstPrize}</p>
+                                </div>
+                              )}
+                              {eventData?.secondPrize && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400 text-lg">🥈</span>
+                                  <p className="text-muted-foreground">{eventData.secondPrize}</p>
+                                </div>
+                              )}
+                              {eventData?.thirdPrize && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-amber-700 text-lg">🥉</span>
+                                  <p className="text-muted-foreground">{eventData.thirdPrize}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-4">
+                        <Button
+                          className="w-full rounded-full"
+                          size="lg"
+                          onClick={HandleOpenApply}
+                          disabled={eventData?.status === "completed" || eventData?.status === "cancelled" || UserType === "Organization"}
+                        >
+                          {eventData?.status === "upcoming"
+                            ? "Apply Now"
+                            : eventData?.status === "ongoing"
+                              ? "Event In Progress"
+                              : eventData?.status === "completed"
+                                ? "Event Completed"
+                                : "Event Cancelled"}
+                        </Button>
+                        <p className="text-sm text-center text-muted-foreground mt-2">
+                          {eventData?.status === "upcoming" ? (
+                            <span className="flex items-center justify-center gap-1">
+                              <Circle className="h-2 w-2 fill-green-500 text-green-500" />
+                              Registration is open
+                            </span>
+                          ) : eventData?.status === "ongoing" ? (
+                            <span className="flex items-center justify-center gap-1">
+                              <Circle className="h-2 w-2 fill-blue-500 text-blue-500" />
+                              Registration closed
+                            </span>
+                          ) : eventData?.status === "completed" ? (
+                            <span className="flex items-center justify-center gap-1">
+                              <Circle className="h-2 w-2 fill-gray-500 text-gray-500" />
+                              Event has ended
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-1">
+                              <Circle className="h-2 w-2 fill-red-500 text-red-500" />
+                              Event was cancelled
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
-                <ShowParticiPants eventid={eventData._id} currentUser={currentUser} />
+
+                {/* Participants Card */}
+                <ShowParticipants eventid={eventData._id} currentUser={currentUser} event={eventData} />
               </div>
             </div>
           </div>
-        </div>
 
-        {/* More Events Section */}
-            {/* Fix for potentially undefined _id and category */}
-        <div className='flex flex-col lg:flex gap-8 px-6 lg:px-8'>
-          <div>
-            {eventData && <MoreEvents 
-              currentEventId={eventData?._id || ""} 
-              currentCategory={eventData?.category || ""} 
-            />}
+          {/* More Events Section */}
+          <div className="mt-12 px-6 lg:px-8">
+            <div className="border-b pb-2 mb-6">
+              <h2 className="text-2xl font-bold">More Events</h2>
+            </div>
+            {eventData && (
+              <MoreEvents
+                currentEventId={eventData?._id || ""}
+                currentCategory={eventData?.category || ""}
+              />
+            )}
           </div>
         </div>
 
@@ -950,6 +1214,7 @@ export default function EventDetailPage() {
             closePopup={HandleCloseApply}
             eventData={eventData}
             currentUser={currentUser}
+            showToast={showToast}
           />
         )}
       </div>

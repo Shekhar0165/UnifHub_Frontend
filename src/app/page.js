@@ -22,9 +22,7 @@ export default function Home() {
           await router.replace(`/events`);
         } else if (token && UserType === "Organization") {
           await router.replace(`/organization/${UserID}`);
-        } else {
-          await router.replace("/login");
-        }
+        } 
       } catch (error) {
         console.error("Navigation error:", error);
         // Set loading to false if navigation fails

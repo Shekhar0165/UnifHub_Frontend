@@ -1,16 +1,26 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, usePathname, useSearchParams } from 'next/navigation'
 import {
-    User, Award, FileText, Calendar, Download, Share2, MapPin,
-    Briefcase, GraduationCap, Mail, Phone, Star, Activity,
-    BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, X,BriefcaseIcon,ChevronDown
-} from 'lucide-react'
+    Users, UserPlus, History, UsersIcon, Award, FileText, Calendar,
+    Share2, MapPin, GraduationCap, Mail, Phone, Star, Activity,
+    BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, X,
+    BriefcaseIcon, ChevronDown, Building
+} from 'lucide-react';
+
+// UI components from shadcn/ui or your UI library
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+
 import { useRouter } from 'next/navigation';
 import Header from '@/app/Components/Header/Header'
 import { Chart } from "react-google-charts";
 import EventComponent from '@/app/Components/Organization/CreatePost'
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Link from 'next/link';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import OrganizationJourney from '@/app/Components/Organization/OrganizationJourney';
 
 
 
@@ -24,7 +34,7 @@ const getActivityColor = (count) => {
 
 
 
-const LeftComponent = ({user}) => {
+const LeftComponent = ({ user }) => {
     return (
         <>
             <div className="w-full lg:w-1/3">
@@ -141,86 +151,190 @@ const LeftComponent = ({user}) => {
     )
 }
 
-const RightComponent = ({user}) => {
-    const [activeTab, setActiveTab] = useState('achievements');
+const RightComponent = ({ user, setIsNavigating }) => {
+    const [activeTab, setActiveTab] = useState('team');
     const [selectedTeam, setSelectedTeam] = useState(null);
-    const [selectedEvent, setSelectedEvent] = useState(null);
     const [showTeamPopup, setShowTeamPopup] = useState(false);
-    const [showEventsCreatePopup, setShowEventsCreatePopup] = useState(false);
-    const [showEventPopup, setShowEventPopup] = useState(false);
+    const [teams, setTeams] = useState([]);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
+
+    // Fetch teams from the backend
+    useEffect(() => {
+        const fetchTeams = async () => {
+            try {
+                setLoading(true);
+                const authToken = localStorage.getItem('accessToken');
+
+                // Use the id from the user object
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API}/team/${user._id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                setTeams(data);
+            } catch (error) {
+                console.error('Error fetching teams:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user?._id) {
+            fetchTeams();
+        }
+    }, [user]);
 
     const handleTeamClick = (team) => {
         setSelectedTeam(team);
         setShowTeamPopup(true);
     };
 
-    const handleEventClick = (event) => {
-        setSelectedEvent(event);
-        setShowEventPopup(true);
-    };
 
     const closeTeamPopup = () => {
         setShowTeamPopup(false);
         setSelectedTeam(null);
     };
 
-    const closeEventPopup = () => {
-        setShowEventPopup(false);
-        setSelectedEvent(null);
-    };
 
-    const HandleCreateEvents = ()=>{
-        router.push(`/organization/${user.userid}/create-event`)
-    }
 
-    
-
-    // Team Members Popup
     const TeamMembersPopup = () => {
         if (!selectedTeam) return null;
 
         return (
-            <div className="fixed inset-0 transition-all duration-700  bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[80vh] overflow-auto shadow-xl">
-                    <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{selectedTeam.name} Team Members</h3>
-                        <button onClick={closeTeamPopup} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                            <X className="h-5 w-5" />
-                        </button>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl transform transition-all">
+                    {/* Header */}
+                    <div className="relative bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    {selectedTeam.teamName}
+                                </h3>
+                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    Team Members ({selectedTeam.teamMembers?.length || 0})
+                                </p>
+                            </div>
+                            <button
+                                onClick={closeTeamPopup}
+                                className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                            </button>
+                        </div>
                     </div>
-                    <div className="p-4">
-                        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <h4 className="font-medium text-gray-900 dark:text-white">Team Lead</h4>
-                            <p className="text-blue-600 dark:text-blue-400">{selectedTeam?.head}</p>
+
+                    {/* Content */}
+                    <div className="p-6 overflow-auto max-h-[60vh]">
+                        {/* Team Lead Section */}
+                        <div className="mb-8">
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+                                Team Lead
+                            </h4>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl ">
+                                <Link href={`/user/${selectedTeam.teamLeader.userid}`} className="flex items-center hover:bg-white/10 p-3 rounded-xl">
+                                    <Avatar className="h-12 w-12 border-4 border-white dark:border-gray-800 shadow-sm">
+                                        {selectedTeam.teamLeader?.profile_path ? (
+                                            <AvatarImage
+                                                src={`${process.env.NEXT_PUBLIC_API}${selectedTeam.teamLeader.profile_path}`}
+                                                alt={selectedTeam.teamLeader.name}
+                                            />
+                                        ) : (
+                                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                                                {selectedTeam.teamLeader?.name?.charAt(0).toUpperCase() || 'T'}
+                                            </AvatarFallback>
+                                        )}
+                                    </Avatar>
+                                    <div className="ml-4">
+                                        <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            {selectedTeam.teamLeader?.name || "Team Leader"}
+                                        </h5>
+                                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                                            {selectedTeam.teamLeader?.role || "Team Lead"}
+                                        </p>
+                                    </div>
+                                </Link>
+                            </div>
                         </div>
 
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Team Members</h4>
-                        <ul className="space-y-3">
-                            {selectedTeam?.members?.map((member, index) => {
-                                const [name, role] = Object.entries(member)[0];
-                                
-                                return (
-                                    <li key={index} className="p-3 bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                                        <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold shadow-sm">
-                                                {name.charAt(0).toUpperCase()}
+                        {/* Team Members Section */}
+                        <div>
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+                                Team Members
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {selectedTeam.teamMembers?.map((member, index) => (
+                                    <div key={member.id || index}>
+                                        <Link
+                                            href={`/user/${member.userid}`}
+                                            onClick={() => setIsNavigating(true)}
+                                            className="block group relative p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/30 dark:to-gray-800/30 
+                border border-gray-200 dark:border-gray-700 rounded-xl 
+                hover:shadow-lg hover:-translate-y-1 
+                dark:hover:shadow-blue-500/5 
+                transition-all duration-300"
+                                        >
+                                            {/* Hover Effect Overlay */}
+                                            <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 dark:group-hover:bg-blue-500/10 rounded-xl transition-colors duration-300"></div>
+
+                                            <div className="relative flex items-center space-x-4">
+                                                {/* Avatar Section */}
+                                                <div className="flex-shrink-0">
+                                                    <Avatar className="h-14 w-14 ring-2 ring-white dark:ring-gray-800 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-800 shadow-md transform group-hover:scale-105 transition-transform duration-300">
+                                                        {member.profile_path ? (
+                                                            <AvatarImage
+                                                                src={`${process.env.NEXT_PUBLIC_API}${member.profile_path}`}
+                                                                alt={member.name}
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-lg font-semibold">
+                                                                {member.name.charAt(0).toUpperCase()}
+                                                            </AvatarFallback>
+                                                        )}
+                                                    </Avatar>
+                                                </div>
+
+                                                {/* Content Section */}
+                                                <div className="flex-grow min-w-0">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                                                            {member.name}
+                                                        </h4>
+                                                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transform group-hover:translate-x-1 transition-all duration-300" />
+                                                    </div>
+
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors duration-300"
+                                                        >
+                                                            <div className="flex items-center gap-1.5">
+                                                                <BriefcaseIcon className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                                                <span className="text-xs">{member.role}</span>
+                                                            </div>
+                                                        </Badge>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="ml-3 flex-grow">
-                                                <p className="font-medium text-gray-900 dark:text-gray-100">{name}</p>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{role}</p>
-                                            </div>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+
+                    {/* Footer */}
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
                         <button
                             onClick={closeTeamPopup}
-                            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
+                            <X className="h-4 w-4" />
                             Close
                         </button>
                     </div>
@@ -229,219 +343,12 @@ const RightComponent = ({user}) => {
         );
     };
 
-    // Event Positions Popup
-    const EventPositionsPopup = () => {
-        if (!selectedEvent) return null;
-
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl w-[70%] max-h-[70vh] overflow-auto shadow-xl">
-                    <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{selectedEvent?.title} - Positions</h3>
-                        <button onClick={closeEventPopup} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                            <X className="h-5 w-5" />
-                        </button>
-                    </div>
-                    <div className="p-4">
-                        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{selectedEvent?.date}</p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Total Participants: {selectedEvent?.participants}</p>
-                        </div>
-
-                        {/* Team Section (if needed) */}
-                        {selectedEvent?.team && selectedEvent?.team.length > 0 && (
-                            <div>
-                                <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <BriefcaseIcon className="h-5 w-5 text-indigo-500" />
-                                    Event Team
-                                </h4>
-                                <div className="space-y-2">
-                                    {selectedEvent?.team.map((member, index) => {
-                                        const [name, role] = Object.entries(member)[0];
-                                        return (
-                                            <div key={index} className="flex justify-between items-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
-                                                <span className="font-medium text-gray-800 dark:text-gray-200">{name}</span>
-                                                <span className="text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/40 px-2 py-1 rounded">{role}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        <h4 className="font-medium mt-4 text-gray-900 dark:text-white mb-2">Top Positions</h4>
-
-                        <div className="space-y-3">
-                            {selectedEvent?.position?.slice(0, 3).map((person, index) => (
-                                <div key={index} className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                    <div className={`p-2 rounded-full mr-3 ${index === 0 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                            index === 1 ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' :
-                                                'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                                        }`}>
-                                        <span className="font-bold">{index + 1}</span>
-                                    </div>
-                                    <span className="text-gray-700 dark:text-gray-300">{person}</span>
-                                </div>
-                            ))}
-                        </div>
-
-
-                        <h4 className="font-medium text-gray-900 dark:text-white my-4">Other Participants</h4>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            {selectedEvent?.position?.slice(3).map((person, index) => (
-                                <div key={index} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-                                    {index + 4}. {person}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                        <button
-                            onClick={closeEventPopup}
-                            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const EventsList = () => {
-        const [visibleEvents, setVisibleEvents] = useState(3);
-        const [isLoading, setIsLoading] = useState(false);
-        
-        // Function to handle showing more events
-        const handleShowMore = () => {
-            setIsLoading(true);
-            
-            // Simulate loading with a slight delay for better UX
-            setTimeout(() => {
-                setVisibleEvents(prev => Math.min(prev + 3, user.events.length));
-                setIsLoading(false);
-            }, 300);
-        };
-    
-        // Get medal icon and color based on position
-        const getMedalInfo = (position) => {
-            if (position === 0) return { icon: <Award className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />, bg: "bg-yellow-100 dark:bg-yellow-900/30" };
-            if (position === 1) return { icon: <Award className="h-6 w-6 text-gray-600 dark:text-gray-400" />, bg: "bg-gray-100 dark:bg-gray-700/50" };
-            if (position === 2) return { icon: <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />, bg: "bg-amber-100 dark:bg-amber-900/30" };
-            return { icon: <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />, bg: "bg-blue-100 dark:bg-blue-900/30" };
-        };
-    
-        return (
-            <div className="space-y-2">
-                <div className="space-y-3">
-                    {user?.events?.slice(0, visibleEvents).map((event, index) => {
-                        const { icon, bg } = getMedalInfo(index);
-                        
-                        return (
-                            <div 
-                                onClick={() => handleEventClick(event)} 
-                                key={index} 
-                                className="cursor-pointer flex items-start space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 group transform transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-md"
-                                style={{
-                                    animation: `fadeSlideIn 0.5s ease-out ${index * 0.1}s both`
-                                }}
-                            >
-                                <div className={`flex-shrink-0 p-3 ${bg} rounded-full group-hover:scale-110 transition-transform`}>
-                                    {icon}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-lg font-medium text-gray-900 dark:text-white">
-                                        {event.title}
-                                    </p>
-                                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                                        1st {event.position[0]}
-                                    </p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {event.date}
-                                    </p>
-                                </div>
-                                <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-                
-                {visibleEvents < user?.events?.length && (
-                    <div className="py-4 flex justify-center">
-                        <button 
-                            onClick={handleShowMore}
-                            disabled={isLoading}
-                            className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium rounded-lg transition-colors group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                        >
-                            {isLoading ? (
-                                <LoadingSpinner/>
-                            ) : (
-                                <>
-                                    <span>Show More</span>
-                                    <ChevronDown className="h-5 w-5 group-hover:translate-y-1 transition-transform duration-300" />
-                                </>
-                            )}
-                        </button>
-                    </div>
-                )}
-                
-                {visibleEvents >= user?.events?.length && user?.events?.length > 3 && (
-                    <div className="py-3 text-center">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            No more events to show
-                        </p>
-                    </div>
-                )}
-    
-                <style jsx>{`
-                    @keyframes fadeSlideIn {
-                        from {
-                            opacity: 0;
-                            transform: translateY(20px);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateY(0);
-                        }
-                    }
-                `}</style>
-            </div>
-        );
-    };
-    
     return (
         <>
             <div className="w-full lg:w-2/3">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-6">
-                    {/* Tab Navigation */}
+                    {/* Tab Navigation - Remove Achievements, change Events to Journey */}
                     <div className="flex border-b border-gray-200 dark:border-gray-700">
-                        <button
-                            onClick={() => setActiveTab('achievements')}
-                            className={`flex-1 transition-all duration-500 py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'achievements'
-                                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            <div className="flex items-center justify-center">
-                                <Award className="h-5 w-5 mr-2" />
-                                Achievements
-                            </div>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('events')}
-                            className={`flex-1 transition-all duration-500 py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'events'
-                                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            <div className="flex items-center justify-center">
-                                <FileText className="h-5 w-5 mr-2" />
-                                Events
-                            </div>
-                        </button>
                         <button
                             onClick={() => setActiveTab('team')}
                             className={`flex-1 py-4 px-6 text-center border-b-2 font-medium transition-all duration-500 text-sm ${activeTab === 'team'
@@ -450,152 +357,171 @@ const RightComponent = ({user}) => {
                                 }`}
                         >
                             <div className="flex items-center justify-center">
-                                <Star className="h-5 w-5 mr-2" />
-                                Team
+                                <Users className="h-5 w-5 mr-2" />
+                                Teams
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('journey')}
+                            className={`flex-1 transition-all duration-500 py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'journey'
+                                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                }`}
+                        >
+                            <div className="flex items-center justify-center">
+                                <History className="h-5 w-5 mr-2" />
+                                Journey
                             </div>
                         </button>
                     </div>
 
                     {/* Tab Content */}
                     <div className="p-6">
-                        {activeTab === 'achievements' && (
-                            <div>
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Latest Achievements</h2>
-                                <div className="space-y-6">
-                                    <EventsList/>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'events' && (
-                            <div>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Events</h2>
-                                    <button onClick={HandleCreateEvents} className="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 dark:bg-transparent dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors">
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Create New Events
-                                    </button>
-                                </div>
-
-                                {/* Education Section */}
-                                <div className="mb-8">
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                        <GraduationCap className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                                        Education
-                                    </h3>
-
-                                    {user?.education?.map((edu, index) => (
-                                        <div key={index} className="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                            <h4 className="text-md font-medium text-gray-900 dark:text-white">{edu.degree}</h4>
-                                            <p className="text-blue-600 dark:text-blue-400">{edu.institution}</p>
-                                            <div className="flex justify-between mt-2">
-                                                <span className="text-sm text-gray-500 dark:text-gray-400">{edu.duration}</span>
-                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">GPA: {edu.gpa}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Experience Section */}
-                                <div>
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                        <Briefcase className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                                        Work Experience
-                                    </h3>
-
-                                    {user?.experience?.map((exp, index) => (
-                                        <div key={index} className="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                            <h4 className="text-md font-medium text-gray-900 dark:text-white">{exp.role}</h4>
-                                            <p className="text-blue-600 dark:text-blue-400">{exp.company}</p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{exp.duration}</p>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">{exp.description}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Upcoming Events Section */}
-                                {/* <div className="mt-8">
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                        <FileText className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                                        Upcoming Events
-                                    </h3>
-
-                                    {user?.upcomingEvents && user?.upcomingEvents?.map((event, index) => (
-                                        <div key={index} className="mb-4 p-4 border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
-                                            <h4 className="text-md font-medium text-gray-900 dark:text-white">{event.title}</h4>
-                                            <p className="text-blue-600 dark:text-blue-400">{event.organizer}</p>
-                                            <div className="flex justify-between mt-2">
-                                                <span className="text-sm text-gray-500 dark:text-gray-400">{event.date}</span>
-                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{event.location}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div> */}
-                            </div>
-                        )}
-
                         {activeTab === 'team' && (
                             <div>
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Team</h2>
-                                    <button className="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 dark:bg-transparent dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors">
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Download All
+                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Our Teams</h2>
+                                    <button
+                                        onClick={() => router.push(`/organization/${user.userid}/edit`)}
+                                        className="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 dark:bg-transparent dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
+                                    >
+                                        <UserPlus className="h-4 w-4 mr-2" />
+                                        Manage Teams
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {user?.teams?.map((team, index) => (
-                                        <div
-                                            key={index}
-                                            onClick={() => handleTeamClick(team)}
-                                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                                        >
-                                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
-                                                <h3 className="font-medium text-gray-900 dark:text-white truncate">{team.name}</h3>
-                                            </div>
-
-                                            <div className="p-4">
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-                                                    <span className="font-medium">Head:</span> {team.head}
-                                                </p>
-                                                <div className="flex items-center justify-between mt-4">
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Members: {team.members.length}</span>
-                                                    <button
-                                                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                                                    >
-                                                        View details <ChevronRight className="h-4 w-4 ml-1" />
-                                                    </button>
+                                {loading ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-md animate-pulse">
+                                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                                                    <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                                                </div>
+                                                <div className="p-4">
+                                                    <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-600 rounded mb-3"></div>
+                                                    <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                                                    <div className="flex items-center justify-between mt-4">
+                                                        <div className="h-3 w-1/4 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                                                        <div className="h-3 w-1/3 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ))}
+                                    </div>
+                                ) : teams.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {teams.map((team) => (
+                                            <div
+                                                key={team._id}
+                                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1"
+                                            >
+                                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                                                    <h3 className="font-medium text-gray-900 dark:text-white truncate flex items-center">
+                                                        <Users className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                                                        {team.teamName}
+                                                    </h3>
+                                                </div>
+
+                                                <div className="p-4">
+                                                    <Link href={`/user/${team.teamLeader.userid}`} className="flex items-center mb-3 hover:bg-white/10 p-2 rounded-md">
+                                                        <div className="flex-shrink-0">
+                                                            <Avatar className="h-9 w-9 border-2 border-primary/20">
+                                                                {team.teamLeader?.profile_path ? (
+                                                                    <AvatarImage src={`${process.env.NEXT_PUBLIC_API}${team.teamLeader.profile_path}`} alt={team.teamLeader.name} />
+                                                                ) : (
+                                                                    <AvatarFallback className="bg-primary/10 text-primary">
+                                                                        {team.teamLeader?.name?.charAt(0).toUpperCase() || 'T'}
+                                                                    </AvatarFallback>
+                                                                )}
+                                                            </Avatar>
+                                                        </div>
+                                                        <div className="ml-3">
+                                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                {team.teamLeader?.name || "Team Leader"}
+                                                            </p>
+                                                            <p className="text-xs text-blue-600 dark:text-blue-400">
+                                                                {team.teamLeader?.role || "Team Lead"}
+                                                            </p>
+                                                        </div>
+                                                    </Link>
+
+                                                    <div className="flex flex-wrap gap-1 mt-3 mb-4">
+                                                        {team.teamMembers?.slice(0, 3).map((member) => (
+                                                            <Badge
+                                                                key={member.id}
+                                                                variant="outline"
+
+                                                            >
+                                                                <Link className="flex items-center gap-1.5 px-2 py-1 hover:bg-white/10 border border-gray-600 hovre:bg-white/10 rounded-md" href={`/user/${member.userid}`}>
+                                                                    <Avatar className="h-4 w-4">
+                                                                        {member.profile_path ? (
+                                                                            <AvatarImage src={`${process.env.NEXT_PUBLIC_API}${member.profile_path}`} alt={member.name} />
+                                                                        ) : (
+                                                                            <AvatarFallback className="text-xs">
+                                                                                {member.name.charAt(0).toUpperCase()}
+                                                                            </AvatarFallback>
+                                                                        )}
+                                                                    </Avatar>
+                                                                    <span className="text-xs">{member.name}</span>
+                                                                </Link>
+                                                            </Badge>
+                                                        ))}
+
+                                                        {team.teamMembers?.length > 3 && (
+                                                            <Badge onClick={() => handleTeamClick(team)} variant="outline" className="px-2 py-1">
+                                                                <span className="text-xs">+{team.teamMembers.length - 3} more</span>
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between mt-2">
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Members: {team.teamMembers?.length || 0}
+                                                        </span>
+                                                        <button onClick={() => handleTeamClick(team)} className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                                            View details <ChevronRight className="h-4 w-4 ml-1" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-8 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
+                                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-4">
+                                            <UsersIcon className="h-6 w-6" />
                                         </div>
-                                    ))}
-                                </div>
+                                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Teams Yet</h3>
+                                        <p className="text-gray-500 dark:text-gray-400 mb-4">This organization hasn't created any teams yet.</p>
+                                        <button
+                                            onClick={() => router.push(`/organization/${user.userid}/manage-teams`)}
+                                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                                        >
+                                            <UserPlus className="h-4 w-4 mr-2" />
+                                            Create Team
+                                        </button>
+                                    </div>
+                                )}
                             </div>
+                        )}
+
+                        {activeTab === 'journey' && (
+                            <OrganizationJourney organizationId={user._id} />
                         )}
                     </div>
                 </div>
-                {/* <AddEvetns/> */}
-                {/* Activity Section */}
-                <EventComponent user={user}/>
-                <UserActivity user={user}/>
+
+                {/* Keep the event component and user activity */}
+                <EventComponent user={user} />
+                <UserActivity user={user} />
             </div>
 
-            {/* Render Popups */}
+            {/* Render Popups - keep them for now */}
             {showTeamPopup && <TeamMembersPopup />}
-            {showEventPopup && <EventPositionsPopup />}
         </>
     );
 };
 
-
-// const AddEvetns =()=>{
-//     return (
-//         <>
-//             <div className='bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-6 p-6'></div>
-//         </>
-//     )
-// }
 
 const UserActivity = ({ user }) => {
     // Month names for labeling
@@ -628,9 +554,9 @@ const UserActivity = ({ user }) => {
             textStyle: { color: "#6b7280", fontSize: 12, fontWeight: 500 },
             gridlines: { color: "rgba(107, 114, 128, 0.2)" }, // Subtle grid lines
         },
-        tooltip: { 
-            textStyle: { fontSize: 12, color: "#ffffff" }, 
-            showColorCode: true 
+        tooltip: {
+            textStyle: { fontSize: 12, color: "#ffffff" },
+            showColorCode: true
         },
     };
 
@@ -680,9 +606,17 @@ const UserActivity = ({ user }) => {
 };
 export default function ProfilePage() {
     const { organization } = useParams();
-    const [user, setUser] = useState("");
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isNavigating, setIsNavigating] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    // Single useEffect for handling navigation state
+    useEffect(() => {
+        setIsNavigating(false);
+    }, [pathname, searchParams]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -710,9 +644,9 @@ export default function ProfilePage() {
                     credentials: 'include', // Equivalent to withCredentials: true in axios
                     body: JSON.stringify({ userid: organization })
                 });
-                
+
                 const data = await response.json();
-                
+
                 setUser(data); // Axios auto-parses JSON
             } catch (error) {
                 console.error('Error fetching user data:', error);
@@ -737,6 +671,11 @@ export default function ProfilePage() {
     return (
         <>
             <Header />
+            {isNavigating && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <LoadingSpinner />
+                </div>
+            )}
             <div className="min-h-screen bg-background">
                 {/* Header with cover image */}
                 {user ? (
@@ -756,7 +695,11 @@ export default function ProfilePage() {
                                 <LeftComponent user={user} />
 
                                 {/* Right Column - Content Area */}
-                                <RightComponent user={user} />
+                                <RightComponent
+                                    user={user}
+                                    isNavigating={isNavigating}
+                                    setIsNavigating={setIsNavigating}
+                                />
                             </div>
                         </div>
                     </>
