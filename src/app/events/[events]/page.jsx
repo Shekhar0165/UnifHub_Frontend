@@ -21,21 +21,30 @@ const apiUrl = process.env.NEXT_PUBLIC_API;
 
 // This prevents this page from being pre-rendered statically
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const ShowParticipants = ({ eventid, currentUser, event }) => {
   const [participants, setParticipants] = useState({ teamName: "", participants: [] });
   const [loading, setLoading] = useState(true);
   const [isRemoving, setIsRemoving] = useState(false);
   const [removingUserId, setRemovingUserId] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure we only run client-side code after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!eventid || !currentUser || !currentUser._id) {
-        setLoading(false);
-        return;
-      }
+    // Only run after component is mounted on client
+    if (!isMounted) return;
+    if (!eventid || !currentUser || !currentUser._id) {
+      setLoading(false);
+      return;
+    }
 
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+    const fetchData = async () => {
+      const accessToken = localStorage.getItem("accessToken");
       if (!accessToken) {
         setLoading(false);
         return;
@@ -73,7 +82,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
     };
 
     fetchData();
-  }, [eventid, currentUser]);
+  }, [eventid, currentUser, isMounted]);
 
   // Check if current user is admin
   const isAdmin = currentUser && currentUser.role === "admin";
@@ -92,7 +101,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
       return alert(`Cannot remove member. Minimum ${event.minTeamMembers} members required.`);
     }
 
-    const accessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+    const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) return alert("You need to be logged in!");
 
     setIsRemoving(true);
@@ -129,7 +138,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const handleRemoveTeam = async () => {
     if (!eventid) return alert("Event ID is missing!");
 
-    const accessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+    const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) return alert("You need to be logged in!");
 
     if (!confirm("Are you sure you want to remove the entire team?")) return;
@@ -322,7 +331,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const authToken = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
         {
@@ -428,7 +437,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const authToken = localStorage.getItem('accessToken')
       const applicationData = {
         eventid: eventData?._id,
         teamName: teamName,
@@ -814,6 +823,12 @@ export default function EventDetailPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [visible, setVisible] = useState(true)
   const router = useRouter()
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Ensure we only run client-side code after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Toast notification handler for consistent notifications
   const showToast = (type, title, description = "") => {
@@ -825,9 +840,12 @@ export default function EventDetailPage() {
   }
 
   useEffect(() => {
+    // Only run after component is mounted on client
+    if (!isMounted) return;
+
     const fetchUserData = async () => {
       setIsLoading(true)
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const accessToken = localStorage.getItem('accessToken');
 
       if (!accessToken) {
         setIsLoading(false)
@@ -870,13 +888,16 @@ export default function EventDetailPage() {
     }
 
     fetchUserData()
-  }, [apiUrl, router])
+  }, [apiUrl, router, isMounted])
 
   useEffect(() => {
+    // Only run after component is mounted on client
+    if (!isMounted) return;
+
     const fetchEventData = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const accessToken = localStorage.getItem('accessToken');
 
         if (!accessToken) {
           setLoading(false)
@@ -914,13 +935,13 @@ export default function EventDetailPage() {
     }
 
     fetchEventData()
-  }, [router])
+  }, [router, isMounted])
 
   // Find the event from our events data
   const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim())
 
-  // Show loading state
-  if (loading) {
+  // Show loading state - this will be shown both during server rendering and client loading
+  if (!isMounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center">

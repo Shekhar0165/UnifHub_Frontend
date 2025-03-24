@@ -6,17 +6,30 @@ import Herosection from "./Components/HeroSection/Herosection";
 import Footer from "./Components/Footer/Footer";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
+// This prevents this page from being pre-rendered statically
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure we only run client-side code after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
+    // Only run after component is mounted on client
+    if (!isMounted) return;
+    
     // Check for token and redirect within useEffect (client-side only)
     const checkAuthAndRedirect = async () => {
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
-        const UserType = typeof window !== 'undefined' ? localStorage.getItem("UserType") : null;
-        const UserID = typeof window !== 'undefined' ? localStorage.getItem("UserId") : null;
+        const token = localStorage.getItem("accessToken");
+        const UserType = localStorage.getItem("UserType");
+        const UserID = localStorage.getItem("UserId");
         
         if (token && UserType === "individual") {
           await router.replace(`/events`);
@@ -38,9 +51,9 @@ export default function Home() {
     }, 5000);
     
     return () => clearTimeout(timeout);
-  }, [router]);
+  }, [router, isMounted]);
 
-  if (loading) {
+  if (!isMounted || loading) {
     return <LoadingSpinner text="Preparing your experience..." />;
   }
 

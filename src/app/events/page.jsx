@@ -5,7 +5,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, X,AlertCircle } from 'lucide-react';
+import { Search, Filter, X, AlertCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import FilterSidebar from '../Components/Events/FilterSidebar';
 import Header from '../Components/Header/Header';
@@ -16,6 +16,7 @@ import OrganizationsGrid from '../Components/Events/OrganizationsGrid';
 
 // This prevents this page from being pre-rendered statically
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const Page = () => {
   const router = useRouter();
@@ -25,6 +26,7 @@ const Page = () => {
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
   
   // Filter states
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -36,11 +38,19 @@ const Page = () => {
   const statuses = ["Open", "Closed", "Upcoming"];
   const tags = ["Engineering", "Business", "Arts", "Technology", "Research"];
 
+  // Ensure we only run client-side code after component mount
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only run this effect on the client side after component is mounted
+    if (!isMounted) return;
+
     const fetchEvents = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const accessToken = localStorage.getItem('accessToken');
 
         if (!accessToken) {
           setLoading(false);
@@ -62,7 +72,7 @@ const Page = () => {
         } else {
           console.error('Failed to fetch events data');
           // Handle authentication error (e.g., token expired)
-          if (response.status === 401 && typeof window !== 'undefined') {
+          if (response.status === 401) {
             // Clear tokens and redirect to login
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');
@@ -78,13 +88,16 @@ const Page = () => {
     };
 
     fetchEvents();
-  }, [router]);
+  }, [router, isMounted]);
 
   useEffect(() => {
+    // Only run this effect on the client side after component is mounted
+    if (!isMounted) return;
+    
     const fetchOrganizations = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const accessToken = localStorage.getItem('accessToken');
 
         if (!accessToken) {
           setLoading(false);
@@ -106,7 +119,7 @@ const Page = () => {
         } else {
           console.error('Failed to fetch organization data');
           // Handle authentication error (e.g., token expired)
-          if (response.status === 401 && typeof window !== 'undefined') {
+          if (response.status === 401) {
             // Clear tokens and redirect to login
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');
@@ -120,41 +133,19 @@ const Page = () => {
     };
 
     fetchOrganizations();
-  }, [router]);
+  }, [router, isMounted]);
 
-  // Handle category filter toggle
-  const toggleCategory = (category) => {
-    setSelectedCategories(prev => 
-      prev.includes(category)
-        ? prev.filter(item => item !== category)
-        : [...prev, category]
+  // Only render content after component has mounted on the client
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner text="Loading events..." />
+      </div>
     );
-  };
+  }
 
-  // Handle status filter toggle
-  const toggleStatus = (status) => {
-    setSelectedStatuses(prev => 
-      prev.includes(status)
-        ? prev.filter(item => item !== status)
-        : [...prev, status]
-    );
-  };
-
-  // Handle tag filter toggle
-  const toggleTag = (tag) => {
-    setSelectedTags(prev => 
-      prev.includes(tag)
-        ? prev.filter(item => item !== tag)
-        : [...prev, tag]
-    );
-  };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSelectedCategories([]);
-    setSelectedStatuses([]);
-    setSelectedTags([]);
-  };
+  // The rest of the component logic
+  // ... existing code ...
 
   // Apply filters to events
   const filteredEvents = events?.filter(event => {
@@ -192,6 +183,40 @@ const Page = () => {
     
     return matchesSearch && matchesCategory && matchesTags;
   });
+
+  // Handle category filter toggle
+  const toggleCategory = (category) => {
+    setSelectedCategories(prev => 
+      prev.includes(category)
+        ? prev.filter(item => item !== category)
+        : [...prev, category]
+    );
+  };
+
+  // Handle status filter toggle
+  const toggleStatus = (status) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status)
+        ? prev.filter(item => item !== status)
+        : [...prev, status]
+    );
+  };
+
+  // Handle tag filter toggle
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => 
+      prev.includes(tag)
+        ? prev.filter(item => item !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedStatuses([]);
+    setSelectedTags([]);
+  };
 
   // Calculate active filter count
   const activeFilterCount = selectedCategories.length + selectedStatuses.length + selectedTags.length;
