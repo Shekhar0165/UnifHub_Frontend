@@ -19,9 +19,9 @@ const OrganizationJourney = ({ organizationId }) => {
       try {
         setLoading(true);
         const response = await axios.get(`${api}/journey/${organizationId}`);
-        console.log(response);
+        console.log(response.data.data)
         // Extract the first item from the array
-        setJourneyData(response.data[0]);
+        setJourneyData(response.data.data);
         setLoading(false);
       } catch (err) {
         setError(err.message || 'Failed to fetch journey data');
@@ -33,6 +33,7 @@ const OrganizationJourney = ({ organizationId }) => {
       fetchJourneyData();
     }
   }, [organizationId]);
+  console.log(journeyData)
 
   // Function to get the icon component based on achievement type
   const getIconComponent = (achievementType, className = "h-3 w-3 text-white") => {
@@ -50,9 +51,9 @@ const OrganizationJourney = ({ organizationId }) => {
     }
   };
 
-  if (loading) return <div>Loading journey data...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!journeyData) return <div>No journey data available</div>;
+  if (loading) return <div className="text-muted-foreground">Loading journey data...</div>;
+  if (error) return <div className="text-red-600 dark:text-red-400">Error: {error}</div>;
+  if (!journeyData) return <div className="text-muted-foreground">No journey data available</div>;
 
   // Create timeline items from Journey array
   const timelineItems = journeyData.Journey.map(item => ({
@@ -95,7 +96,7 @@ const OrganizationJourney = ({ organizationId }) => {
   return (
     <div className="flex flex-col h-full">
     <div className="flex justify-between items-center mb-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Organization Journey</h2>
+      <h2 className="text-xl font-semibold text-foreground">Organization Journey</h2>
       <Badge variant="outline" className="text-blue-600 dark:text-blue-400 px-3 py-1.5">
         <Clock className="h-3.5 w-3.5 mr-1.5" />
         Timeline View
@@ -108,23 +109,23 @@ const OrganizationJourney = ({ organizationId }) => {
         {timelineItems.length > 0 ? (
           timelineItems.map((item, index) => (
             <div className="relative" key={index}>
-              <div className={`absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-2 border-white dark:border-gray-800 ${item.bgColor} shadow flex items-center justify-center`}>
+              <div className={`absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-2 border-background ${item.bgColor} shadow flex items-center justify-center`}>
                 {item.icon === 'Building' ? (
                   <Building className="h-3 w-3 text-white" />
                 ) : (
                   getIconComponent(item.achievementType)
                 )}
               </div>
-              <div className={`${item.cardBg} rounded-lg p-5 hover:shadow-md transition-shadow`}>
+              <div className={`${item.cardBg} bg-blue-50/40 dark:bg-blue-900/20 rounded-lg p-5 hover:shadow-md hover:bg-blue-50/60 dark:hover:bg-blue-900/30 transition-all duration-200`}>
                 <Badge variant="outline" className={`${item.badgeColor} mb-2`}>
                   {item.date}
                 </Badge>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{item.title}</h3>
-                <p className="text-gray-700 dark:text-gray-300 mt-2">
+                <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
+                <p className="text-foreground mt-2">
                   {item.description}
                 </p>
                 {item.subtext && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                  <p className="text-sm text-muted-foreground mt-4">
                     {item.subtext}
                   </p>
                 )}
@@ -144,14 +145,14 @@ const OrganizationJourney = ({ organizationId }) => {
           ))
         ) : (
           <div className="relative">
-            <div className="absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-300 dark:bg-gray-600 shadow flex items-center justify-center">
+            <div className="absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-2 border-background bg-gray-300 dark:bg-gray-600 shadow flex items-center justify-center">
               <Calendar className="h-3 w-3 text-gray-600 dark:text-gray-300" />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+            <div className="bg-secondary/20 rounded-lg p-6 border border-border/30">
               <div className="flex flex-col items-center text-center">
-                <CalendarX className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" />
-                <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400">No Journey Data Yet</h3>
-                <p className="text-gray-500 dark:text-gray-400 mt-2 mb-4 max-w-md">
+                <CalendarX className="h-12 w-12 text-muted-foreground mb-3" />
+                <h3 className="text-lg font-medium text-muted-foreground">No Journey Data Yet</h3>
+                <p className="text-muted-foreground mt-2 mb-4 max-w-md">
                   This organization hasn't started its journey yet. Create events and achieve milestones to build your journey.
                 </p>
                 <Button variant="outline" className="gap-2">

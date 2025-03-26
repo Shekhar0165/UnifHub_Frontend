@@ -115,19 +115,19 @@ const EventsList = ({ user }) => {
         </div>
       ) : eventsList.length === 0 ? (
         <div className="text-center py-12">
-          <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">No events found</p>
+          <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">No events found</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {eventsList.slice(0, visibleEvents).map((event, index) => {
+          {eventsList?.slice(0, visibleEvents).map((event, index) => {
             const { icon, bg } = getMedalInfo(event.position);
 
             return (
               <div
                 onClick={() => handleEventClick(event)}
                 key={event._id || index}
-                className="cursor-pointer flex items-start space-x-4 p-5 rounded-lg bg-white dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/10 group transform transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg border border-gray-200 dark:border-gray-700"
+                className="cursor-pointer flex items-start space-x-4 p-5 rounded-lg bg-background hover:bg-secondary/20 group transform transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg border border-border"
                 style={{
                   animation: `fadeSlideIn 0.5s ease-out ${index * 0.1}s both`
                 }}
@@ -136,17 +136,17 @@ const EventsList = ({ user }) => {
                   {icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <p className="text-lg font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {event.title}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {event.position && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                         Position: {event.position}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-sm text-muted-foreground mt-2">
                     {formatDate(event.event_date)}
                   </p>
                 </div>
@@ -154,7 +154,7 @@ const EventsList = ({ user }) => {
                   <button
                     onClick={(e) => handleDownloadCertificate(event, e)}
                     disabled={downloadingId === event._id}
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900"
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 bg-background hover:bg-blue-50/30 dark:bg-secondary/50 dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors border border-border focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900"
                   >
                     {downloadingId === event._id ? (
                       <span className="animate-spin h-4 w-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent dark:border-t-transparent rounded-full mr-2"></span>
@@ -191,7 +191,7 @@ const EventsList = ({ user }) => {
 
       {visibleEvents >= eventsList.length && eventsList.length > 3 && (
         <div className="py-4 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             You've reached the end of your achievements list
           </p>
         </div>

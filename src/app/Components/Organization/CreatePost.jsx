@@ -189,8 +189,8 @@ const EventComponent = ({ user }) => {
                 {loading ? (
                     <LoadingSpinner />
                 ) : events.length === 0 ? (
-                    <Card className="mb-4 p-6 text-center">
-                        <p className="text-gray-500 mb-4">You haven't created any events yet.</p>
+                    <Card className="mb-4 p-6 text-center border border-border/40 bg-background">
+                        <p className="text-muted-foreground mb-4">You haven't created any events yet.</p>
                         {userType === 'Organization' && (
                             <Button onClick={navigateToCreateEvent} className="mx-auto">
                                 Create Your First Event
@@ -201,10 +201,10 @@ const EventComponent = ({ user }) => {
                     <>
                         <div className="grid gap-6">
                             {visibleEvents.map((event) => (
-                                <Card key={event._id} className="overflow-hidden dark:bg-gray-800">
-                                    <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-700">
+                                <Card key={event._id} className="overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-md transition-all">
+                                    <CardHeader className="pb-3 border-b border-border">
                                         <div className="flex justify-between items-start">
-                                            <CardTitle className="text-xl font-medium">{event.eventName}</CardTitle>
+                                            <CardTitle className="text-xl font-medium text-foreground">{event.eventName}</CardTitle>
                                             {userType === 'Organization' && (
                                                 <Button
                                                     variant="ghost"
@@ -219,33 +219,33 @@ const EventComponent = ({ user }) => {
 
                                     <CardContent className="py-4 space-y-4">
                                         <div>
-                                            <p className="line-clamp-2 text-gray-700 dark:text-gray-300">{event.description}</p>
+                                            <p className="line-clamp-2 text-foreground">{event.description}</p>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             {event.eventDate && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Calendar size={16} />
                                                     <span>{formatEventDate(event.eventDate)}</span>
                                                 </div>
                                             )}
 
                                             {event.location && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <MapPin size={16} />
                                                     <span className="truncate">{event.location}</span>
                                                 </div>
                                             )}
 
                                             {event.duration && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Clock size={16} />
                                                     <span>{event.duration}</span>
                                                 </div>
                                             )}
 
                                             {event.attendees && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Users size={16} />
                                                     <span>{event.attendees} Attendees</span>
                                                 </div>
@@ -262,11 +262,11 @@ const EventComponent = ({ user }) => {
 
                                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                             <div>
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Users size={16} />
                                                     <span>{event?.totalparticipants} Participants</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Users size={16} />
                                                     <span>{event?.totalteams} Teams</span>
                                                 </div>
@@ -277,7 +277,7 @@ const EventComponent = ({ user }) => {
                                                     onClick={() => handleEventClick(event)}
                                                     size="sm"
                                                     variant="outline"
-                                                    className="flex items-center gap-1 w-full sm:w-auto dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/10 dark:hover:text-blue-300"
+                                                    className="flex items-center gap-1 w-full sm:w-auto bg-blue-50/20 hover:bg-blue-50/40 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 border border-border"
                                                 >
                                                     <Trophy size={16} className="text-amber-500" />
                                                     Show Positions
@@ -297,13 +297,13 @@ const EventComponent = ({ user }) => {
                                         </div>
                                     </CardContent>
 
-                                    <CardFooter className="pt-3 pb-4 flex flex-col sm:flex-row justify-between border-t border-gray-100 dark:border-gray-700 gap-4">
+                                    <CardFooter className="pt-3 pb-4 flex flex-col sm:flex-row justify-between border-t border-border gap-4">
                                         <div className="flex items-center">
                                             <Avatar className="h-6 w-6 mr-2">
                                                 <AvatarImage src={user?.profileImage} />
                                                 <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
                                             </Avatar>
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                                            <span className="text-sm text-muted-foreground">
                                                 Organized by <span className="font-medium">{user?.name || "you"}</span>
                                             </span>
                                         </div>
@@ -313,7 +313,7 @@ const EventComponent = ({ user }) => {
                                                     onClick={() => openDeleteConfirmation(event)}
                                                     size="sm"
                                                     variant="outline"
-                                                    className="border-red-300 dark:border-none text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                    className="border-red-300 dark:border-red-800/40 text-red-600 dark:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-900/20 hover:text-red-700"
                                                 >
                                                     <Trash2 size={14} className="mr-1" />
                                                     Delete
@@ -323,7 +323,7 @@ const EventComponent = ({ user }) => {
                                                 onClick={() => router.push(`/events/${event.eventName}`)}
                                                 variant="outline"
                                                 size="sm"
-                                                className="ml-auto sm:ml-0"
+                                                className="ml-auto sm:ml-0 border border-border hover:bg-secondary/20"
                                             >
                                                 View Details
                                             </Button>
@@ -335,7 +335,7 @@ const EventComponent = ({ user }) => {
 
                         {visibleEvents.length < events.length && (
                             <div className="mt-6 mb-2 text-center">
-                                <Button variant="outline" onClick={loadMoreEvents} className="mx-auto">
+                                <Button variant="outline" onClick={loadMoreEvents} className="mx-auto border border-border hover:bg-secondary/20">
                                     Show More Events
                                 </Button>
                             </div>

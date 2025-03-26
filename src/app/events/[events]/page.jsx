@@ -29,6 +29,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const [removingUserId, setRemovingUserId] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
 
   // Ensure we only run client-side code after mount
   useEffect(() => {
@@ -92,6 +93,59 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
     ? participants.participants.length 
     : 0;
 
+  // Check if team has room for more members
+  const hasRoomForMoreMembers = event?.maxTeamMembers > currentParticipantsCount;
+
+  // Handler for opening add member dialog
+  const handleAddMember = () => {
+    setShowAddMember(true);
+  };
+
+  const handleCloseAddMember = () => {
+    setShowAddMember(false);
+  };
+
+  // Refresh participants data
+  const refreshParticipants = async () => {
+    setLoading(true);
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const data = {
+        eventid: eventid,
+        userid: currentUser._id,
+      };
+      const response = await axios.post(
+        `${apiUrl}/participants/user`,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (response.data && response.data.newParticipants) {
+        setParticipants({
+          teamName: response.data.newParticipants.teamName || "",
+          participants: Array.isArray(response.data.newParticipants.participants)
+            ? response.data.newParticipants.participants
+            : []
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching participants:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle removing a team member
   const handleRemoveMember = async (userId) => {
     if (!userId) return;
     if (!eventid) return alert("Event ID is missing!");
@@ -293,8 +347,346 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
           )}
         </div>
 
+        {/* Add "Add Member" button if there's room for more team members */}
+        {hasRoomForMoreMembers && event?.status === "upcoming" && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-4 border-primary text-primary hover:bg-primary/10"
+            onClick={handleAddMember}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Member
+          </Button>
+        )}
         
+        {/* Add Member Dialog */}
+        {showAddMember && (
+          <AddTeamMember 
+            showDialog={showAddMember}
+            closeDialog={handleCloseAddMember}
+            eventData={event}
+            teamName={participants.teamName}
+            currentParticipants={participants.participants}
+            refreshParticipants={refreshParticipants}
+            showToast={(type, title, description) => toast({
+              variant: type === "success" ? "default" : "destructive",
+              title,
+              description
+            })}
+          />
+        )}
       </Card>
+    </div>
+  );
+};
+
+// New component for adding team members
+const AddTeamMember = ({ 
+  showDialog, 
+  closeDialog, 
+  eventData, 
+  teamName, 
+  currentParticipants,
+  refreshParticipants,
+  showToast 
+}) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState([]);
+
+  // Search for members
+  const searchMembers = async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    setIsLoading(true);
+
+    try {
+      const authToken = localStorage.getItem('accessToken')
+      const response = await axios.get(
+        `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      const data = response.data;
+
+      if (data.success) {
+        const results = data.members || [];
+        // Filter out members who are already part of the team
+        const filteredResults = results.filter(member => 
+          !currentParticipants.some(p => p.userid === member._id)
+        );
+        setSearchResults(filteredResults);
+      } else {
+        showToast("error", "Search Error", data.message || "Failed to search members");
+      }
+    } catch (error) {
+      showToast("error", "Search Error", error.message || "Error searching members");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle member selection
+  const handleSelectMember = (member) => {
+    if (!selectedMembers.some(m => m._id === member._id)) {
+      setSelectedMembers([...selectedMembers, member]);
+    }
+  };
+
+  // Handle member removal
+  const handleRemoveMember = (memberId) => {
+    setSelectedMembers(selectedMembers.filter(member => member._id !== memberId));
+  };
+
+  // Handle input change and search
+  const handleSearchInputChange = (e) => {
+    setSearchQuery(e.target.value);
+    if (e.target.value.trim()) {
+      searchMembers();
+    }
+  };
+
+  // Submit selected members
+  const handleSubmit = async () => {
+    if (selectedMembers.length === 0) {
+      showToast("error", "No members selected", "Please select at least one member to add");
+      return;
+    }
+
+    // Check if adding these members would exceed the maximum team size
+    if (currentParticipants.length + selectedMembers.length > eventData.maxTeamMembers) {
+      showToast("error", "Team size limit exceeded", `Maximum team size is ${eventData.maxTeamMembers}`);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const authToken = localStorage.getItem('accessToken');
+      const memberIds = selectedMembers.map(member => member._id);
+      
+      const response = await axios.post(
+        `${apiUrl}/participants/update-team`,
+        {
+          eventid: eventData._id,
+          teamName: teamName,
+          participant_ids: memberIds
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json"
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        showToast("success", "Team updated", "Team members added successfully!");
+        refreshParticipants(); // Refresh the participants list
+        closeDialog();
+      } else {
+        showToast("error", "Update Error", response.data.message || "Failed to update team");
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
+      showToast("error", "Update Error", errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!showDialog) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-background p-6 rounded-xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto border border-primary/20 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Add Team Members
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={closeDialog}
+            className="rounded-full hover:bg-primary/10"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search members by userid"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                className="pl-10 pr-10"
+              />
+            </div>
+          </div>
+
+          {isSearching && (
+            <div className="max-h-64 overflow-y-auto border rounded-lg bg-background shadow-sm">
+              {isLoading && (
+                <div className="p-6 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground mt-2">Searching members...</p>
+                </div>
+              )}
+
+              {!isLoading && searchResults && searchResults.length > 0 ? (
+                <div className="divide-y">
+                  {searchResults.map((member) => (
+                    <div
+                      key={member._id}
+                      className="flex justify-between items-center p-3 hover:bg-primary/5 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
+                          {member.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs text-muted-foreground">{member.userid}</div>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant={selectedMembers.some(m => m._id === member._id) ? "outline" : "default"}
+                        onClick={() => handleSelectMember(member)}
+                        disabled={selectedMembers.some(m => m._id === member._id)}
+                        className={selectedMembers.some(m => m._id === member._id) ? "opacity-70" : ""}
+                      >
+                        {selectedMembers.some(m => m._id === member._id) ? (
+                          <>
+                            <Check className="mr-1 w-3 h-3" />
+                            Added
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="mr-1 w-3 h-3" />
+                            Add
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                !isLoading && (
+                  <div className="p-6 text-center text-muted-foreground">
+                    {searchQuery.trim() ? (
+                      <>
+                        <UserX className="h-8 w-8 mx-auto mb-2 text-muted-foreground/70" />
+                        <p>No members found matching "{searchQuery}"</p>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/70" />
+                        <p>Enter a name or email to search</p>
+                      </>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Selected Members ({selectedMembers.length})
+              </div>
+
+              <div className="text-xs px-2 py-1 rounded bg-primary/10 text-primary/80">
+                Team Size: {currentParticipants.length}/{eventData.maxTeamMembers}
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {selectedMembers.length > 0 ? (
+                selectedMembers.map(member => (
+                  <div key={member._id} className="flex justify-between items-center p-2.5 border rounded-lg hover:bg-primary/5 transition-colors">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2 shadow-sm">
+                        {member.name?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <div className="font-medium">{member.name}</div>
+                        <div className="text-xs text-muted-foreground">{member.userid}</div>
+                      </div>
+                    </div>
+
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleRemoveMember(member._id)}
+                      className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground bg-primary/5 rounded-lg border border-dashed border-primary/20">
+                  <UserPlus className="h-8 w-8 mb-2 text-primary/40" />
+                  <p className="text-sm">No members selected yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Team status info */}
+          {currentParticipants.length + selectedMembers.length > eventData.maxTeamMembers && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-500 py-1.5 px-3 bg-amber-500/10 rounded-lg">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Selected members exceed maximum team size of {eventData.maxTeamMembers}
+            </div>
+          )}
+
+          <div className="flex justify-between gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={closeDialog}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                isLoading ||
+                selectedMembers.length === 0 ||
+                currentParticipants.length + selectedMembers.length > eventData.maxTeamMembers
+              }
+              className="flex-1"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add to Team
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -822,6 +1214,7 @@ export default function EventDetailPage() {
   const [currentUser, setCurrentUser] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [visible, setVisible] = useState(true)
+  const [isParticipating, setIsParticipating] = useState(false)
   const router = useRouter()
   const [isMounted, setIsMounted] = useState(false)
 
@@ -838,6 +1231,47 @@ export default function EventDetailPage() {
       description
     })
   }
+
+  // Check if the user is already participating in the event
+  useEffect(() => {
+    // Only run after component is mounted on client
+    if (!isMounted || !currentUser || !events.length) return;
+
+    const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim());
+    if (!eventData || !eventData._id) return;
+
+    const checkParticipation = async () => {
+      const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) return;
+
+      try {
+        const data = {
+          eventid: eventData._id,
+          userid: currentUser._id,
+        };
+        const response = await axios.post(
+          `${apiUrl}/participants/user`,
+          data,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (response.data && response.data.newParticipants) {
+          const participants = response.data.newParticipants.participants || [];
+          // If the participants array is not empty, the user is participating
+          setIsParticipating(Array.isArray(participants) && participants.length > 0);
+        }
+      } catch (error) {
+        console.error("Error checking participation:", error);
+      }
+    };
+
+    checkParticipation();
+  }, [events, currentUser, params.events, isMounted]);
 
   useEffect(() => {
     // Only run after component is mounted on client
@@ -999,6 +1433,23 @@ export default function EventDetailPage() {
   }
 
   const UserType = getUserType()
+
+  // Return button label based on participation status
+  const getApplyButtonLabel = () => {
+    if (isParticipating) {
+      return "Already Registered";
+    }
+    
+    if (eventData?.status === "upcoming") {
+      return "Apply Now";
+    } else if (eventData?.status === "ongoing") {
+      return "Event In Progress";
+    } else if (eventData?.status === "completed") {
+      return "Event Completed";
+    } else {
+      return "Event Cancelled";
+    }
+  };
 
   return (
     <>
@@ -1169,18 +1620,22 @@ export default function EventDetailPage() {
                           className="w-full rounded-full"
                           size="lg"
                           onClick={HandleOpenApply}
-                          disabled={eventData?.status === "completed" || eventData?.status === "cancelled" || UserType === "Organization"}
+                          disabled={
+                            eventData?.status === "completed" || 
+                            eventData?.status === "cancelled" || 
+                            UserType === "Organization" ||
+                            isParticipating
+                          }
                         >
-                          {eventData?.status === "upcoming"
-                            ? "Apply Now"
-                            : eventData?.status === "ongoing"
-                              ? "Event In Progress"
-                              : eventData?.status === "completed"
-                                ? "Event Completed"
-                                : "Event Cancelled"}
+                          {getApplyButtonLabel()}
                         </Button>
                         <p className="text-sm text-center text-muted-foreground mt-2">
-                          {eventData?.status === "upcoming" ? (
+                          {isParticipating ? (
+                            <span className="flex items-center justify-center gap-1">
+                              <CheckCircle className="h-3 w-3 fill-green-500 text-green-500" />
+                              You are registered for this event
+                            </span>
+                          ) : eventData?.status === "upcoming" ? (
                             <span className="flex items-center justify-center gap-1">
                               <Circle className="h-2 w-2 fill-green-500 text-green-500" />
                               Registration is open
