@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, MapPin, Clock, Users, Edit, Plus, Trophy, Trash2, X, User as UserIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Edit, Plus, Trophy, Trash2, X, User as UserIcon, ChevronDown, ChevronUp, HelpCircle, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import axios from "axios";
@@ -23,6 +23,12 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Toaster } from '@/components/ui/toaster'
 import EventResultPopup from "./EventResultPopup";
 import EventPositionsPopup from "./EventPositionsPopup";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import AddTeamMemberPopup from "./AddTeamMembers";
+import ViewTeamPopup from "./ViewTeamPopup";
+
 
 const EventComponent = ({ user }) => {
     const [events, setEvents] = useState([]);
@@ -36,6 +42,10 @@ const EventComponent = ({ user }) => {
     const [selectedResult, setSelectedResult] = useState(null);
     const [showEventResult, setShowEventResult] = useState(false);
     const [userType, setUserType] = useState('');
+    const [selectedAddTeamMember, setSelectedAddTeamMember] = useState(null);
+    const [showAddTeamMemberPopup, setShowAddTeamMemberPopup] = useState(false);
+    const [selectedViewTeam, setSelectedViewTeam] = useState(null);
+    const [showViewTeamPopup, setShowViewTeamPopup] = useState(false);
     const eventsPerPage = 3;
     const router = useRouter();
     const { toast } = useToast();
@@ -75,6 +85,9 @@ const EventComponent = ({ user }) => {
             fetchEvents();
         }
     }, [user, toast]);
+
+
+   
 
 
     const formatEventDate = (dateString) => {
@@ -117,6 +130,26 @@ const EventComponent = ({ user }) => {
     const handleEventClick = (event) => {
         setSelectedEvent(event);
         setShowEventPopup(true);
+    };
+
+    const handleAddTeamMemberClick = (event) => {
+        setSelectedAddTeamMember(event);
+        setShowAddTeamMemberPopup(true);
+    };
+
+    const handleViewTeamClick = (event) => {
+        setSelectedViewTeam(event);
+        setShowViewTeamPopup(true);
+    };
+
+    const handleSecondButtonClick = (event) => {
+        if(event?.isteamadded){
+            handleViewTeamClick(event)
+        }else{
+            handleAddTeamMemberClick(event)
+        }
+        FetchEventTeamsMembers(event._id)
+        window.location.reload()
     };
 
     const closeResultPopup = () => {
@@ -283,6 +316,29 @@ const EventComponent = ({ user }) => {
                                                     Show Positions
                                                 </Button>
 
+                                                 {userType === 'Organization' && (<Button
+                                                    onClick={() => handleSecondButtonClick(event)}
+                                                    size="sm"
+                                                    variant="default"
+                                                    className="flex items-center gap-1 w-full sm:w-auto"
+                                                    disabled={userType !== 'Organization'}
+                                                >
+                                                   {event?.isteamadded ? <Eye size={16} /> : <Plus size={16} /> }
+                                                    {event?.isteamadded ? "View Team" : "Add Team Member"}
+                                                </Button> )}
+
+                                                 {<Button
+                                                    onClick={() => handleSecondButtonClick(event)}
+                                                    size="sm"
+                                                    variant="default"
+                                                    className={`flex items-center gap-1 w-full sm:w-auto ${event?.isteamadded ? '' : 'hidden'} ${userType === 'Organization' ? 'hidden' : ''}`}
+                                                >
+                                                   {event?.isteamadded ? <Eye size={16} /> : ''}
+                                                    {event?.isteamadded ? "View Team" : ""}
+                                                </Button> }
+
+
+
                                                 {userType === 'Organization' && (
                                                     <Button
                                                         onClick={() => handleResultClick(event)}
@@ -369,6 +425,13 @@ const EventComponent = ({ user }) => {
                 isOpen={showEventPopup} // Add this prop
             />}
             {showEventResult && <EventResultPopup selectedResult={selectedResult} closeResultPopup={closeResultPopup} />}
+            {showAddTeamMemberPopup && <AddTeamMemberPopup
+                selectedAddTeamMember={selectedAddTeamMember}
+                closeAddTeamMemberPopup={() => setShowAddTeamMemberPopup(false)}
+                isOpen={showAddTeamMemberPopup} // Add this prop
+                organizationId={user?._id}
+            />}
+            {showViewTeamPopup && <ViewTeamPopup selectedViewTeam={selectedViewTeam} closeViewTeamPopup={() => setShowViewTeamPopup(false)} isOpen={showViewTeamPopup} user={user} />}
 
         </>
     );

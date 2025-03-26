@@ -452,7 +452,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
                                                                 variant="outline"
 
                                                             >
-                                                                <Link className="flex items-center gap-1.5 px-2 py-1 hover:bg-secondary/20 border border-border hover:bg-secondary/20 rounded-md" href={`/user/${member.userid}`}>
+                                                                <Link className="flex items-center gap-1.5 px-2 py-1 hover:bg-secondary/20 border border-border  rounded-md" href={`/user/${member.userid}`}>
                                                                     <Avatar className="h-4 w-4">
                                                                         {member.profile_path ? (
                                                                             <AvatarImage src={`${process.env.NEXT_PUBLIC_API}${member.profile_path}`} alt={member.name} />
