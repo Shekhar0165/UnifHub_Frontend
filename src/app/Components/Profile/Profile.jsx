@@ -107,6 +107,10 @@ const Profile = () => {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('UserType');
         localStorage.removeItem('UserId');
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+        Cookies.remove('UserType');
+        Cookies.remove('UserId');
 
         // Show success toast if available
         if (typeof toast === 'function') {
