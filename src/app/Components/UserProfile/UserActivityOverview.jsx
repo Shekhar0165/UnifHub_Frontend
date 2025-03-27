@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Activity, 
-  ChevronRight, 
-  User, 
-  Award, 
-  Calendar, 
-  TrendingUp, 
-  Star,
-  Clock,
+  Trophy as TrophyIcon, 
+  FileText as FileIcon, 
+  BarChart2 as ChartBarIcon,
+  Calendar as CalendarIcon,
+  Sparkles as SparklesIcon,
   BarChart
 } from 'lucide-react';
 import axios from 'axios';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const UserActivityOverview = ({ user }) => {
   const [userData, setUserData] = useState(null);
@@ -33,7 +30,6 @@ const UserActivityOverview = ({ user }) => {
           }
         });
         
-        console.log('Full User Data:', response.data);
         setUserData(response.data.data);
         setLoading(false);
       } catch (err) {
@@ -47,124 +43,209 @@ const UserActivityOverview = ({ user }) => {
     }
   }, [userid, api]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!userData) return <div>No user activity data available</div>;
+  if (loading) return <div className="text-center py-4">Loading...</div>;
+  if (error) return <div className="text-center text-destructive py-4">Error: {error}</div>;
+  if (!userData) return <div className="text-center py-4">No user activity data available</div>;
 
   const { 
-    user: userDetails,
     totalScore = 0,
     streak = { currentStreak: 0, longestStreak: 0, lastActivityDate: null },
     contributionData = [],
-    weeklyScores = [],
-    monthlyScores = [],
     eventOrganization = [],
-    eventParticipation = [],
-    organizationMembership = []
+    weeklyScores = [],
   } = userData;
 
-  // Process the weekly contribution data
-  const weeklyContributions = contributionData.length > 0 
-    ? contributionData[contributionData.length - 1] 
-    : new Array(7).fill(0);
+  // Contribution Data Processing
+  const processContributionData = () => {
+    const flatData = contributionData.flat();
+    const totalContributions = flatData.reduce((a, b) => a + b, 0);
+    
+    // Create a more engaging visualization
+    const contributionLevels = [
+      { label: 'Beginner', threshold: 5, color: 'bg-accent text-accent-foreground' },
+      { label: 'Active', threshold: 15, color: 'bg-primary/20 text-primary' },
+      { label: 'Enthusiast', threshold: 30, color: 'bg-primary/40 text-primary' },
+      { label: 'Pro', threshold: 50, color: 'bg-primary/70 text-primary-foreground' },
+      { label: 'Legend', threshold: Infinity, color: 'bg-primary text-primary-foreground' }
+    ];
 
-  // Days of the week for labeling
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const currentLevel = contributionLevels.find(level => 
+      totalContributions <= level.threshold
+    );
 
-  // Calculate total events and memberships
-  const totalEvents = eventOrganization.length + eventParticipation.length;
-  const totalMemberships = organizationMembership.length;
+    return {
+      total: totalContributions,
+      level: currentLevel
+    };
+  };
+
+  const contributionAnalysis = processContributionData();
+
+  // Event Organization Analysis
+  const getEventImpact = () => {
+    const totalEventsOrganized = eventOrganization.length;
+    const totalParticipants = eventOrganization.reduce((sum, event) => 
+      sum + (event.participantCount || 0), 0);
+
+    return {
+      eventsOrganized: totalEventsOrganized,
+      totalParticipants
+    };
+  };
+
+  const eventImpact = getEventImpact();
 
   return (
-    <div className="bg-background rounded-xl shadow-lg overflow-hidden mb-6 border border-border/40">
-      <div className="p-6">
-        {/* Activity Metrics Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg flex items-center">
-            <TrendingUp className="mr-2 text-blue-600 dark:text-blue-400" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Score</p>
-              <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                {totalScore}
-              </p>
-            </div>
-          </div>
-          <div className="p-3 bg-green-50/50 dark:bg-green-900/20 rounded-lg flex items-center">
-            <Award className="mr-2 text-green-600 dark:text-green-400" />
-            <div>
-              <p className="text-xs text-muted-foreground">Current Streak</p>
-              <p className="text-xl font-semibold text-green-600 dark:text-green-400">
-                {streak.currentStreak} days
-              </p>
-            </div>
-          </div>
-          <div className="p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-lg flex items-center">
-            <Star className="mr-2 text-purple-600 dark:text-purple-400" />
-            <div>
-              <p className="text-xs text-muted-foreground">Longest Streak</p>
-              <p className="text-xl font-semibold text-purple-600 dark:text-purple-400">
-                {streak.longestStreak} days
-              </p>
-            </div>
-          </div>
-          <Card className="p-0 overflow-hidden border-0">
-            <CardContent className="p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg flex items-center space-y-0">
-              <BarChart className="mr-2 text-amber-600 dark:text-amber-400" />
-              <div>
-                <p className="text-xs text-muted-foreground">Weekly Score</p>
-                {weeklyScores.length > 0 ? (
-                  <p className="text-xl font-semibold text-amber-600 dark:text-amber-400">
-                    {weeklyScores[weeklyScores.length - 1].score}
-                  </p>
-                ) : (
-                  <p className="text-xl font-semibold text-amber-600 dark:text-amber-400">0</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+    <div className="container mx-auto p-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Profile Summary */}
+       <Card className="md:col-span-1">
+    <CardHeader className="pb-0">
+      <CardTitle className="flex items-center text-base sm:text-lg">
+        <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary" />
+        Profile Overview
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
+      {/* Total Score */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
+        <div className="flex items-center col-span-1">
+          <TrophyIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-4" />
+          <span className="text-xs sm:text-sm md:text-base">Total Score</span>
         </div>
+        <div className="text-right sm:text-right col-span-1">
+          <span className="font-bold text-sm sm:text-base md:text-lg">{totalScore}</span>
+        </div>
+      </div>
 
-        {/* Weekly Activity Graph */}
-        <div className="mt-8">
-          <h4 className="text-sm font-medium text-foreground mb-3">Weekly Activity</h4>
-          <div className="flex items-end h-32 gap-2 relative">
-            {weeklyContributions.map((count, index) => {
-              const maxCount = Math.max(...weeklyContributions, 1); // Ensure we don't divide by zero
-              const heightPercentage = (count / maxCount) * 100;
-              
-              // Generate a gradient color based on the activity level
-              const intensity = Math.min(0.2 + (count / maxCount) * 0.8, 1);
-              const bgColor = `rgba(59, 130, 246, ${intensity})`;
-              
-              return (
-                <div key={index} className="relative group flex-1">
-                  <div
-                    style={{ 
-                      height: `${heightPercentage}%`,
-                      minHeight: count > 0 ? '4px' : '0',
-                      backgroundColor: bgColor
-                    }}
-                    className="w-full rounded-t hover:opacity-90 transition-opacity"
-                  ></div>
-                  <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    {count} activities
-                  </div>
-                  <div className="w-full h-1 bg-gray-100 dark:bg-gray-800"></div>
-                </div>
-              );
-            })}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-              <div className="border-t border-border/30 w-full h-0"></div>
-              <div className="border-t border-border/30 w-full h-0"></div>
-              <div className="border-t border-border/30 w-full h-0"></div>
-            </div>
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            {daysOfWeek.map((day, index) => (
-              <span key={index} className="font-medium">{day}</span>
-            ))}
-          </div>
+      {/* Current Streak */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
+        <div className="flex items-center col-span-1">
+          <FileIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-1" />
+          <span className="text-xs sm:text-sm md:text-base">Current Streak</span>
         </div>
+        <div className="text-right sm:text-right col-span-1">
+          <span className="font-bold text-sm sm:text-base md:text-lg">
+            {streak.currentStreak} days
+          </span>
+        </div>
+      </div>
+
+      {/* Longest Streak */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
+        <div className="flex items-center col-span-1">
+          <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-2" />
+          <span className="text-xs sm:text-sm md:text-base">Longest Streak</span>
+        </div>
+        <div className="text-right sm:text-right col-span-1">
+          <span className="font-bold text-sm sm:text-base md:text-lg">
+            {streak.longestStreak} days
+          </span>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+        {/* Contribution Insights */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-0">
+            <CardTitle className="flex items-center">
+              <ChartBarIcon className="mr-2 text-primary" />
+              Contribution Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-muted p-4 rounded-lg text-center">
+                      <h3 className="text-sm text-muted-foreground mb-2">Total Contributions</h3>
+                      <p className="text-2xl font-bold text-primary">
+                        {contributionAnalysis.total}
+                      </p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Your total number of contributions across all activities</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`${contributionAnalysis.level.color} p-4 rounded-lg text-center`}>
+                      <h3 className="text-sm mb-2">Contribution Level</h3>
+                      <p className="text-2xl font-bold">
+                        {contributionAnalysis.level.label}
+                      </p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Your current contribution intensity level</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Event Organization Impact */}
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="bg-accent/30 p-4 rounded-lg">
+                <h3 className="text-sm text-accent-foreground mb-2">
+                  Events Organized
+                </h3>
+                <p className="text-2xl font-bold text-primary">
+                  {eventImpact.eventsOrganized}
+                </p>
+              </div>
+              <div className="bg-secondary p-4 rounded-lg">
+                <h3 className="text-sm text-secondary-foreground mb-2">
+                  Total Participants
+                </h3>
+                <p className="text-2xl font-bold text-primary">
+                  {eventImpact.totalParticipants}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Weekly Performance */}
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BarChart className="mr-2 text-primary" />
+              Weekly Performance Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-2">
+              {weeklyScores.map((weekScore, index) => {
+                // Normalize the score to get a value between 0 and 1
+                const normalizedScore = Math.min(weekScore.score / 100, 1);
+                // Select color from chart colors
+                const colorClass = normalizedScore > 0.7 
+                  ? 'bg-chart-1/80 text-primary' 
+                  : normalizedScore > 0.4 
+                    ? 'bg-chart-2/80 text-primary' 
+                    : 'bg-chart-3/80 text-primary-foreground';
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`p-2 rounded text-center ${colorClass}`}
+                  >
+                    <span className="text-xs font-medium">
+                      Week {index + 1}
+                    </span>
+                    <p className="text-sm font-bold">{weekScore.score}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

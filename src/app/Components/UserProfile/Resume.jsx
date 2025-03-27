@@ -131,7 +131,7 @@ const Resume = ({ User }) => {
 
         
         {sortedJourneyItems.length > 0 ? (
-          <div className="overflow-y-auto pr-2 h-full max-h-96">
+          <div className="overflow-y-auto pr-2 h-full max-h-96 mt-6">
             <div className="relative border-l-2 border-blue-200 dark:border-blue-900 pl-8 ml-4 space-y-10 pb-6">
               {sortedJourneyItems.map((item, index) => (
                 <div className="relative" key={item._id || index}>
