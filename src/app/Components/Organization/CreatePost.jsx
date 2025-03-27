@@ -149,7 +149,6 @@ const EventComponent = ({ user }) => {
             handleAddTeamMemberClick(event)
         }
         FetchEventTeamsMembers(event._id)
-        window.location.reload()
     };
 
     const closeResultPopup = () => {

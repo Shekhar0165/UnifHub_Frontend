@@ -40,7 +40,7 @@ export default function RegisterPage() {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email) {
       toast({
         title: "Validation Error",
@@ -50,13 +50,13 @@ export default function RegisterPage() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API}/send-otp`, {
         email: formData.email
       });
-      
+
       toast({
         title: "Success",
         description: "OTP has been sent to your email",
@@ -78,7 +78,7 @@ export default function RegisterPage() {
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    
+
     if (!otp) {
       toast({
         title: "Validation Error",
@@ -88,14 +88,14 @@ export default function RegisterPage() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API}/verify-otp`, {
         code: otp,
         email: formData.email,
       });
-      
+
       toast({
         title: "Success",
         description: "Email verified successfully",
@@ -117,9 +117,9 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-  
+
     const { name, userid, email, password, confirmPassword, phone, university, location } = formData;
-  
+
     // Validation
     if (!name || !userid || !email || !password || !confirmPassword) {
       toast({
@@ -130,7 +130,7 @@ export default function RegisterPage() {
       });
       return;
     }
-  
+
     if (password !== confirmPassword) {
       toast({
         title: "Validation Error",
@@ -140,7 +140,7 @@ export default function RegisterPage() {
       });
       return;
     }
-  
+
     if (password.length < 8) {
       toast({
         title: "Validation Error",
@@ -150,18 +150,18 @@ export default function RegisterPage() {
       });
       return;
     }
-  
+
     setIsLoading(true);
     try {
       // Choose endpoint based on user type
-      const endpoint = userType === 'individual' 
-        ? `${process.env.NEXT_PUBLIC_API}/student/register` 
+      const endpoint = userType === 'individual'
+        ? `${process.env.NEXT_PUBLIC_API}/student/register`
         : `${process.env.NEXT_PUBLIC_API}/org/register`;
-      
+
       const res = await axios.post(
         endpoint,
         { name, userid, email, password, phone, university, location, userType },
-        { 
+        {
           withCredentials: true,
           validateStatus: (status) => status < 400 // Accept 201 as success
         }
@@ -177,7 +177,12 @@ export default function RegisterPage() {
       localStorage.setItem("refreshToken", res.data.refreshToken);
       localStorage.setItem('UserType', res.data.user.userType);
       localStorage.setItem('UserId', res.data.user.userid);
-  
+
+      document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+      document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+      document.cookie = `UserType=${data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+      document.cookie = `UserId=${data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+
       toast({
         title: "Registration successful!",
         description: "Redirecting you to events page...",
@@ -188,7 +193,7 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/");
       }, 1500);
-  
+
     } catch (error) {
       console.error("Registration Error:", error.response?.data || error.message);
       toast({
@@ -200,14 +205,14 @@ export default function RegisterPage() {
     } finally {
       setIsLoading(false);
     }
-};
+  };
 
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Toaster />
       <div className="w-full max-w-md space-y-6">
-      
+
         <Card className="border-none shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
@@ -220,7 +225,7 @@ export default function RegisterPage() {
               {step === 1 && "First, tell us who you are"}
               {step === 2 && "Let's verify your email address"}
               {step === 3 && "Enter the verification code sent to your email"}
-              {step === 4 && userType === 'individual' 
+              {step === 4 && userType === 'individual'
                 ? "Complete your profile to join amazing events"
                 : "Set up your organization profile to host events"
               }
@@ -229,14 +234,14 @@ export default function RegisterPage() {
           <CardContent className="space-y-4">
             {step === 1 && (
               <div className="grid grid-cols-1 gap-4">
-                <Button 
+                <Button
                   onClick={() => handleUserTypeSelect('individual')}
                   className="h-24 text-lg"
                   variant="outline"
                 >
                   I'm an Individual
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleUserTypeSelect('organization')}
                   className="h-24 text-lg"
                   variant="outline"
@@ -250,15 +255,15 @@ export default function RegisterPage() {
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input 
-                    id="email" 
+                  <Input
+                    id="email"
                     name="email"
-                    type="email" 
-                    placeholder="name@example.com" 
+                    type="email"
+                    placeholder="name@example.com"
                     value={formData.email}
                     onChange={handleChange}
                     disabled={isLoading}
-                    required 
+                    required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -278,15 +283,15 @@ export default function RegisterPage() {
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="otp">Verification Code</Label>
-                  <Input 
-                    id="otp" 
-                    type="text" 
-                    placeholder="Enter 6-digit code" 
+                  <Input
+                    id="otp"
+                    type="text"
+                    placeholder="Enter 6-digit code"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
                     maxLength={6}
                     disabled={isLoading}
-                    required 
+                    required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -301,7 +306,7 @@ export default function RegisterPage() {
                 </Button>
                 <p className="text-center text-sm">
                   Didn't receive the code?{' '}
-                  <button 
+                  <button
                     type="button"
                     onClick={handleSendOtp}
                     className="text-primary hover:underline"
@@ -317,37 +322,37 @@ export default function RegisterPage() {
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input 
-                    id="name" 
+                  <Input
+                    id="name"
                     name="name"
-                    placeholder="Enter your full name" 
+                    placeholder="Enter your full name"
                     value={formData.name}
                     onChange={handleChange}
                     disabled={isLoading}
-                    required 
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="userid">User ID</Label>
-                  <Input 
-                    id="userid" 
+                  <Input
+                    id="userid"
                     name="userid"
-                    placeholder="Choose a unique user ID" 
+                    placeholder="Choose a unique user ID"
                     value={formData.userid}
                     onChange={handleChange}
                     disabled={isLoading}
-                    required 
+                    required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number (Optional)</Label>
-                  <Input 
-                    id="phone" 
+                  <Input
+                    id="phone"
                     name="phone"
-                    type="tel" 
-                    placeholder="Enter your phone number" 
+                    type="tel"
+                    placeholder="Enter your phone number"
                     value={formData.phone}
                     onChange={handleChange}
                     disabled={isLoading}
@@ -358,10 +363,10 @@ export default function RegisterPage() {
                   <Label htmlFor="university">
                     {userType === 'individual' ? "University" : "Organization Type"}
                   </Label>
-                  <Input 
-                    id="university" 
+                  <Input
+                    id="university"
                     name="university"
-                    placeholder={userType === 'individual' ? "Enter your university" : "e.g., Club, Company, Non-profit"} 
+                    placeholder={userType === 'individual' ? "Enter your university" : "e.g., Club, Company, Non-profit"}
                     value={formData.university}
                     onChange={handleChange}
                     disabled={isLoading}
@@ -370,10 +375,10 @@ export default function RegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input 
-                    id="location" 
+                  <Input
+                    id="location"
                     name="location"
-                    placeholder="City, Country" 
+                    placeholder="City, Country"
                     value={formData.location}
                     onChange={handleChange}
                     disabled={isLoading}
@@ -384,32 +389,32 @@ export default function RegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
+                  <Input
+                    id="password"
                     name="password"
-                    type="password" 
-                    placeholder="Create a password" 
+                    type="password"
+                    placeholder="Create a password"
                     value={formData.password}
                     onChange={handleChange}
                     disabled={isLoading}
-                    required 
+                    required
                   />
                   <p className="text-xs text-muted-foreground">
                     Must be at least 8 characters long
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input 
-                    id="confirmPassword" 
+                  <Input
+                    id="confirmPassword"
                     name="confirmPassword"
-                    type="password" 
-                    placeholder="Confirm your password" 
+                    type="password"
+                    placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     disabled={isLoading}
-                    required 
+                    required
                   />
                 </div>
 

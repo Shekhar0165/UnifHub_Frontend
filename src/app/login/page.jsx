@@ -39,6 +39,11 @@ export default function Page() {
         localStorage.setItem('UserType', data.user.usertype);
         localStorage.setItem('UserId', data.user.userid);
         
+        document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+        document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+        document.cookie = `UserType=${data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+        document.cookie = `UserId=${data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+        
         toast({
           title: "Login successful!",
           description: "Redirecting you to events page...",

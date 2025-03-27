@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import Header from '@/app/Components/Header/Header'
 import EventsList from '@/app/Components/UserProfile/Eventslist'
 import Resume from '@/app/Components/UserProfile/Resume'
+import UserActivityOverview from '@/app/Components/UserProfile/UserActivityOverview'
 
 // Helper function to get activity level color
 const getActivityColor = (count) => {
@@ -262,75 +263,7 @@ const RightComponent = ({ user }) => {
         </div>
 
         {/* Activity Section */}
-        <div className="bg-background rounded-xl shadow-lg overflow-hidden mb-6 border border-border/40">
-          <div className="p-6">
-            <h3 className="font-medium text-foreground mb-4 flex items-center">
-              <Activity className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-              Activity Overview
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-muted-foreground">This Month</p>
-                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{user?.activities?.thisMonth}</p>
-              </div>
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-muted-foreground">Last Month</p>
-                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{user?.activities?.lastMonth}</p>
-              </div>
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-muted-foreground">Current Streak</p>
-                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                  {user?.activities?.streakDays} days
-                </p>
-              </div>
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-muted-foreground">Longest Streak</p>
-                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                  {user?.activities?.longestStreak} days
-                </p>
-              </div>
-            </div>
-            {/* Monthly Activity Graph */}
-            <div className="mt-8">
-              <h4 className="text-sm font-medium text-foreground mb-3">Monthly Activity</h4>
-              <div className="flex items-end h-32 gap-1 relative">
-                {user?.activities?.contributions?.map((count, index) => (
-                  <div key={index} className="relative group flex-1">
-                    <div
-                      style={{ height: `${(count / Math.max(...user.activities.contributions)) * 100}%` }}
-                      className="w-full bg-blue-600 dark:bg-blue-500 rounded-t opacity-80 hover:opacity-100 transition-opacity"
-                    ></div>
-                    <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-0.5 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {count} activities
-                    </div>
-                  </div>
-                ))}
-                {/* Grid lines for readability */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                  <div className="border-t border-border w-full h-0"></div>
-                  <div className="border-t border-border w-full h-0"></div>
-                  <div className="border-t border-border w-full h-0"></div>
-                </div>
-              </div>
-              <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                <span>Jan</span>
-                <span>Mar</span>
-                <span>May</span>
-                <span>Jul</span>
-                <span>Sep</span>
-                <span>Nov</span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-center">
-              <a href={user?.socialLinks?.github} className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center">
-                View full activity on GitHub
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </a>
-            </div>
-          </div>
-        </div>
+        <UserActivityOverview user={user} />
       </div>
     </>
   )
