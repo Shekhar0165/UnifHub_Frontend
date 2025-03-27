@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Trophy as TrophyIcon, 
-  FileText as FileIcon, 
+import {
+  Trophy as TrophyIcon,
+  FileText as FileIcon,
   BarChart2 as ChartBarIcon,
   Calendar as CalendarIcon,
   Sparkles as SparklesIcon,
@@ -23,13 +23,13 @@ const UserActivityOverview = ({ user }) => {
     const fetchUserActivity = async () => {
       try {
         const authToken = localStorage.getItem('accessToken');
-        
+
         const response = await axios.get(`${api}/user-activity/${userid}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         });
-        
+
         setUserData(response.data.data);
         setLoading(false);
       } catch (err) {
@@ -47,7 +47,7 @@ const UserActivityOverview = ({ user }) => {
   if (error) return <div className="text-center text-destructive py-4">Error: {error}</div>;
   if (!userData) return <div className="text-center py-4">No user activity data available</div>;
 
-  const { 
+  const {
     totalScore = 0,
     streak = { currentStreak: 0, longestStreak: 0, lastActivityDate: null },
     contributionData = [],
@@ -59,7 +59,7 @@ const UserActivityOverview = ({ user }) => {
   const processContributionData = () => {
     const flatData = contributionData.flat();
     const totalContributions = flatData.reduce((a, b) => a + b, 0);
-    
+
     // Create a more engaging visualization
     const contributionLevels = [
       { label: 'Beginner', threshold: 5, color: 'bg-accent text-accent-foreground' },
@@ -69,7 +69,7 @@ const UserActivityOverview = ({ user }) => {
       { label: 'Legend', threshold: Infinity, color: 'bg-primary text-primary-foreground' }
     ];
 
-    const currentLevel = contributionLevels.find(level => 
+    const currentLevel = contributionLevels.find(level =>
       totalContributions <= level.threshold
     );
 
@@ -84,7 +84,7 @@ const UserActivityOverview = ({ user }) => {
   // Event Organization Analysis
   const getEventImpact = () => {
     const totalEventsOrganized = eventOrganization.length;
-    const totalParticipants = eventOrganization.reduce((sum, event) => 
+    const totalParticipants = eventOrganization.reduce((sum, event) =>
       sum + (event.participantCount || 0), 0);
 
     return {
@@ -99,52 +99,43 @@ const UserActivityOverview = ({ user }) => {
     <div className="container mx-auto p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Summary */}
-       <Card className="md:col-span-1">
-    <CardHeader className="pb-0">
-      <CardTitle className="flex items-center text-base sm:text-lg">
-        <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary" />
-        Profile Overview
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-      {/* Total Score */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
-        <div className="flex items-center col-span-1">
-          <TrophyIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-4" />
-          <span className="text-xs sm:text-sm md:text-base">Total Score</span>
-        </div>
-        <div className="text-right sm:text-right col-span-1">
-          <span className="font-bold text-sm sm:text-base md:text-lg">{totalScore}</span>
-        </div>
-      </div>
+        <Card className="md:col-span-1">
+          <CardHeader className="pb-0">
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary" />
+              Profile Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
 
-      {/* Current Streak */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
-        <div className="flex items-center col-span-1">
-          <FileIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-1" />
-          <span className="text-xs sm:text-sm md:text-base">Current Streak</span>
-        </div>
-        <div className="text-right sm:text-right col-span-1">
-          <span className="font-bold text-sm sm:text-base md:text-lg">
-            {streak.currentStreak} days
-          </span>
-        </div>
-      </div>
 
-      {/* Longest Streak */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
-        <div className="flex items-center col-span-1">
-          <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-2" />
-          <span className="text-xs sm:text-sm md:text-base">Longest Streak</span>
-        </div>
-        <div className="text-right sm:text-right col-span-1">
-          <span className="font-bold text-sm sm:text-base md:text-lg">
-            {streak.longestStreak} days
-          </span>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
+            {/* Current Streak */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
+              <div className="flex items-center col-span-1">
+                <FileIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-1" />
+                <span className="text-xs sm:text-sm md:text-base">Current Streak</span>
+              </div>
+              <div className="text-right sm:text-right col-span-1">
+                <span className="font-bold text-sm sm:text-base md:text-lg">
+                  {streak.currentStreak} days
+                </span>
+              </div>
+            </div>
+
+            {/* Longest Streak */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
+              <div className="flex items-center col-span-1">
+                <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-2" />
+                <span className="text-xs sm:text-sm md:text-base">Longest Streak</span>
+              </div>
+              <div className="text-right sm:text-right col-span-1">
+                <span className="font-bold text-sm sm:text-base md:text-lg">
+                  {streak.longestStreak} days
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Contribution Insights */}
         <Card className="md:col-span-2">
@@ -191,6 +182,26 @@ const UserActivityOverview = ({ user }) => {
 
             {/* Event Organization Impact */}
             <div className="mt-6 grid grid-cols-2 gap-4">
+
+
+              {/* Total Score */}
+             <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-primary/5 p-4 rounded-lg text-center hover:bg-primary/20 transition-colors">
+                      <h3 className="text-sm text-muted-foreground mb-1">Total Score</h3>
+                      <div className="flex items-center justify-center">
+                        <TrophyIcon className="h-4 w-4 mr-2 text-chart-4" />
+                        <p className="text-2xl font-bold text-primary">{totalScore}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Your cumulative score from all activities</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               <div className="bg-accent/30 p-4 rounded-lg">
                 <h3 className="text-sm text-accent-foreground mb-2">
                   Events Organized
@@ -199,14 +210,7 @@ const UserActivityOverview = ({ user }) => {
                   {eventImpact.eventsOrganized}
                 </p>
               </div>
-              <div className="bg-secondary p-4 rounded-lg">
-                <h3 className="text-sm text-secondary-foreground mb-2">
-                  Total Participants
-                </h3>
-                <p className="text-2xl font-bold text-primary">
-                  {eventImpact.totalParticipants}
-                </p>
-              </div>
+
             </div>
           </CardContent>
         </Card>
@@ -225,15 +229,15 @@ const UserActivityOverview = ({ user }) => {
                 // Normalize the score to get a value between 0 and 1
                 const normalizedScore = Math.min(weekScore.score / 100, 1);
                 // Select color from chart colors
-                const colorClass = normalizedScore > 0.7 
-                  ? 'bg-chart-1/80 text-primary' 
-                  : normalizedScore > 0.4 
-                    ? 'bg-chart-2/80 text-primary' 
+                const colorClass = normalizedScore > 0.7
+                  ? 'bg-chart-1/80 text-primary'
+                  : normalizedScore > 0.4
+                    ? 'bg-chart-2/80 text-primary'
                     : 'bg-chart-3/80 text-primary-foreground';
-                
+
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`p-2 rounded text-center ${colorClass}`}
                   >
                     <span className="text-xs font-medium">

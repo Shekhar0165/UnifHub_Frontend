@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import OrganizationJourney from '@/app/Components/Organization/OrganizationJourney';
+import OrganizationActivity from '@/app/Components/Organization/OrganizationActivity';
 
 
 
@@ -513,7 +514,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
 
                 {/* Keep the event component and user activity */}
                 <EventComponent user={user} />
-                <UserActivity user={user} />
+                <OrganizationActivity organizationId={user._id} />
             </div>
 
             {/* Render Popups - keep them for now */}
@@ -523,87 +524,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
 };
 
 
-const UserActivity = ({ user }) => {
-    // Month names for labeling
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    // Prepare data for Google Charts
-    const chartData = [
-        ["Month", "Contributions", { role: "style" }], // Chart header
-        ...user?.activities?.contributions?.map((count, index) => [
-            months[index] || `Month ${index + 1}`, // Use month names or fallback
-            count,
-            "stroke-color: #2563eb; stroke-width: 1; fill-color: #2563eb; opacity: 0.9; border-radius: 10px",
-        ]),
-    ];
-
-    const options = {
-        legend: { position: "none" },
-        chartArea: { width: "85%", height: "75%" },
-        backgroundColor: "transparent",
-        bar: { groupWidth: "40%" }, // Reduce bar width
-        colors: ["#2563eb"],
-        hAxis: {
-            title: "Months",
-            textStyle: { color: "#6b7280", fontSize: 12, fontWeight: 500 },
-            gridlines: { color: "rgba(107, 114, 128, 0.2)" }, // Subtle grid lines
-        },
-        vAxis: {
-            minValue: 0,
-            title: "Contributions",
-            textStyle: { color: "#6b7280", fontSize: 12, fontWeight: 500 },
-            gridlines: { color: "rgba(107, 114, 128, 0.2)" }, // Subtle grid lines
-        },
-        tooltip: {
-            textStyle: { fontSize: 12, color: "#ffffff" },
-            showColorCode: true
-        },
-    };
-
-    return (
-        <div className="bg-background rounded-xl shadow-lg overflow-hidden mb-6 p-6 border border-border/40">
-            <h3 className="font-medium text-foreground mb-4 flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                Activity Overview
-            </h3>
-
-            {/* Activity Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                {[
-                    { label: "This Month", value: user?.activities?.thisMonth },
-                    { label: "Last Month", value: user?.activities?.lastMonth },
-                    { label: "Current Streak", value: `${user?.activities?.streakDays} days` },
-                    { label: "Longest Streak", value: `${user?.activities?.longestStreak} days` },
-                ].map((item, index) => (
-                    <div key={index} className="p-4 bg-blue-50/30 dark:bg-blue-900/20 rounded-lg shadow-sm">
-                        <p className="text-xs text-muted-foreground">{item.label}</p>
-                        <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">{item.value}</p>
-                    </div>
-                ))}
-            </div>
-
-            {/* Monthly Activity Chart */}
-            <div className="mt-8 bg-secondary/30 rounded-lg p-4 shadow">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Monthly Activity</h4>
-                <Chart
-                    chartType="ColumnChart"
-                    width="100%"
-                    height="200px"
-                    data={chartData}
-                    options={options}
-                />
-            </div>
-
-            {/* GitHub Link */}
-            <div className="mt-6 flex justify-center">
-                <a href={user?.socialLinks?.github} className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center">
-                    View full activity on GitHub
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                </a>
-            </div>
-        </div>
-    );
-};
 export default function ProfilePage() {
     const { organization } = useParams();
     const [user, setUser] = useState(null);

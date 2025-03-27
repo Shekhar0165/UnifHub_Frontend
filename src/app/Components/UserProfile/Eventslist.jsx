@@ -29,9 +29,10 @@ const EventsList = ({ user }) => {
       setIsLoading(true);
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/userevent/${user._id}`);
-        setEventsList(response.data);
+        setEventsList(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching events:", error);
+        setEventsList([]);
       } finally {
         setIsLoading(false);
       }
@@ -109,18 +110,18 @@ const EventsList = ({ user }) => {
 
   return (
     <div className="space-y-4">
-      {isLoading && eventsList.length === 0 ? (
+      {isLoading && (!eventsList || eventsList.length === 0) ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin h-8 w-8 border-3 border-blue-600 dark:border-blue-400 border-t-transparent dark:border-t-transparent rounded-full"></div>
         </div>
-      ) : eventsList.length === 0 ? (
+      ) : (!eventsList || eventsList.length === 0) ? (
         <div className="text-center py-12">
           <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">No events found</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {eventsList?.slice(0, visibleEvents).map((event, index) => {
+          {Array.isArray(eventsList) && eventsList.slice(0, visibleEvents).map((event, index) => {
             const { icon, bg } = getMedalInfo(event.position);
 
             return (
@@ -170,7 +171,7 @@ const EventsList = ({ user }) => {
         </div>
       )}
 
-      {eventsList.length > 0 && visibleEvents < eventsList.length && (
+      {Array.isArray(eventsList) && eventsList.length > 0 && visibleEvents < eventsList.length && (
         <div className="py-4 flex justify-center">
           <button
             onClick={handleShowMore}
@@ -189,7 +190,7 @@ const EventsList = ({ user }) => {
         </div>
       )}
 
-      {visibleEvents >= eventsList.length && eventsList.length > 3 && (
+      {Array.isArray(eventsList) && visibleEvents >= eventsList.length && eventsList.length > 3 && (
         <div className="py-4 text-center">
           <p className="text-sm text-muted-foreground">
             You've reached the end of your achievements list
