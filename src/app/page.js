@@ -5,6 +5,7 @@ import Navbar from "./Components/Navbar/Navbar";
 import Herosection from "./Components/HeroSection/Herosection";
 import Footer from "./Components/Footer/Footer";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import Cookies from "js-cookie";
 
 // This prevents this page from being pre-rendered statically
 export const dynamic = 'force-dynamic';
@@ -24,17 +25,21 @@ export default function Home() {
     // Only run after component is mounted on client
     if (!isMounted) return;
     
-    // Check for token and redirect within useEffect (client-side only)
+    // Check for authentication and redirect within useEffect (client-side only)
     const checkAuthAndRedirect = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        const UserType = localStorage.getItem("UserType");
-        const UserID = localStorage.getItem("UserId");
+        // Try cookies first (new approach)
+        let userType = localStorage.getItem('UserType')
+        let userId = localStorage.getItem('UserId')
+      
         
-        if (token && UserType === "individual") {
+        // Log for debugging
+        console.log("Auth check - UserType:", userType, "UserId:", userId);
+        
+        if (userType === "individual") {
           await router.replace(`/events`);
-        } else if (token && UserType === "Organization") {
-          await router.replace(`/organization/${UserID}`);
+        } else if (userType === "Organization" && userId) {
+          await router.replace(`/organization/${userId}`);
         } 
       } catch (error) {
         console.error("Navigation error:", error);
@@ -48,7 +53,7 @@ export default function Home() {
     // Fallback timeout in case navigation gets stuck
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 5000);
+    }, 1500);
     
     return () => clearTimeout(timeout);
   }, [router, isMounted]);

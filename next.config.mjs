@@ -7,23 +7,29 @@ const nextConfig = {
 
     // Disable static generation and optimize for server rendering
     staticPageGenerationTimeout: 1000,
-    
+
     // Runtime configuration
     reactStrictMode: true,
-    swcMinify: true, 
-    
+    swcMinify: true,
+
     // Disable image optimization for deployment
     images: {
         unoptimized: true,
     },
-    
-    // Define routes that require client-side execution
-    // These won't be prerendered statically
-    async redirects() {
-        return [];
-    },
+
+    // CORS and Headers to allow cookies
     async headers() {
-        return [];
+        return [
+            {
+                source: "/:path*",
+                headers: [
+                    { key: "Access-Control-Allow-Credentials", value: "true" },
+                    { key: "Access-Control-Allow-Origin", value: "http://localhost:3000" }, // Allow frontend to access backend
+                    { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+                    { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Authorization, Content-Type, Set-Cookie" },
+                ],
+            },
+        ];
     },
 };
 

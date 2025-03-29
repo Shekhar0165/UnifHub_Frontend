@@ -48,10 +48,10 @@ const EventPositionsPopup = ({ selectedEvent, closeEventPopup, isOpen }) => {
           `${process.env.NEXT_PUBLIC_API}/Participants/for-events/${selectedEvent._id}`, 
           {
             method: "GET",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            headers: {  
               "Content-Type": "application/json",
             },
+            withCredentials: true
           }
         );
         

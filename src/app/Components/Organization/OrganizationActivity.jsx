@@ -34,12 +34,11 @@ const OrganizationActivity = ({ organizationId, organization, activityData: init
 
         const fetchOrganizationActivity = async () => {
             try {
-                const authToken = localStorage.getItem('accessToken');
-                
                 const response = await axios.get(`${api}/org-activity/${id}`, {
                     headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true
                 });
                 
                 setActivityData(response.data);

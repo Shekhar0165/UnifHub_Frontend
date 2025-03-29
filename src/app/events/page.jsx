@@ -13,7 +13,7 @@ import TabsSection from '../Components/Events/TabsSection';
 import NoResultsFound from '../Components/Events/NoResultsFound';
 import EventsGrid from '../Components/Events/EventsGrid';
 import OrganizationsGrid from '../Components/Events/OrganizationsGrid';
-
+import { authenticatedFetch } from '@/utils/authUtils';
 // This prevents this page from being pre-rendered statically
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -49,37 +49,12 @@ const Page = () => {
 
     const fetchEvents = async () => {
       try {
-        // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!accessToken) {
-          setLoading(false);
-          return; // User is not authenticated
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/events/all`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setEvents(data);
-        } else {
-          console.error('Failed to fetch events data');
-          // Handle authentication error (e.g., token expired)
-          if (response.status === 401) {
-            // Clear tokens and redirect to login
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            router.push('/');
-          }
-        }
+        const data = await authenticatedFetch(
+          `${process.env.NEXT_PUBLIC_API}/events/all`,
+          { method: 'GET' },
+          router
+        );
+        setEvents(data);
       } catch (error) {
         console.error('Error fetching events data:', error);
       } finally {
@@ -96,37 +71,12 @@ const Page = () => {
     
     const fetchOrganizations = async () => {
       try {
-        // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!accessToken) {
-          setLoading(false);
-          return; // User is not authenticated
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org/all`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setOrg(data);
-        } else {
-          console.error('Failed to fetch organization data');
-          // Handle authentication error (e.g., token expired)
-          if (response.status === 401) {
-            // Clear tokens and redirect to login
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            router.push('/');
-          }
-        }
+        const data = await authenticatedFetch(
+          `${process.env.NEXT_PUBLIC_API}/org/all`,
+          { method: 'GET' },
+          router
+        );
+        setOrg(data);
       } catch (error) {
         console.error('Error fetching organization data:', error);
       }

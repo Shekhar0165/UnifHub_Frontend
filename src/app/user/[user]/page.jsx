@@ -11,6 +11,7 @@ import Header from '@/app/Components/Header/Header'
 import EventsList from '@/app/Components/UserProfile/Eventslist'
 import Resume from '@/app/Components/UserProfile/Resume'
 import UserActivityOverview from '@/app/Components/UserProfile/UserActivityOverview'
+import Cookies from 'js-cookie'
 
 // Helper function to get activity level color
 const getActivityColor = (count) => {
@@ -280,19 +281,10 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!accessToken) {
-          setLoading(false);
-          return; // User is not authenticated
-        }
-
         const response = await fetch(`${process.env.NEXT_PUBLIC_API}/user/profile/${userId.user}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
           },
           credentials: 'include',
         });
@@ -304,22 +296,30 @@ export default function ProfilePage() {
           console.error('Failed to fetch user data');
           // Handle authentication error (e.g., token expired)
           if (response.status === 401) {
-            // Clear tokens and redirect to login
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+            // Clear cookies and redirect to login
+            Cookies.remove('accessToken');
+            Cookies.remove('refreshToken');
+            Cookies.remove('UserType');
+            Cookies.remove('UserId');
             router.push('/');
           }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
+        if (error.response?.status === 401) {
+          Cookies.remove('accessToken');
+          Cookies.remove('refreshToken');
+          Cookies.remove('UserType');
+          Cookies.remove('UserId');
+          router.push('/');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserData();
-  }, [router]);
+  }, [router, userId.user]);
 
 
   return (

@@ -29,9 +29,9 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                     {
                         method: "GET",
                         headers: {
-                            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
                             "Content-Type": "application/json",
                         },
+                        withCredentials: true
                     }
                 );
                 
@@ -158,9 +158,9 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                 {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
                         "Content-Type": "application/json",
                     },
+                    withCredentials: true,
                     body: JSON.stringify(requestData),
                 }
             );

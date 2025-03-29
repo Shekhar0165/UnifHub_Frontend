@@ -12,9 +12,12 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from '@/app/Components/Header/Header';
 import TeamManagement from '@/app/Components/Team/Team';
+import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 const OrganizationProfileEditForm = () => {
     const { toast } = useToast();
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState("basic");
     const [organization, setOrganization] = useState({
         name: '',
@@ -39,17 +42,18 @@ const OrganizationProfileEditForm = () => {
     useEffect(() => {
         const fetchOrganizationData = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
                 const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/org`, {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
                     },
-                    credentials: 'include',
+                    withCredentials: true
                 });
 
                 setOrganization(response.data);
             } catch (error) {
+                if (error.response?.status === 401) {
+                    router.push('/');
+                }
                 toast({
                     title: "Error",
                     description: "Failed to load organization data. Please try again.",
@@ -59,7 +63,7 @@ const OrganizationProfileEditForm = () => {
         };
 
         fetchOrganizationData();
-    }, [toast]);
+    }, [toast, router]);
 
     // Handle input changes
     const handleChange = (e) => {
@@ -101,7 +105,6 @@ const OrganizationProfileEditForm = () => {
         setIsLoading(true);
 
         try {
-            const token = localStorage.getItem('accessToken');
             const formData = new FormData();
             formData.append('organizationData', JSON.stringify(organization));
 
@@ -118,9 +121,9 @@ const OrganizationProfileEditForm = () => {
                 formData,
                 {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
+                        'Content-Type': 'multipart/form-data',
+                    },
+                    withCredentials: true
                 }
             );
 
@@ -132,6 +135,9 @@ const OrganizationProfileEditForm = () => {
             setProfileImage(null);
             setCoverImage(null);
         } catch (error) {
+            if (error.response?.status === 401) {
+                router.push('/');
+            }
             toast({
                 title: "Error",
                 description: error.response?.data?.message || 'Failed to update profile. Please try again.',

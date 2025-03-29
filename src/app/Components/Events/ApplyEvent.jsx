@@ -4,6 +4,9 @@ import { useRouter } from 'next/';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Search, Loader2, X, Check, UserPlus, Flag, XCircle, CheckCircle, AlertTriangle, UserX, Send, ChevronLeft } from 'lucide-react';
+import Cookies from 'js-cookie';
+
+const apiUrl = process.env.NEXT_PUBLIC_API;
 
 const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToast }) => {
   // State management
@@ -27,11 +30,13 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken');
       const response = await axios.get(
         `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
         {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true
         }
       );
 
@@ -66,7 +71,10 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
           teamName: teamName,
         },
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+          },
+          withCredentials: true
         }
       );
 
@@ -127,7 +135,6 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken');
       const applicationData = {
         eventid: eventData?._id,
         teamName: teamName,
@@ -138,10 +145,10 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
         `${apiUrl}/participants/register`,
         applicationData,
         {
-          headers: { 
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json" 
-         },
+          headers: {
+            "Content-Type": "application/json"
+          },
+          withCredentials: true
         }
       );
 

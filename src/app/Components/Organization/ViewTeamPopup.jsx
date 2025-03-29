@@ -24,6 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 const ViewTeamPopup = ({ 
   isOpen, 
@@ -34,6 +36,7 @@ const ViewTeamPopup = ({
   const [EventMember, setEventMember] = useState(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API;
 
   // Fetch team data when the popup is opened
@@ -43,24 +46,17 @@ const ViewTeamPopup = ({
       
       setLoading(true);
       try {
-        const accessToken = localStorage.getItem("accessToken");
-        if (!accessToken) {
-          throw new Error("Authentication token not found");
-        }
-
-        // Example of how you might fetch the data
         const response = await axios.post(
           `${apiUrl}/events/teams/get/${user?._id}`,
           { eventId: selectedViewTeam._id },
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
+            withCredentials: true
           }
         );
 
-        // Assuming the response contains the eventDetails in the format you provided
         if (response.data && response.data.eventDetails) {
           setEventMember({ eventDetails: response.data.eventDetails });
         } else {
@@ -68,6 +64,12 @@ const ViewTeamPopup = ({
         }
       } catch (error) {
         console.error("Error fetching team data:", error);
+        if (error.response?.status === 401) {
+          Cookies.remove('user');
+          Cookies.remove('accessToken');
+          Cookies.remove('refreshToken');
+          router.push('/');
+        }
         toast({
           title: "Error",
           description: error.message || "Failed to load team data. Please try again.",
@@ -79,7 +81,7 @@ const ViewTeamPopup = ({
     };
 
     fetchTeamData();
-  }, [isOpen, selectedViewTeam, user, apiUrl, toast]);
+  }, [isOpen, selectedViewTeam, user, apiUrl, toast, router]);
 
   // Utility function to get initials from a name
   const getInitials = (name) => {

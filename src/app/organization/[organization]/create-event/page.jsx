@@ -42,6 +42,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { useRouter } from 'next/navigation'
+import Cookies from 'js-cookie'
 
 // Import rich text editor with dynamic import (no SSR)
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
@@ -327,13 +328,11 @@ const AddEventForm = () => {
     const fetchOrganizationData = async () => {
       setIsLoading(true)
       try {
-        const token = localStorage.getItem('accessToken');
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/org`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
-          credentials: 'include',
+          withCredentials: true
         });
 
         setOrganizations(Array.isArray(response.data) ? response.data : [response.data])
@@ -343,6 +342,13 @@ const AddEventForm = () => {
           form.setValue('organization_id', response.data[0]._id)
         }
       } catch (error) {
+        if (error.response?.status === 401) {
+          Cookies.remove('accessToken');
+          Cookies.remove('refreshToken');
+          Cookies.remove('UserType');
+          Cookies.remove('UserId');
+          router.push('/');
+        }
         toast({
           variant: "destructive",
           title: "Failed to load organizations",
@@ -354,7 +360,7 @@ const AddEventForm = () => {
     };
 
     fetchOrganizationData();
-  }, [form, toast]);
+  }, [form, toast, router]);
 
   // Remove image
   const handleRemoveImage = () => {
@@ -370,7 +376,6 @@ const AddEventForm = () => {
     try {
       setIsSubmitting(true)
       // Create FormData for file upload
-      const token = localStorage.getItem('accessToken');
       const formData = new FormData()
 
       // Append all text fields
@@ -396,9 +401,9 @@ const AddEventForm = () => {
         formData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
+          withCredentials: true
         }
       )
 
@@ -416,6 +421,13 @@ const AddEventForm = () => {
       router.push(`/events/${values.eventName}`)
 
     } catch (error) {
+      if (error.response?.status === 401) {
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+        Cookies.remove('UserType');
+        Cookies.remove('UserId');
+        router.push('/');
+      }
       // Error toast
       toast({
         variant: "destructive",

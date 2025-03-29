@@ -13,9 +13,12 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from '@/app/Components/Header/Header';
+import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 const ProfileEditForm = () => {
   const { toast } = useToast();
+  const router = useRouter();
   const [user, setUser] = useState({
     name: '',
     phone: '',
@@ -47,18 +50,24 @@ const ProfileEditForm = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
-        
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/user/one`, {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
               },
-              credentials: 'include',
+              withCredentials: true,
         });
         
         setUser(response.data);
       } catch (error) {
+        if (error.response?.status === 401) {
+          Cookies.remove('accessToken');
+          Cookies.remove('refreshToken');
+          Cookies.remove('UserType');
+          Cookies.remove('UserId');
+          router.push('/');
+          return;
+        }
+        
         toast({
           title: "Error",
           description: "Failed to load user data. Please try again.",
@@ -68,7 +77,7 @@ const ProfileEditForm = () => {
     };
     
     fetchUserData();
-  }, [toast]);
+  }, [toast, router]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -160,58 +169,65 @@ const ProfileEditForm = () => {
 
   // Handle form submission
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
-  try {
-    const token = localStorage.getItem('accessToken');
-    
-    // Create FormData for file uploads
-    const formData = new FormData();
-    
-    // Add all user data fields to FormData
-    // Converting the object to JSON string since FormData doesn't handle nested objects well
-    formData.append('userData', JSON.stringify(user));
-    
-    // Append files if selected
-    if (profileImage) {
-      formData.append('profileImage', profileImage);
-    }
-    
-    if (coverImage) {
-      formData.append('coverImage', coverImage);
-    }
-    
-    await axios.put(
-      `${process.env.NEXT_PUBLIC_API}/user/${user._id}`, 
-      formData,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+    try {
+      // Create FormData for file uploads
+      const formData = new FormData();
+      
+      // Add all user data fields to FormData
+      // Converting the object to JSON string since FormData doesn't handle nested objects well
+      formData.append('userData', JSON.stringify(user));
+      
+      // Append files if selected
+      if (profileImage) {
+        formData.append('profileImage', profileImage);
       }
-    );
-    
-    toast({
-      title: "Success",
-      description: "Profile updated successfully!",
-    });
-    
-    // Reset file states after successful upload
-    setProfileImage(null);
-    setCoverImage(null);
-    
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: error.response?.data?.message || 'Failed to update profile. Please try again.',
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+      
+      if (coverImage) {
+        formData.append('coverImage', coverImage);
+      }
+      
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API}/user/${user._id}`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          withCredentials: true
+        }
+      );
+      
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!",
+      });
+      
+      // Reset file states after successful upload
+      setProfileImage(null);
+      setCoverImage(null);
+      
+    } catch (error) {
+      if (error.response?.status === 401) {
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+        Cookies.remove('UserType');
+        Cookies.remove('UserId');
+        router.push('/');
+        return;
+      }
+      
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || 'Failed to update profile. Please try again.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>

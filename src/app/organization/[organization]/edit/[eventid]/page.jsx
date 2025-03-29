@@ -40,6 +40,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog"
 import { useParams, useRouter } from 'next/navigation'
+import Cookies from 'js-cookie'
 
 // Import rich text editor with dynamic import (no SSR)
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
@@ -107,19 +108,12 @@ const EditEventForm = () => {
 
             try {
                 setIsLoading(true);
-                const token = localStorage.getItem("accessToken");
-
-                if (!token) {
-                    throw new Error("Authentication token missing");
-                }
-
                 const response = await axios.post(
                     `${process.env.NEXT_PUBLIC_API}/events/one`,
                     { _id: eventId },
                     {
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
                         },
                         withCredentials: true,
                     }
@@ -175,6 +169,14 @@ const EditEventForm = () => {
 
             } catch (error) {
                 console.error("Error fetching event:", error);
+                if (error.response?.status === 401) {
+                    Cookies.remove('accessToken');
+                    Cookies.remove('refreshToken');
+                    Cookies.remove('UserType');
+                    Cookies.remove('UserId');
+                    router.push('/');
+                    return;
+                }
                 toast({
                     variant: "destructive",
                     title: "Failed to load event data",
@@ -186,23 +188,16 @@ const EditEventForm = () => {
         };
 
         fetchEventData();
-    }, [eventId, form, toast]);
+    }, [eventId, form, toast, router]);
 
     // Fetch organizations
     useEffect(() => {
         const fetchOrganizationData = async () => {
             setIsLoading(true);
             try {
-                const token = localStorage.getItem('accessToken');
-
-                if (!token) {
-                    throw new Error("Authentication token missing");
-                }
-
                 const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/org`, {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
                     },
                     withCredentials: true,
                 });
@@ -214,6 +209,14 @@ const EditEventForm = () => {
                 }
             } catch (error) {
                 console.error("Error fetching organizations:", error);
+                if (error.response?.status === 401) {
+                    Cookies.remove('accessToken');
+                    Cookies.remove('refreshToken');
+                    Cookies.remove('UserType');
+                    Cookies.remove('UserId');
+                    router.push('/');
+                    return;
+                }
                 toast({
                     variant: "destructive",
                     title: "Failed to load organizations",
@@ -225,7 +228,7 @@ const EditEventForm = () => {
         };
 
         fetchOrganizationData();
-    }, [toast]);
+    }, [toast, router]);
 
     // Handle image selection with improved validation
     const handleImageChange = (e) => {
@@ -305,12 +308,6 @@ const EditEventForm = () => {
             setIsSubmitting(true);
 
             // Create FormData for file upload
-            const token = localStorage.getItem('accessToken');
-
-            if (!token) {
-                throw new Error("Authentication token missing. Please log in again.");
-            }
-
             const formData = new FormData();
 
             // Add event ID for update
@@ -333,24 +330,17 @@ const EditEventForm = () => {
                 formData.append('image', values.image);
             }
 
-            // Log formData keys for debugging
-            for (let key of formData.keys()) {
-                console.log(key, formData.get(key));
-            }
-
             // Send to backend - using update endpoint
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API}/events/update/${eventId}`,
                 formData,
                 {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
+                        'Content-Type': 'multipart/form-data',
+                    },
+                    withCredentials: true
                 }
             );
-
-            console.log(response);
 
             // Success toast
             toast({
@@ -365,7 +355,14 @@ const EditEventForm = () => {
 
         } catch (error) {
             console.error('Error updating event:', error);
-
+            if (error.response?.status === 401) {
+                Cookies.remove('accessToken');
+                Cookies.remove('refreshToken');
+                Cookies.remove('UserType');
+                Cookies.remove('UserId');
+                router.push('/');
+                return;
+            }
             // Error toast with more specific messages
             toast({
                 variant: "destructive",

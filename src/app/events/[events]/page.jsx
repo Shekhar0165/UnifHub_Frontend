@@ -15,9 +15,61 @@ import Footer from '@/app/Components/Footer/Footer'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { refreshTokens, authenticatedFetch } from '@/utils/authUtils'
+import Cookies from 'js-cookie'
 
 
 const apiUrl = process.env.NEXT_PUBLIC_API;
+
+// Create axios instance with interceptors for token refresh
+const api = axios.create({
+  baseURL: apiUrl,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+// Add a response interceptor to handle token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If the error is 401 and we haven't already tried to refresh
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Refresh the token
+        const refreshToken = Cookies.get('refreshToken');
+        if (!refreshToken) {
+          // Redirect to login if no refresh token
+          window.location.href = '/';
+          return Promise.reject(error);
+        }
+        
+        // Call the refresh token endpoint
+        const response = await axios.post(
+          `${apiUrl}/auth/refresh`,
+          { token: refreshToken },
+          { withCredentials: true }
+        );
+        
+        if (response.status === 200) {
+          // Retry the original request
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        window.location.href = '/';
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // This prevents this page from being pre-rendered statically
 export const dynamic = 'force-dynamic';
@@ -45,26 +97,15 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
     }
 
     const fetchData = async () => {
-      const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const data = {
           eventid: eventid,
           userid: currentUser._id,
         };
-        const response = await axios.post(
-          `${apiUrl}/participants/user`,
-          data,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+        
+        const response = await api.post(
+          `/participants/user`,
+          data
         );
 
         if (response.data && response.data.newParticipants) {
@@ -108,26 +149,15 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   // Refresh participants data
   const refreshParticipants = async () => {
     setLoading(true);
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const data = {
         eventid: eventid,
         userid: currentUser._id,
       };
-      const response = await axios.post(
-        `${apiUrl}/participants/user`,
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+      
+      const response = await api.post(
+        `/participants/user`,
+        data
       );
 
       if (response.data && response.data.newParticipants) {
@@ -155,22 +185,13 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
       return alert(`Cannot remove member. Minimum ${event.minTeamMembers} members required.`);
     }
 
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return alert("You need to be logged in!");
-
     setIsRemoving(true);
     setRemovingUserId(userId);
 
     try {
-      await axios.post(
-        `${apiUrl}/participants/remove-member`,
-        { eventid, userid: userId },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+      await api.post(
+        `/participants/remove-member`,
+        { eventid, userid: userId }
       );
 
       // Update local state by removing the member
@@ -192,23 +213,14 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const handleRemoveTeam = async () => {
     if (!eventid) return alert("Event ID is missing!");
 
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return alert("You need to be logged in!");
-
     if (!confirm("Are you sure you want to remove the entire team?")) return;
 
     setIsRemoving(true);
 
     try {
-      await axios.post(
-        `${apiUrl}/participants/remove-team`,
-        { eventid },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+      await api.post(
+        `/participants/remove-team`,
+        { eventid }
       );
 
       // Update local state by clearing participants
@@ -405,11 +417,13 @@ const AddTeamMember = ({
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
         {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true
         }
       );
 
@@ -468,7 +482,6 @@ const AddTeamMember = ({
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken');
       const memberIds = selectedMembers.map(member => member._id);
       
       const response = await axios.post(
@@ -480,9 +493,9 @@ const AddTeamMember = ({
         },
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
             "Content-Type": "application/json"
           },
+          withCredentials: true
         }
       );
 
@@ -723,11 +736,13 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
         {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true
         }
       );
 
@@ -764,7 +779,10 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
           teamName: teamName,
         },
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+          },
+          withCredentials: true
         }
       );
 
@@ -829,7 +847,6 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem('accessToken')
       const applicationData = {
         eventid: eventData?._id,
         teamName: teamName,
@@ -841,9 +858,9 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
         applicationData,
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
             "Content-Type": "application/json"
           },
+          withCredentials: true
         }
       );
 
@@ -1241,23 +1258,15 @@ export default function EventDetailPage() {
     if (!eventData || !eventData._id) return;
 
     const checkParticipation = async () => {
-      const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) return;
-
       try {
         const data = {
           eventid: eventData._id,
           userid: currentUser._id,
         };
-        const response = await axios.post(
-          `${apiUrl}/participants/user`,
-          data,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+        
+        const response = await api.post(
+          `/participants/user`,
+          data
         );
 
         if (response.data && response.data.newParticipants) {
@@ -1279,50 +1288,26 @@ export default function EventDetailPage() {
 
     const fetchUserData = async () => {
       setIsLoading(true)
-      const accessToken = localStorage.getItem('accessToken');
-
-      if (!accessToken) {
-        setIsLoading(false)
-        return
-      }
-
       try {
-        const response = await fetch(`${apiUrl}/user/one`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-        })
-
-        if (response.ok) {
-          const userData = await response.json()
-
-          // Process user data
-          const user = typeof userData === 'string' ? JSON.parse(userData) : userData
-          setCurrentUser(user)
-        } else {
-          showToast("error", "Authentication Error", "Failed to fetch user data")
-
-          // Handle authentication error
-          if (response.status === 401) {
-            localStorage.removeItem('user')
-            localStorage.removeItem('accessToken')
-            localStorage.removeItem('refreshToken')
-            router.push('/')
-          }
-        }
+        const userData = await authenticatedFetch(
+          `${apiUrl}/user/one`,
+          { method: 'GET' },
+          router
+        );
+        
+        // Process user data
+        const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
+        setCurrentUser(user);
       } catch (error) {
-        console.error('Error fetching user data:', error)
-        showToast("error", "Error", "Failed to load user data")
+        console.error('Error fetching user data:', error);
+        showToast("error", "Error", "Failed to load user data");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchUserData()
-  }, [apiUrl, router, isMounted])
+    fetchUserData();
+  }, [apiUrl, router, isMounted]);
 
   useEffect(() => {
     // Only run after component is mounted on client
@@ -1330,46 +1315,22 @@ export default function EventDetailPage() {
 
     const fetchEventData = async () => {
       try {
-        // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!accessToken) {
-          setLoading(false)
-          return // User is not authenticated
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/events/all`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setEvents(data)
-        } else {
-          console.error('Failed to fetch event data')
-          // Handle authentication error (e.g., token expired)
-          if (response?.status === 401) {
-            // Clear tokens and redirect to login
-            localStorage.removeItem('user')
-            localStorage.removeItem('accessToken')
-            localStorage.removeItem('refreshToken')
-            router.push('/')
-          }
-        }
+        const data = await authenticatedFetch(
+          `${process.env.NEXT_PUBLIC_API}/events/all`,
+          { method: 'GET' },
+          router
+        );
+        
+        setEvents(data);
       } catch (error) {
-        console.error('Error fetching event data:', error)
+        console.error('Error fetching event data:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    fetchEventData()
-  }, [router, isMounted])
+    fetchEventData();
+  }, [router, isMounted]);
 
   // Find the event from our events data
   const eventData = events?.find(event => event.eventName.trim() === decodeURIComponent(params.events).trim())
@@ -1424,7 +1385,7 @@ export default function EventDetailPage() {
     SetApplyForEvent(false)
   }
 
-  // Safely get UserType from localStorage (client-side only)
+  // Safely get UserType from cookies (client-side only)
   const getUserType = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem("UserType") || ""

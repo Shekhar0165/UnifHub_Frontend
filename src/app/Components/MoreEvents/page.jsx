@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from 'next/navigation';
+import { authenticatedFetch } from '@/utils/authUtils';
 
 const MoreEvents = ({ currentEventId, currentCategory }) => {
   const router = useRouter();
@@ -13,47 +14,23 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
   const [events, SetEvents] = useState(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchEvents = async () => {
       try {
-        // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!accessToken) {
-          setLoading(false);
-          return; // User is not authenticated
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API}/events/all`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          SetEvents(data);
-        } else {
-          console.error('Failed to fetch user data');
-          // Handle authentication error (e.g., token expired)
-          if (response.status === 401) {
-            // Clear tokens and redirect to login
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            router.push('/');
-          }
-        }
+        const data = await authenticatedFetch(
+          `${process.env.NEXT_PUBLIC_API}/events/all`,
+          { method: 'GET' },
+          router
+        );
+        
+        SetEvents(data);
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error fetching events data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    fetchEvents();
   }, [router]);
 
   // Filter events to show only those from the same category, excluding current event
@@ -64,8 +41,8 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
     )
     .slice(0, 3); // Limit to 3 events
 
-  const handleOpenEvent = (id) => {
-    router.push(`/events/${id}`);
+  const handleOpenEvent = (name) => {
+    router.push(`/events/${name}`);
   };
 
   if (!relatedEvents || relatedEvents.length === 0) {
@@ -88,7 +65,7 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
               <CardHeader className="p-0">
                 <div className="relative aspect-video overflow-hidden">
                   <img
-                    src={event?.image}
+                    src={`${process.env.NEXT_PUBLIC_API}/events${event?.image_path}`} 
                     alt={event?.title}
                     className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                   />
@@ -127,7 +104,7 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
               </CardContent>
 
               <CardFooter className="px-6 pb-6">
-                <Button onClick={() => handleOpenEvent(event?._id)} className="w-full gap-2">
+                <Button onClick={() => handleOpenEvent(event?.eventName)} className="w-full gap-2">
                   View Event
                   <ExternalLink className="h-4 w-4" />
                 </Button>

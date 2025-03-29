@@ -13,7 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from '../ModeToggle/ModeToggle';
-import { toast } from "@/hooks/use-toast"; // Import toast if available
+import { toast } from "@/hooks/use-toast";
+import Cookies from 'js-cookie';
 
 const Profile = () => {
   const router = useRouter();
@@ -27,24 +28,16 @@ const Profile = () => {
     ? `${process.env.NEXT_PUBLIC_API}/user/one`
     : `${process.env.NEXT_PUBLIC_API}/org`;
 
-
   // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         // Check if user is authenticated (has token)
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!accessToken) {
-          setLoading(false);
-          return; // User is not authenticated
-        }
 
         const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
           },
           credentials: 'include',
         });
@@ -57,9 +50,10 @@ const Profile = () => {
           // Handle authentication error (e.g., token expired)
           if (response.status === 401) {
             // Clear tokens and redirect to login
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+            Cookies.remove('accessToken');
+            Cookies.remove('refreshToken');
+            Cookies.remove('UserType');
+            Cookies.remove('UserId');
             router.push('/');
           }
         }
@@ -71,9 +65,7 @@ const Profile = () => {
     };
 
     fetchUserData();
-  }, [router]);
-
-  console.log('userData', userData);
+  }, [router, endpoint]);
 
   // Get user initials for avatar fallback
   const getUserInitials = () => {
@@ -87,32 +79,21 @@ const Profile = () => {
   // Logout function
   const handleLogout = async () => {
     try {
-      // Get refresh token from localStorage if available
-      const refreshToken = localStorage.getItem('refreshToken');
 
       // Call the logout API endpoint
       const response = await fetch(`${process.env.NEXT_PUBLIC_API}/logout`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include', // Important to include cookies
-        body: JSON.stringify({ refreshToken }), // Send as fallback in request body
       });
 
       if (response.ok) {
-        // Clear any local storage items
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('UserType');
-        localStorage.removeItem('UserId');
-        Cookies.remove('accessToken');
-        Cookies.remove('refreshToken');
-        Cookies.remove('UserType');
-        Cookies.remove('UserId');
-
         // Show success toast if available
+        localStorage.removeItem('UserType')
+        localStorage.removeItem('UserId')
+
         if (typeof toast === 'function') {
           toast({
             title: "Logged out",
@@ -120,7 +101,6 @@ const Profile = () => {
             variant: "success",
           });
         }
-
         // Redirect to login page
         router.push('/');
       } else {

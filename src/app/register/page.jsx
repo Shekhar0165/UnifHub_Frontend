@@ -168,15 +168,15 @@ export default function RegisterPage() {
       );
 
       // Check if response contains required data
-      if (!res.data || !res.data.user || !res.data.accessToken) {
+      if (!res.data) {
         throw new Error("Invalid response from server");
       }
 
       // Store in localStorage as fallback
-      localStorage.setItem("accessToken", res.data.accessToken);
-      localStorage.setItem("refreshToken", res.data.refreshToken);
       localStorage.setItem('UserType', res.data.user.userType);
       localStorage.setItem('UserId', res.data.user.userid);
+      localStorage.setItem("refreshToken", res.data.refreshToken);
+
       toast({
         title: "Registration successful!",
         description: "Redirecting you to events page...",

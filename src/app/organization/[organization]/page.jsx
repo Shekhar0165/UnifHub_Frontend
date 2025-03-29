@@ -7,6 +7,7 @@ import {
     BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, X,
     BriefcaseIcon, ChevronDown, Building
 } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 // UI components from shadcn/ui or your UI library
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -160,25 +161,37 @@ const RightComponent = ({ user, setIsNavigating }) => {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // Fetch teams from the backend
     useEffect(() => {
         const fetchTeams = async () => {
             try {
                 setLoading(true);
-                const authToken = localStorage.getItem('accessToken');
-
-                // Use the id from the user object
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API}/team/${user._id}`, {
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json',
-                    }
+                    },
+                    credentials: 'include'
                 });
+
+                if (response.status === 401) {
+                    Cookies.remove('accessToken');
+                    Cookies.remove('refreshToken');
+                    Cookies.remove('UserType');
+                    Cookies.remove('UserId');
+                    router.push('/');
+                    return;
+                }
 
                 const data = await response.json();
                 setTeams(data);
             } catch (error) {
                 console.error('Error fetching teams:', error);
+                if (error.response?.status === 401) {
+                    Cookies.remove('accessToken');
+                    Cookies.remove('refreshToken');
+                    Cookies.remove('UserType');
+                    Cookies.remove('UserId');
+                    router.push('/');
+                }
             } finally {
                 setLoading(false);
             }
@@ -187,7 +200,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
         if (user?._id) {
             fetchTeams();
         }
-    }, [user]);
+    }, [user, router]);
 
     const handleTeamClick = (team) => {
         setSelectedTeam(team);
@@ -534,7 +547,6 @@ export default function ProfilePage() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // Single useEffect for handling navigation state
     useEffect(() => {
         setIsNavigating(false);
     }, [pathname, searchParams]);
@@ -542,41 +554,39 @@ export default function ProfilePage() {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const accessToken = localStorage.getItem('accessToken');
-
-                if (!accessToken) {
-                    setLoading(false);
-                    return; // User not authenticated
-                }
-
                 if (!organization) {
                     console.error('organization is missing');
                     setLoading(false);
                     return;
                 }
-                console.log("working from here")
 
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API}/org/one`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${accessToken}`,
                     },
-                    credentials: 'include', // Equivalent to withCredentials: true in axios
+                    credentials: 'include',
                     body: JSON.stringify({ userid: organization })
                 });
 
-                const data = await response.json();
+                if (response.status === 401) {
+                    Cookies.remove('accessToken');
+                    Cookies.remove('refreshToken');
+                    Cookies.remove('UserType');
+                    Cookies.remove('UserId');
+                    router.push('/');
+                    return;
+                }
 
-                setUser(data); // Axios auto-parses JSON
+                const data = await response.json();
+                setUser(data);
             } catch (error) {
                 console.error('Error fetching user data:', error);
-
                 if (error.response?.status === 401) {
-                    // Token expired, clear storage and redirect
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
+                    Cookies.remove('accessToken');
+                    Cookies.remove('refreshToken');
+                    Cookies.remove('UserType');
+                    Cookies.remove('UserId');
                     router.push('/');
                 }
             } finally {
@@ -585,7 +595,7 @@ export default function ProfilePage() {
         };
 
         fetchUserData();
-    }, [organization]);
+    }, [organization, router]);
 
     console.log('user', user);
 

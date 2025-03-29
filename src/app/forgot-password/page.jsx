@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Loader2, CheckCircle, AlertCircle, Send, KeyRound, Save } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 export default function ForgetPasswordPage() {
   const router = useRouter();
@@ -130,12 +131,19 @@ export default function ForgetPasswordPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password: newPassword }),
       });
 
       const data = await response.json();
       
       if (response.ok) {
+        // Clear any existing auth cookies
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+        Cookies.remove('UserType');
+        Cookies.remove('UserId');
+
         toast({
           title: "Password Reset Successful!",
           description: "Redirecting to login page...",

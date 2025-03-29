@@ -4,6 +4,7 @@ import { Calendar, CalendarX, ChevronRight, Clock, Building, Plus, Users, Award,
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import Cookies from 'js-cookie';
 
 // ... other imports
 
@@ -18,12 +19,23 @@ const OrganizationJourney = ({ organizationId }) => {
     const fetchJourneyData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${api}/journey/${organizationId}`);
-        console.log(response.data.data)
+        const response = await axios.get(`${api}/journey/${organizationId}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true
+        });
         // Extract the first item from the array
         setJourneyData(response.data.data);
         setLoading(false);
       } catch (err) {
+        console.error("Error fetching journey data:", err);
+        if (err.response?.status === 401) {
+          Cookies.remove('user');
+          Cookies.remove('accessToken');
+          Cookies.remove('refreshToken');
+          router.push('/');
+        }
         setError(err.message || 'Failed to fetch journey data');
         setLoading(false);
       }
@@ -32,7 +44,7 @@ const OrganizationJourney = ({ organizationId }) => {
     if (organizationId) {
       fetchJourneyData();
     }
-  }, [organizationId]);
+  }, [organizationId, router]);
   console.log(journeyData)
 
   // Function to get the icon component based on achievement type

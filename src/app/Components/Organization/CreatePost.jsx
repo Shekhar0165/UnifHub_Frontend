@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import AddTeamMemberPopup from "./AddTeamMembers";
 import ViewTeamPopup from "./ViewTeamPopup";
+import Cookies from 'js-cookie';
 
 
 const EventComponent = ({ user }) => {
@@ -46,15 +47,25 @@ const EventComponent = ({ user }) => {
     const [showAddTeamMemberPopup, setShowAddTeamMemberPopup] = useState(false);
     const [selectedViewTeam, setSelectedViewTeam] = useState(null);
     const [showViewTeamPopup, setShowViewTeamPopup] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const eventsPerPage = 3;
     const router = useRouter();
     const { toast } = useToast();
 
+    // Ensure component is mounted before accessing browser APIs
     useEffect(() => {
-        const storedUserType = localStorage.getItem("UserType");
-        // Get user type from localStorage
-        setUserType(storedUserType);
+        setIsMounted(true);
+    }, []);
 
+    useEffect(() => {
+        // Only run after component is mounted to avoid SSR issues with localStorage/cookies
+        if (!isMounted) return;
+        
+        // Get user type from cookies first, fall back to localStorage during migration
+        const userTypeFromStorage = localStorage.getItem('UserType');
+        
+        setUserType( userTypeFromStorage);
+        
         const fetchEvents = async () => {
             try {
                 setLoading(true);
@@ -63,14 +74,18 @@ const EventComponent = ({ user }) => {
                     { _id: user?._id },
                     {
                         headers: {
-                            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                            "Content-Type": "application/json",
                         },
+                        withCredentials: true
                     }
                 );
                 setEvents(response.data);
                 setVisibleEvents(response.data.slice(0, eventsPerPage));
             } catch (error) {
                 console.error("Error fetching events:", error);
+                if (error.response?.status === 401) {
+                    router.push('/');
+                }
                 toast({
                     variant: "destructive",
                     title: "Error Fetching Events",
@@ -84,7 +99,7 @@ const EventComponent = ({ user }) => {
         if (user?._id) {
             fetchEvents();
         }
-    }, [user, toast]);
+    }, [user, toast, router, isMounted]);
 
 
    
@@ -171,8 +186,9 @@ const EventComponent = ({ user }) => {
                 `${process.env.NEXT_PUBLIC_API}/events/delete/${eventToDelete._id}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                        "Content-Type": "application/json",
                     },
+                    withCredentials: true
                 }
             );
 
@@ -188,6 +204,9 @@ const EventComponent = ({ user }) => {
             }
         } catch (error) {
             console.error("Error deleting event:", error);
+            if (error.response?.status === 401) {
+                router.push('/');
+            }
             toast({
                 variant: "destructive",
                 title: "Failed to Delete Event",
