@@ -175,7 +175,8 @@ export default function RegisterPage() {
       // Store in localStorage as fallback
       localStorage.setItem('UserType', res.data.user.userType);
       localStorage.setItem('UserId', res.data.user.userid);
-      localStorage.setItem("refreshToken", res.data.refreshToken);
+      document.cookie = `accessToken=${res.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+      document.cookie = `refreshToken=${res.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
 
       toast({
         title: "Registration successful!",
