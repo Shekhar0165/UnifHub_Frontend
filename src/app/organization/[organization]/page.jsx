@@ -45,7 +45,7 @@ const LeftComponent = ({ user }) => {
                     <div className="p-6">
                         <div className="flex flex-col items-center">
                             <img
-                                src={`${process.env.NEXT_PUBLIC_API}${user?.profileImage}`}
+                                src={user?.profileImage}
                                 alt={user?.name}
                                 className="h-32 w-32 rounded-full border-4 border-background dark:border-gray-700 shadow-xl mb-4"
                             />
@@ -254,7 +254,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
                                     <Avatar className="h-12 w-12 border-4 border-white dark:border-gray-800 shadow-sm">
                                         {selectedTeam.teamLeader?.profile_path ? (
                                             <AvatarImage
-                                                src={`${process.env.NEXT_PUBLIC_API}${selectedTeam.teamLeader.profile_path}`}
+                                                src={selectedTeam.teamLeader.profile_path}
                                                 alt={selectedTeam.teamLeader.name}
                                             />
                                         ) : (
@@ -301,7 +301,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
                                                     <Avatar className="h-14 w-14 ring-2 ring-white dark:ring-gray-800 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-800 shadow-md transform group-hover:scale-105 transition-transform duration-300">
                                                         {member.profile_path ? (
                                                             <AvatarImage
-                                                                src={`${process.env.NEXT_PUBLIC_API}${member.profile_path}`}
+                                                                src={member.profile_path}
                                                                 alt={member.name}
                                                                 className="object-cover"
                                                             />
@@ -441,7 +441,7 @@ const RightComponent = ({ user, setIsNavigating }) => {
                                                         <div className="flex-shrink-0">
                                                             <Avatar className="h-9 w-9 border-2 border-primary/20">
                                                                 {team.teamLeader?.profile_path ? (
-                                                                    <AvatarImage src={`${process.env.NEXT_PUBLIC_API}${team.teamLeader.profile_path}`} alt={team.teamLeader.name} />
+                                                                    <AvatarImage src={team.teamLeader.profile_path} alt={team.teamLeader.name} />
                                                                 ) : (
                                                                     <AvatarFallback className="bg-primary/10 text-primary">
                                                                         {team.teamLeader?.name?.charAt(0).toUpperCase() || 'T'}
@@ -466,10 +466,10 @@ const RightComponent = ({ user, setIsNavigating }) => {
                                                                 variant="outline"
 
                                                             >
-                                                                <Link className="flex items-center gap-1.5 px-2 py-1 hover:bg-secondary/20 border border-border  rounded-md" href={`/user/${member.userid}`}>
+                                                                <Link className="flex items-center gap-1 py-1 hover:bg-secondary/20  rounded-md" href={`/user/${member.userid}`}>
                                                                     <Avatar className="h-4 w-4">
                                                                         {member.profile_path ? (
-                                                                            <AvatarImage src={`${process.env.NEXT_PUBLIC_API}${member.profile_path}`} alt={member.name} />
+                                                                            <AvatarImage src={member.profile_path} alt={member.name} />
                                                                         ) : (
                                                                             <AvatarFallback className="text-xs">
                                                                                 {member.name.charAt(0).toUpperCase()}
@@ -613,7 +613,7 @@ export default function ProfilePage() {
                     <>
                         <div className="relative h-60 w-full overflow-hidden">
                             <img
-                                src={`${process.env.NEXT_PUBLIC_API}${user?.coverImage}`}
+                                src={user?.coverImage}
                                 alt="Cover"
                                 className="w-full h-full object-cover"
                             />

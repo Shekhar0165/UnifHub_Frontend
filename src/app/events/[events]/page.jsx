@@ -1,7 +1,7 @@
 'use client'
 import { useParams } from 'next/navigation'
 import React, { useEffect, useState, useCallback } from 'react'
-import { Calendar, MapPin, Users, AlertCircle, Share2, BookmarkPlus, Search, UserPlus, Loader2, X, Circle, Flag, CheckCircle, ChevronLeft, Send, Check, UserX, XCircle, CalendarX, ArrowLeft,AlertTriangle } from 'lucide-react'
+import { Calendar, MapPin, Users, AlertCircle, Share2, BookmarkPlus, Search, UserPlus, Loader2, X, Circle, Flag, CheckCircle, ChevronLeft, Send, Check, UserX, XCircle, CalendarX, ArrowLeft, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,11 +35,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // If the error is 401 and we haven't already tried to refresh
     if (error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         // Refresh the token
         const refreshToken = Cookies.get('refreshToken');
@@ -48,14 +48,14 @@ api.interceptors.response.use(
           window.location.href = '/';
           return Promise.reject(error);
         }
-        
+
         // Call the refresh token endpoint
         const response = await axios.post(
           `${apiUrl}/auth/refresh`,
           { token: refreshToken },
           { withCredentials: true }
         );
-        
+
         if (response.status === 200) {
           // Retry the original request
           return api(originalRequest);
@@ -66,7 +66,7 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -102,7 +102,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
           eventid: eventid,
           userid: currentUser._id,
         };
-        
+
         const response = await api.post(
           `/participants/user`,
           data
@@ -130,8 +130,8 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const isAdmin = currentUser && currentUser.role === "admin";
 
   // Count current participants
-  const currentParticipantsCount = Array.isArray(participants?.participants) 
-    ? participants.participants.length 
+  const currentParticipantsCount = Array.isArray(participants?.participants)
+    ? participants.participants.length
     : 0;
 
   // Check if team has room for more members
@@ -154,7 +154,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
         eventid: eventid,
         userid: currentUser._id,
       };
-      
+
       const response = await api.post(
         `/participants/user`,
         data
@@ -278,8 +278,8 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
               </div>
             )}
             {isAdmin && (
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={handleRemoveTeam}
                 disabled={isRemoving}
                 className="text-sm"
@@ -293,14 +293,14 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
         <div className="space-y-3 mb-6">
           {participants.participants.map((participant) => (
             <div key={participant.userid || participant._id || Math.random().toString()}
-                 className="p-4 border rounded-lg flex items-center gap-4 hover:bg-white/5 transition-colors duration-200">
+              className="p-4 border rounded-lg flex items-center gap-4 hover:bg-white/5 transition-colors duration-200">
               <Link
                 href={`/user/${participant.userid}`}
                 className="flex items-center gap-4 flex-grow"
               >
                 {participant.profileImage ? (
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API}${participant.profileImage}`}
+                    src={participant.profileImage}
                     alt={participant.name || "User"}
                     className="w-12 h-12 rounded-full object-cover border-2 border-primary"
                   />
@@ -314,11 +314,11 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
                   <p className="text-gray-500 text-sm">{participant.userid || "No ID"}</p>
                 </div>
               </Link>
-              
+
               {/* Remove user button for admin or team members */}
               {(isAdmin || currentUser._id === participant.userid) && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-700"
                   onClick={() => handleRemoveMember(participant.userid)}
@@ -351,7 +351,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
               </span>
             )}
           </div>
-          
+
           {event && event.minTeamMembers && (
             <div className="text-sm text-gray-500">
               Minimum required: {event.minTeamMembers}
@@ -361,9 +361,9 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
 
         {/* Add "Add Member" button if there's room for more team members */}
         {hasRoomForMoreMembers && event?.status === "upcoming" && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="w-full mt-4 border-primary text-primary hover:bg-primary/10"
             onClick={handleAddMember}
           >
@@ -371,10 +371,10 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
             Add Member
           </Button>
         )}
-        
+
         {/* Add Member Dialog */}
         {showAddMember && (
-          <AddTeamMember 
+          <AddTeamMember
             showDialog={showAddMember}
             closeDialog={handleCloseAddMember}
             eventData={event}
@@ -394,14 +394,14 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
 };
 
 // New component for adding team members
-const AddTeamMember = ({ 
-  showDialog, 
-  closeDialog, 
-  eventData, 
-  teamName, 
+const AddTeamMember = ({
+  showDialog,
+  closeDialog,
+  eventData,
+  teamName,
   currentParticipants,
   refreshParticipants,
-  showToast 
+  showToast
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -432,7 +432,7 @@ const AddTeamMember = ({
       if (data.success) {
         const results = data.members || [];
         // Filter out members who are already part of the team
-        const filteredResults = results.filter(member => 
+        const filteredResults = results.filter(member =>
           !currentParticipants.some(p => p.userid === member._id)
         );
         setSearchResults(filteredResults);
@@ -483,7 +483,7 @@ const AddTeamMember = ({
 
     try {
       const memberIds = selectedMembers.map(member => member._id);
-      
+
       const response = await axios.post(
         `${apiUrl}/participants/update-team`,
         {
@@ -718,7 +718,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
   const [selectedMembers, setSelectedMembers] = useState([]); // New state to track selected members
 
   const router = useRouter();
-  
+
   // Initialize the invited array with the current user
   useEffect(() => {
     if (currentUser) {
@@ -779,7 +779,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
           teamName: teamName,
         },
         {
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
           },
           withCredentials: true
@@ -826,7 +826,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
   const handleRemoveMember = (memberId) => {
     // Don't allow removing the current user (admin)
     if (currentUser && memberId === currentUser._id) return;
-    
+
     setInvited(invited.filter(id => id !== memberId));
     setSelectedMembers(selectedMembers.filter(member => member._id !== memberId));
   };
@@ -918,7 +918,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                 <div className="flex items-center">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
                     {currentUser.profileImage ? (
-                      <img className="w-12 h-12 rounded-full object-cover border-2 border-primary" src={`${process.env.NEXT_PUBLIC_API}${currentUser.profileImage}`} alt="" />
+                      <img className="w-12 h-10 rounded-full object-cover border-2 border-primary" src={currentUser.profileImage} alt="" />
                     ) :
                       currentUser.name?.charAt(0).toUpperCase() || 'U'
                     }
@@ -1052,7 +1052,16 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                       >
                         <div className="flex items-center">
                           <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
-                            {member.name?.charAt(0).toUpperCase() || 'U'}
+                            {member.profileImage ? (
+                              <img
+                                className="w-12 h-10 rounded-full object-cover border-2 border-primary"
+                                src={member.profileImage}
+                                alt=""
+                              />
+                            ) : (
+                              <span>{member.name?.charAt(0).toUpperCase() || 'U'}</span>
+                            )}
+
                           </div>
                           <div>
                             <div className="font-medium">{member.name}</div>
@@ -1118,7 +1127,11 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                 <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg mb-3 border border-primary/10">
                   <div className="flex items-center">
                     <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
-                      {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+                      {currentUser.profileImage ? (
+                        <img className="w-12 h-10 rounded-full object-cover border-2 border-primary" src={currentUser.profileImage} alt="" />
+                      ) :
+                        currentUser.name?.charAt(0).toUpperCase() || 'U'
+                      }
                     </div>
                     <div>
                       <div className="font-medium">{currentUser.name}</div>
@@ -1136,7 +1149,11 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                       <div key={member._id} className="flex justify-between items-center p-2.5 border rounded-lg hover:bg-primary/5 transition-colors">
                         <div className="flex items-center">
                           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2 shadow-sm">
-                            {member.name?.charAt(0).toUpperCase() || 'U'}
+                            {member.profileImage ? (
+                              <img className="w-12 h-10 rounded-full object-cover border-2 border-primary" src={member.profileImage} alt="" />
+                            ) :
+                              member.name?.charAt(0).toUpperCase() || 'U'
+                            }
                           </div>
                           <div>
                             <div className="font-medium">{member.name}</div>
@@ -1263,7 +1280,7 @@ export default function EventDetailPage() {
           eventid: eventData._id,
           userid: currentUser._id,
         };
-        
+
         const response = await api.post(
           `/participants/user`,
           data
@@ -1294,7 +1311,7 @@ export default function EventDetailPage() {
           { method: 'GET' },
           router
         );
-        
+
         // Process user data
         const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
         setCurrentUser(user);
@@ -1320,7 +1337,7 @@ export default function EventDetailPage() {
           { method: 'GET' },
           router
         );
-        
+
         setEvents(data);
       } catch (error) {
         console.error('Error fetching event data:', error);
@@ -1372,7 +1389,7 @@ export default function EventDetailPage() {
       case 'completed': return 'bg-gray-600'
       case 'cancelled': return 'bg-red-600'
       case 'Add Member': return 'bg-yello-600'
-      case 'Team Full': return  'bg-green-600' 
+      case 'Team Full': return 'bg-green-600'
       default: return 'bg-gray-600'
     }
   }
@@ -1400,7 +1417,7 @@ export default function EventDetailPage() {
     if (isParticipating) {
       return "Already Registered";
     }
-    
+
     if (eventData?.status === "upcoming") {
       return "Apply Now";
     } else if (eventData?.status === "ongoing") {
@@ -1411,6 +1428,7 @@ export default function EventDetailPage() {
       return "Event Cancelled";
     }
   };
+  console.log(eventData.image_path)
 
   return (
     <>
@@ -1420,7 +1438,7 @@ export default function EventDetailPage() {
         <div className="relative h-80 lg:h-96 w-full overflow-hidden">
           <img
             className="object-cover w-full h-full"
-            src={eventData?.image_path ? `${process.env.NEXT_PUBLIC_API}/events${eventData.image_path}` : '/event-placeholder.jpg'}
+            src={eventData?.image_path}
             alt={eventData?.eventName || 'Event image'}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
@@ -1582,8 +1600,8 @@ export default function EventDetailPage() {
                           size="lg"
                           onClick={HandleOpenApply}
                           disabled={
-                            eventData?.status === "completed" || 
-                            eventData?.status === "cancelled" || 
+                            eventData?.status === "completed" ||
+                            eventData?.status === "cancelled" ||
                             UserType === "Organization" ||
                             isParticipating
                           }

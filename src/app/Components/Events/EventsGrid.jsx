@@ -11,7 +11,7 @@ const EventCard = ({ event, onClick }) => {
       <CardHeader className="p-0">
         <div className="relative aspect-video overflow-hidden">
           <img 
-            src={`${process.env.NEXT_PUBLIC_API}/events${event?.image_path}`} 
+            src={event?.image_path} 
             alt={event?.eventName || "Event image"}
             className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
           />

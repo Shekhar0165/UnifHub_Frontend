@@ -251,7 +251,7 @@ const ProfileEditForm = () => {
               <div className="relative h-48 rounded-lg overflow-hidden bg-muted">
                 {user?.coverImage && !coverImage && (
                   <img 
-                    src={`${process.env.NEXT_PUBLIC_API}${user?.coverImage}`} 
+                    src={user?.coverImage} 
                     alt="Cover" 
                     className="w-full h-full object-cover"
                   />
@@ -285,7 +285,7 @@ const ProfileEditForm = () => {
               <div className="relative">
                 <Avatar className="h-32 w-32 border-4 border-background">
                   {user?.profileImage && !profileImage ? (
-                    <AvatarImage src={`${process.env.NEXT_PUBLIC_API}${user?.profileImage}`} 
+                    <AvatarImage src={user?.profileImage} 
                     alt={user?.name} />
                   ) : profileImage ? (
                     <AvatarImage src={URL.createObjectURL(profileImage)} alt={user?.name} />

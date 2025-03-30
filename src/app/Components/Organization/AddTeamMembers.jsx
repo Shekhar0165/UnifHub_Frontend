@@ -452,7 +452,7 @@ const AddTeamMemberPopup = ({ selectedAddTeamMember, closeAddTeamMemberPopup, is
                                                                         >
                                                                             <div className="flex items-center gap-2 overflow-hidden">
                                                                                 <Avatar className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0">
-                                                                                    <AvatarImage src={member.profile_path ? `${apiUrl}${member.profile_path}` : ''} />
+                                                                                    <AvatarImage src={member.profile_path} />
                                                                                     <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                                                 </Avatar>
                                                                                 <span className="text-sm sm:text-base truncate">{member.name}</span>
@@ -508,7 +508,7 @@ const AddTeamMemberPopup = ({ selectedAddTeamMember, closeAddTeamMemberPopup, is
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2 overflow-hidden">
                                                                 <Avatar className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0">
-                                                                    <AvatarImage src={member.profile_path ? `${apiUrl}${member.profile_path}` : ''} />
+                                                                    <AvatarImage src={member.profile_path} />
                                                                     <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                                 </Avatar>
                                                                 <div className="overflow-hidden">
@@ -574,7 +574,7 @@ const AddTeamMemberPopup = ({ selectedAddTeamMember, closeAddTeamMemberPopup, is
                                             <div className="p-1 sm:p-2 border border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-md flex-1 min-w-[120px]">
                                                 <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
                                                     <Avatar className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0">
-                                                        <AvatarImage src={headMember.profile_path ? `${apiUrl}${headMember.profile_path}` : ''} />
+                                                        <AvatarImage src={headMember.profile_path} />
                                                         <AvatarFallback>{headMember.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
@@ -589,7 +589,7 @@ const AddTeamMemberPopup = ({ selectedAddTeamMember, closeAddTeamMemberPopup, is
                                             <div className="p-1 sm:p-2 border border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-800 rounded-md flex-1 min-w-[120px]">
                                                 <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
                                                     <Avatar className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0">
-                                                        <AvatarImage src={viceHeadMember.profile_path ? `${apiUrl}${viceHeadMember.profile_path}` : ''} />
+                                                        <AvatarImage src={viceHeadMember.profile_path} />
                                                         <AvatarFallback>{viceHeadMember.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
@@ -654,7 +654,7 @@ const AddTeamMemberPopup = ({ selectedAddTeamMember, closeAddTeamMemberPopup, is
                                                                         <div key={member.id} className="flex items-center justify-between border-b border-border/50 pb-1">
                                                                             <div className="flex items-center gap-1 overflow-hidden">
                                                                                 <Avatar className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0">
-                                                                                    <AvatarImage src={member.profile_path ? `${apiUrl}${member.profile_path}` : ''} />
+                                                                                    <AvatarImage src={member.profile_path} />
                                                                                     <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                                                 </Avatar>
                                                                                 <span className="text-xs sm:text-sm truncate">{member.name}</span>
@@ -718,7 +718,7 @@ const AddTeamMemberPopup = ({ selectedAddTeamMember, closeAddTeamMemberPopup, is
                                                     <div key={member.id} className="flex items-center justify-between border-b border-border/50 pb-1">
                                                         <div className="flex items-center gap-1 overflow-hidden">
                                                             <Avatar className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0">
-                                                                <AvatarImage src={member.profile_path ? `${apiUrl}${member.profile_path}` : ''} />
+                                                                <AvatarImage src={member.profile_path} />
                                                                 <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                             </Avatar>
                                                             <span className="text-xs sm:text-sm truncate">{member.name}</span>

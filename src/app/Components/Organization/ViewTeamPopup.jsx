@@ -124,7 +124,7 @@ const ViewTeamPopup = ({
                   <CardContent className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage 
-                        src={`${apiUrl}${eventDetails.eventHead?.profilePath}`} 
+                        src={eventDetails.eventHead?.profilePath} 
                         alt={eventDetails.eventHead?.name} 
                       />
                       <AvatarFallback>
@@ -149,7 +149,7 @@ const ViewTeamPopup = ({
                   <CardContent className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage 
-                        src={`${apiUrl}${eventDetails.eventViceHead?.profilePath}`} 
+                        src={eventDetails.eventViceHead?.profilePath} 
                         alt={eventDetails.eventViceHead?.name} 
                       />
                       <AvatarFallback>
@@ -224,7 +224,7 @@ const ViewTeamPopup = ({
                                   team.members.map((member) => (
                                     <Link href={`/user/${member.userid}`} key={member._id} className="flex cursor-pointer hover:bg-white/5 items-center gap-3 p-2 rounded-md border bg-card">
                                       <Avatar className="h-8 w-8">
-                                        <AvatarImage src={`${apiUrl}${member.profilePath}`} alt={member.name} />
+                                        <AvatarImage src={member.profilePath} alt={member.name} />
                                         <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
                                       </Avatar>
                                       <div className="flex-1 min-w-0">

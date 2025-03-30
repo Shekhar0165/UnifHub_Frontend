@@ -11,7 +11,7 @@ const OrganizationCard = ({ organization, onClick }) => {
       <CardHeader className="p-0">
         <div className="relative aspect-video overflow-hidden">
           <img 
-            src={`${process.env.NEXT_PUBLIC_API}${organization.profileImage}`} 
+            src={organization.profileImage} 
             alt={organization.name || "Organization image"}
             className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
           />

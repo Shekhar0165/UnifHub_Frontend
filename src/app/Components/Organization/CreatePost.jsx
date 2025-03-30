@@ -60,12 +60,12 @@ const EventComponent = ({ user }) => {
     useEffect(() => {
         // Only run after component is mounted to avoid SSR issues with localStorage/cookies
         if (!isMounted) return;
-        
+
         // Get user type from cookies first, fall back to localStorage during migration
         const userTypeFromStorage = localStorage.getItem('UserType');
-        
-        setUserType( userTypeFromStorage);
-        
+
+        setUserType(userTypeFromStorage);
+
         const fetchEvents = async () => {
             try {
                 setLoading(true);
@@ -102,7 +102,7 @@ const EventComponent = ({ user }) => {
     }, [user, toast, router, isMounted]);
 
 
-   
+
 
 
     const formatEventDate = (dateString) => {
@@ -158,9 +158,9 @@ const EventComponent = ({ user }) => {
     };
 
     const handleSecondButtonClick = (event) => {
-        if(event?.isteamadded){
+        if (event?.isteamadded) {
             handleViewTeamClick(event)
-        }else{
+        } else {
             handleAddTeamMemberClick(event)
         }
         FetchEventTeamsMembers(event._id)
@@ -277,14 +277,14 @@ const EventComponent = ({ user }) => {
                                             {event.eventDate && (
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Calendar size={16} />
-                                                    <span>{formatEventDate(event.eventDate)}</span>
+                                                    <span className="max-w-[180px] sm:max-w-none truncate">{formatEventDate(event.eventDate)}</span>
                                                 </div>
                                             )}
 
                                             {event.location && (
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <MapPin size={16} />
-                                                    <span className="truncate">{event.location}</span>
+                                                    <span className="max-w-[180px] sm:max-w-none truncate">{event.location}</span>
                                                 </div>
                                             )}
 
@@ -322,8 +322,7 @@ const EventComponent = ({ user }) => {
                                                     <span>{event?.totalteams} Teams</span>
                                                 </div>
                                             </div>
-                                            <div className="flex justify-end gap-2">
-
+                                            <div className="flex flex-wrap sm:flex-nowrap justify-end gap-2 w-full sm:w-auto">
                                                 <Button
                                                     onClick={() => handleEventClick(event)}
                                                     size="sm"
@@ -334,28 +333,28 @@ const EventComponent = ({ user }) => {
                                                     Show Positions
                                                 </Button>
 
-                                                 {userType === 'Organization' && (<Button
-                                                    onClick={() => handleSecondButtonClick(event)}
-                                                    size="sm"
-                                                    variant="default"
-                                                    className="flex items-center gap-1 w-full sm:w-auto"
-                                                    disabled={userType !== 'Organization'}
-                                                >
-                                                   {event?.isteamadded ? <Eye size={16} /> : <Plus size={16} /> }
-                                                    {event?.isteamadded ? "View Team" : "Add Team Member"}
-                                                </Button> )}
+                                                {userType === 'Organization' && (
+                                                    <Button
+                                                        onClick={() => handleSecondButtonClick(event)}
+                                                        size="sm"
+                                                        variant="default"
+                                                        className="flex items-center gap-1 w-full sm:w-auto"
+                                                        disabled={userType !== 'Organization'}
+                                                    >
+                                                        {event?.isteamadded ? <Eye size={16} /> : <Plus size={16} />}
+                                                        {event?.isteamadded ? "View Team" : "Add Team Member"}
+                                                    </Button>
+                                                )}
 
-                                                 {<Button
+                                                {<Button
                                                     onClick={() => handleSecondButtonClick(event)}
                                                     size="sm"
                                                     variant="default"
                                                     className={`flex items-center gap-1 w-full sm:w-auto ${event?.isteamadded ? '' : 'hidden'} ${userType === 'Organization' ? 'hidden' : ''}`}
                                                 >
-                                                   {event?.isteamadded ? <Eye size={16} /> : ''}
+                                                    {event?.isteamadded ? <Eye size={16} /> : ''}
                                                     {event?.isteamadded ? "View Team" : ""}
-                                                </Button> }
-
-
+                                                </Button>}
 
                                                 {userType === 'Organization' && (
                                                     <Button
@@ -372,13 +371,18 @@ const EventComponent = ({ user }) => {
                                     </CardContent>
 
                                     <CardFooter className="pt-3 pb-4 flex flex-col sm:flex-row justify-between border-t border-border gap-4">
-                                        <div className="flex items-center">
-                                            <Avatar className="h-6 w-6 mr-2">
-                                                <AvatarImage src={user?.profileImage} />
-                                                <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
-                                            </Avatar>
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                                            <div className="flex items-center">
+                                                <Avatar className="h-6 w-6 mr-2">
+                                                    <AvatarImage src={user?.profileImage} />
+                                                    <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-sm text-muted-foreground overflow-hidden text-ellipsis">
+                                                    Organized by <span className="font-medium">{user?.name || "you"}</span>
+                                                </span>
+                                            </div>
                                             <span className="text-sm text-muted-foreground">
-                                                Organized by <span className="font-medium">{user?.name || "you"}</span>
+                                                {formatEventDate(event.createdAt)}
                                             </span>
                                         </div>
                                         <div className="flex gap-2 w-full sm:w-auto">
@@ -427,8 +431,8 @@ const EventComponent = ({ user }) => {
                                 "{eventToDelete?.eventName}".
                             </AlertDialogDescription>
                         </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
+                        <AlertDialogFooter className="sm:flex-row flex-col-reverse gap-2 sm:gap-0">
+                            <AlertDialogCancel onClick={cancelDelete} className="mt-2 sm:mt-0">Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
                                 Delete
                             </AlertDialogAction>
@@ -440,17 +444,16 @@ const EventComponent = ({ user }) => {
                 selectedEvent={selectedEvent}
                 closeEventPopup={closeEventPopup}
                 events={events}
-                isOpen={showEventPopup} // Add this prop
+                isOpen={showEventPopup}
             />}
             {showEventResult && <EventResultPopup selectedResult={selectedResult} closeResultPopup={closeResultPopup} />}
             {showAddTeamMemberPopup && <AddTeamMemberPopup
                 selectedAddTeamMember={selectedAddTeamMember}
                 closeAddTeamMemberPopup={() => setShowAddTeamMemberPopup(false)}
-                isOpen={showAddTeamMemberPopup} // Add this prop
+                isOpen={showAddTeamMemberPopup}
                 organizationId={user?._id}
             />}
             {showViewTeamPopup && <ViewTeamPopup selectedViewTeam={selectedViewTeam} closeViewTeamPopup={() => setShowViewTeamPopup(false)} isOpen={showViewTeamPopup} user={user} />}
-
         </>
     );
 };

@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation'
 import {
   User, Award, FileText, Calendar, Download, Share2, MapPin,
   Briefcase, GraduationCap, Mail, Phone, Star, Activity,
-  BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, ChevronDown, Pencil
+  BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, ChevronDown, Pencil,Menu
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Header from '@/app/Components/Header/Header'
@@ -32,7 +32,7 @@ const LeftComponent = ({ user }) => {
           <div className="p-6">
             <div className="flex flex-col items-center">
               <img
-                src={`${process.env.NEXT_PUBLIC_API}${user?.profileImage}`}
+                src={user?.profileImage}
                 alt={user?.name}
                 className="h-32 w-32 rounded-full border-4 border-background dark:border-gray-700 shadow-xl mb-4"
               />
@@ -153,19 +153,93 @@ const LeftComponent = ({ user }) => {
 }
 
 
-
 const RightComponent = ({ user }) => {
-  // const user = sampleUser;
   const [activeTab, setActiveTab] = useState('achievements');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
     <>
       <div className="w-full lg:w-2/3">
         <div className="bg-background rounded-xl shadow-lg overflow-hidden mb-6 border border-border/40">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-border">
+          {/* Mobile Toggle Button - Only visible on smaller screens */}
+          <div className="block md:hidden border-b border-border">
+            <button 
+              onClick={toggleMenu}
+              className="flex items-center justify-between w-full py-3 px-4 text-foreground"
+            >
+              <div className="flex items-center">
+                {activeTab === 'achievements' && <Award className="h-5 w-5 mr-2" />}
+                {activeTab === 'resume' && <FileText className="h-5 w-5 mr-2" />}
+                {activeTab === 'certificates' && <Star className="h-5 w-5 mr-2" />}
+                <span className="font-medium">
+                  {activeTab === 'achievements' ? 'Achievements' : 
+                   activeTab === 'resume' ? 'Resume' : 'Certificates'}
+                </span>
+              </div>
+              <Menu className="h-5 w-5" />
+            </button>
+            
+            {/* Mobile Dropdown Menu */}
+            {isMenuOpen && (
+              <div className="border-t border-border bg-background">
+                <button
+                  onClick={() => {
+                    setActiveTab('achievements');
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full py-3 px-4 text-left text-sm ${
+                    activeTab === 'achievements'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                      : 'text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <Award className="h-5 w-5 mr-2" />
+                    Achievements
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('resume');
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full py-3 px-4 text-left text-sm ${
+                    activeTab === 'resume'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                      : 'text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 mr-2" />
+                    Resume
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('certificates');
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full py-3 px-4 text-left text-sm ${
+                    activeTab === 'certificates'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                      : 'text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <Star className="h-5 w-5 mr-2" />
+                    Certificates
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Tab Navigation - Hidden on mobile */}
+          <div className="hidden md:flex border-b border-border">
             <button
               onClick={() => setActiveTab('achievements')}
               className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'achievements'
@@ -205,11 +279,11 @@ const RightComponent = ({ user }) => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {activeTab === 'achievements' && (
               <div>
-                <h2 className="text-xl font-semibold text-foreground mb-6">Latest Achievements</h2>
-                <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-foreground mb-4 sm:mb-6">Latest Achievements</h2>
+                <div className="space-y-4 sm:space-y-6">
                   <EventsList user={user} />
                 </div>
               </div>
@@ -221,7 +295,7 @@ const RightComponent = ({ user }) => {
 
             {activeTab === 'certificates' && (
               <div>
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
                   <h2 className="text-xl font-semibold text-foreground">Certificates</h2>
                   <button className="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-background hover:bg-secondary transition-colors">
                     <Download className="h-4 w-4 mr-2" />
@@ -229,14 +303,14 @@ const RightComponent = ({ user }) => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {user?.events?.map((event, index) => (
                     <div key={index} className="bg-background border border-border rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                      <div className="p-4 border-b border-border bg-blue-50/50 dark:bg-blue-900/20">
+                      <div className="p-3 sm:p-4 border-b border-border bg-blue-50/50 dark:bg-blue-900/20">
                         <h3 className="font-medium text-foreground truncate">{event.title}</h3>
                       </div>
 
-                      <div className="p-4">
+                      <div className="p-3 sm:p-4">
                         <p className="text-sm text-muted-foreground mb-1">
                           <span className="font-medium">Position:</span> {event.position}
                         </p>
@@ -244,13 +318,13 @@ const RightComponent = ({ user }) => {
                           <span className="font-medium">Date:</span> {event.date}
                         </p>
 
-                        <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center justify-between mt-3 sm:mt-4">
                           <span className="text-xs text-muted-foreground">Certificate ID: #{index + 1001}</span>
                           <a
                             href={event.certificate}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                           >
-                            <Download className="h-4 w-4 mr-1" />
+                            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                             Download
                           </a>
                         </div>
@@ -267,9 +341,8 @@ const RightComponent = ({ user }) => {
         <UserActivityOverview user={user} />
       </div>
     </>
-  )
-}
-
+  );
+};
 export default function ProfilePage() {
   const userId = useParams();
   const [user, setUser] = useState(null);
@@ -329,7 +402,7 @@ export default function ProfilePage() {
       {/* Header with Cover Image */}
       <div className="relative h-60 w-full overflow-hidden">
         <img
-          src={`${process.env.NEXT_PUBLIC_API}${user?.coverImage}`}
+          src={user?.coverImage}
           alt="Cover"
           className="w-full h-full object-cover"
         />

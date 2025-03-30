@@ -170,7 +170,7 @@ const Profile = () => {
             <Avatar className="h-8 w-8 border-2 border-primary">
               {userData.profileImage ? (
                 <AvatarImage
-                  src={`${process.env.NEXT_PUBLIC_API}${userData?.profileImage}`}
+                  src={userData?.profileImage}
                   alt={userData.name || 'Profile'}
                 />
               ) : null}
@@ -189,7 +189,7 @@ const Profile = () => {
             <Avatar className="h-10 w-10 border-2 border-primary">
               {userData.profileImage ? (
                 <AvatarImage
-                  src={`${process.env.NEXT_PUBLIC_API}/uploads/${userData.profileImage}`}
+                  src={userData.profileImage}
                   alt={userData.name || 'Profile'}
                 />
               ) : null}

@@ -65,7 +65,7 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
               <CardHeader className="p-0">
                 <div className="relative aspect-video overflow-hidden">
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API}/events${event?.image_path}`} 
+                    src={event?.image_path} 
                     alt={event?.title}
                     className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                   />

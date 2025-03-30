@@ -150,7 +150,7 @@ const EditEventForm = () => {
                 // Set image preview if available
                 if (eventData.image_path) {
                     setImageLoading(true);
-                    const imageUrl = `${process.env.NEXT_PUBLIC_API}/events${eventData.image_path}`;
+                    const imageUrl = `${eventData.image_path}`;
 
                     // Preload image to ensure it's loaded properly
                     const img = new Image();

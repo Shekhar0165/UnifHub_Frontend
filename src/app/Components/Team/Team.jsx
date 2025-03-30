@@ -142,11 +142,13 @@ export default function TeamManagement({ OrgId }) {
         setIsSearching(true);
 
         try {
-            const authToken = localStorage.getItem('accessToken');
             const response = await axios.get(
                 `${api}/user/members/search?query=${encodeURIComponent(query)}`,
                 {
-                    headers: { Authorization: `Bearer ${authToken}` },
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true
                 }
             );
 
@@ -281,8 +283,8 @@ export default function TeamManagement({ OrgId }) {
         try {
             const authToken = localStorage.getItem('accessToken');
             await axios.delete(`${api}/team/delete`, {
-                headers: { 
-                    Authorization: `Bearer ${authToken}` 
+                headers: {
+                    Authorization: `Bearer ${authToken}`
                 },
                 data: {
                     teamid: teamId,
@@ -515,7 +517,7 @@ export default function TeamManagement({ OrgId }) {
 
     return (
         <div className="container mx-auto p-4">
-            <Toaster/>
+            <Toaster />
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Team Management</h1>
@@ -609,42 +611,42 @@ export default function TeamManagement({ OrgId }) {
                                         <Link href={`/user/${team.teamLeader.userid}`} className="flex items-center hover:bg-white/10 p-2 rounded-md">
                                             <Avatar className="mr-3 h-10 w-10 border-2 border-primary/20">
                                                 {team.teamLeader.profile_path ? (
-                                                    <AvatarImage src={`${api}${team.teamLeader.profile_path}`} alt={team.teamLeader.name} />
+                                                    <AvatarImage src={team.teamLeader.profile_path} alt={team.teamLeader.name} />
                                                 ) : (
                                                     <AvatarFallback className="bg-primary/10 text-primary">
                                                         {team.teamLeader.name.charAt(0).toUpperCase()}
+                                                        {team.teamLeader.profile_path}
                                                     </AvatarFallback>
                                                 )}
                                             </Avatar>
-                                            {console.log(team.teamLeader.userid)}
                                             <div>
                                                 <span className="block font-medium">{team.teamLeader.name}</span>
                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                     <Briefcase className="h-3 w-3" /> {team.teamLeader.role}
                                                 </span>
                                             </div>
-                                            
+
                                         </Link>
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium mb-2">Team Members</p>
                                         <div className="flex flex-wrap gap-2">
                                             {team.teamMembers.map(member => (
-                                                <Badge 
-                                                    key={member.id} 
-                                                    variant="outline" 
+                                                <Badge
+                                                    key={member.id}
+                                                    variant="outline"
                                                 >
                                                     <Link className="flex items-center gap-1.5 px-2 py-1" href={`/user/${member.userid}`}>
-                                                    <Avatar className="h-4 w-4">
-                                                        {member.profile_path ? (
-                                                            <AvatarImage src={`${api}${member.profile_path}`} alt={member.name} />
-                                                        ) : (
-                                                            <AvatarFallback className="text-xs">
-                                                                {member.name.charAt(0).toUpperCase()}
-                                                            </AvatarFallback>
-                                                        )}
-                                                    </Avatar>
-                                                    <span className="text-xs">{member.name}</span>
+                                                        <Avatar className="h-4 w-4">
+                                                            {member.profile_path ? (
+                                                                <AvatarImage src={member?.profile_path} alt={member.name} />
+                                                            ) : (
+                                                                <AvatarFallback className="text-xs">
+                                                                    {member.name.charAt(0).toUpperCase()}
+                                                                </AvatarFallback>
+                                                            )}
+                                                        </Avatar>
+                                                        <span className="text-xs">{member.name}</span>
                                                     </Link>
                                                 </Badge>
                                             ))}
@@ -712,7 +714,7 @@ export default function TeamManagement({ OrgId }) {
                                             >
                                                 <Avatar className="mr-2 h-6 w-6">
                                                     {user.profileImage && (
-                                                        <AvatarImage src={`${api}${user.profileImage}`} alt={user.name} />
+                                                        <AvatarImage src={user?.profileImage} alt={user.name} />
                                                     )}
                                                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>
@@ -750,7 +752,7 @@ export default function TeamManagement({ OrgId }) {
                                                     <div className="flex items-center">
                                                         <Avatar className="mr-2 h-6 w-6">
                                                             {member.profile_path && (
-                                                                <AvatarImage src={`${api}${member.profile_path}`} alt={member.name} />
+                                                                <AvatarImage src={member?.profile_path} alt={member.name} />
                                                             )}
                                                             <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                         </Avatar>
@@ -875,7 +877,7 @@ export default function TeamManagement({ OrgId }) {
                                                 >
                                                     <Avatar className="mr-2 h-6 w-6">
                                                         {user.profileImage && (
-                                                            <AvatarImage src={`${api}${user.profileImage}`} alt={user.name} />
+                                                            <AvatarImage src={user.profileImage} alt={user.name} />
                                                         )}
                                                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
@@ -913,7 +915,7 @@ export default function TeamManagement({ OrgId }) {
                                                         <div className="flex items-center">
                                                             <Avatar className="mr-2 h-6 w-6">
                                                                 {member.profile_path && (
-                                                                    <AvatarImage src={`${api}${member.profile_path}`} alt={member.name} />
+                                                                    <AvatarImage src={member?.profile_path} alt={member.name} />
                                                                 )}
                                                                 <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                             </Avatar>
