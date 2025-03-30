@@ -189,7 +189,7 @@ const ProfileEditForm = () => {
         formData.append('coverImage', coverImage);
       }
       
-      await axios.put(
+      const res = await axios.put(
         `${process.env.NEXT_PUBLIC_API}/user/${user._id}`, 
         formData,
         {
@@ -199,6 +199,8 @@ const ProfileEditForm = () => {
           withCredentials: true
         }
       );
+
+      console.log(res)
       
       toast({
         title: "Success",
