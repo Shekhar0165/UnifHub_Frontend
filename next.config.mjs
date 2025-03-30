@@ -22,12 +22,6 @@ const nextConfig = {
         return [
             {
                 source: "/:path*",
-                headers: [
-                    { key: "Access-Control-Allow-Credentials", value: "true" },
-                    { key: "Access-Control-Allow-Origin", value: "http://localhost:3000" }, // Allow frontend to access backend
-                    { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
-                    { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Authorization, Content-Type, Set-Cookie" },
-                ],
             },
         ];
     },
