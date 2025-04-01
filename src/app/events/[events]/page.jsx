@@ -418,8 +418,9 @@ const AddTeamMember = ({
     setIsLoading(true);
 
     try {
-      const response = await axios.get(
-        `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
+      const response = await axios.post(
+        `${apiUrl}/Participants/available/search?query=${encodeURIComponent(searchQuery)}`,
+        { eventid: eventData._id },
         {
           headers: {
             "Content-Type": "application/json",
@@ -429,6 +430,7 @@ const AddTeamMember = ({
       );
 
       const data = response.data;
+      console.log(data)
 
       if (data.success) {
         const results = data.members || [];
@@ -565,10 +567,9 @@ const AddTeamMember = ({
                     >
                       <div className="flex items-center">
                         <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
-         
-                       {member.profileImage ? (
+                          {member.ProfileImage ? (
                             <img
-                              src={member.profileImage}
+                              src={member.ProfileImage}
                               alt={member.name || "User"}
                               className="w-14 h-10 rounded-full object-cover border-2 border-primary"
                             />
@@ -577,7 +578,6 @@ const AddTeamMember = ({
                               {member.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                           )}
-
                         </div>
                         <div>
                           <div className="font-medium">{member.name}</div>
@@ -587,12 +587,25 @@ const AddTeamMember = ({
 
                       <Button
                         size="sm"
-                        variant={selectedMembers.some(m => m._id === member._id) ? "outline" : "default"}
+                        variant={
+                          member.IsUserExsit || selectedMembers.some(m => m._id === member._id)
+                            ? "outline"
+                            : "default"
+                        }
                         onClick={() => handleSelectMember(member)}
-                        disabled={selectedMembers.some(m => m._id === member._id)}
-                        className={selectedMembers.some(m => m._id === member._id) ? "opacity-70" : ""}
+                        disabled={member.IsUserExsit || selectedMembers.some(m => m._id === member._id)}
+                        className={
+                          member.IsUserExsit || selectedMembers.some(m => m._id === member._id)
+                            ? "opacity-70"
+                            : ""
+                        }
                       >
-                        {selectedMembers.some(m => m._id === member._id) ? (
+                        {member.IsUserExsit ? (
+                          <>
+                            <Check className="mr-1 w-3 h-3" />
+                            Already Added
+                          </>
+                        ) : selectedMembers.some(m => m._id === member._id) ? (
                           <>
                             <Check className="mr-1 w-3 h-3" />
                             Added
@@ -606,6 +619,7 @@ const AddTeamMember = ({
                       </Button>
                     </div>
                   ))}
+
                 </div>
               ) : (
                 !isLoading && (
@@ -749,8 +763,11 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
     setIsLoading(true);
 
     try {
-      const response = await axios.get(
-        `${apiUrl}/user/members/search?query=${encodeURIComponent(searchQuery)}`,
+      const response = await axios.post(
+        `${apiUrl}/Participants/available/search?query=${encodeURIComponent(searchQuery)}`,
+        {
+          eventid: eventData?._id
+        },
         {
           headers: {
             "Content-Type": "application/json",
@@ -885,6 +902,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
       } else {
         showToast("error", "Submission Error", data.message || "Failed to submit application");
       }
+      window.location.reload();
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
       showToast("error", "Submission Error", errorMessage);
@@ -1069,12 +1087,11 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                               <img
                                 className="w-12 h-10 rounded-full object-cover border-2 border-primary"
                                 src={member.profileImage}
-                                alt=""
+                                alt={member.name || "User"}
                               />
                             ) : (
                               <span>{member.name?.charAt(0).toUpperCase() || 'U'}</span>
                             )}
-
                           </div>
                           <div>
                             <div className="font-medium">{member.name}</div>
@@ -1084,12 +1101,21 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
 
                         <Button
                           size="sm"
-                          variant={invited.includes(member._id) ? "outline" : "default"}
+                          variant={
+                            member.IsUserExsit || invited.includes(member._id) ? "outline" : "default"
+                          }
                           onClick={() => handleInvite(member)}
-                          disabled={invited.includes(member._id)}
-                          className={invited.includes(member._id) ? "opacity-70" : ""}
+                          disabled={member.IsUserExsit || invited.includes(member._id)}
+                          className={
+                            member.IsUserExsit || invited.includes(member._id) ? "opacity-70" : ""
+                          }
                         >
-                          {invited.includes(member._id) ? (
+                          {member.IsUserExsit ? (
+                            <>
+                              <Check className="mr-1 w-3 h-3" />
+                              Already Added
+                            </>
+                          ) : invited.includes(member._id) ? (
                             <>
                               <Check className="mr-1 w-3 h-3" />
                               Added
@@ -1103,6 +1129,7 @@ const ApplyEvent = ({ ApplyForEvent, closePopup, eventData, currentUser, showToa
                         </Button>
                       </div>
                     ))}
+
                   </div>
                 ) : (
                   !isLoading && (

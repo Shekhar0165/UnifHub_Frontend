@@ -177,9 +177,7 @@ export default function RegisterPage() {
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
 
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
+      router.push("/");
 
     } catch (error) {
       console.error("Registration Error:", error.response?.data || error.message);
