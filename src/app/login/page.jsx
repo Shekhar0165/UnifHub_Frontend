@@ -40,7 +40,6 @@ export default function Page() {
 
         localStorage.setItem("UserType", data.user.usertype);
         localStorage.setItem("UserId", data.user.userid);
-        localStorage.setItem("refreshToken", data.refreshToken);
         
         toast({
           title: "Login successful!",

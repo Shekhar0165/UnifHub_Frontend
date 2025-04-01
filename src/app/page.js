@@ -30,7 +30,7 @@ export default function Home() {
       try {
         // Try cookies first (new approach)
         let userType = localStorage.getItem('UserType')
-        let userId = localStorage.getItem('Userid')
+        let userId = localStorage.getItem('UserId')
         
         if (userType === "individual") {
           await router.replace(`/events`);
