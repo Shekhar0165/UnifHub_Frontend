@@ -30,11 +30,7 @@ export default function Home() {
       try {
         // Try cookies first (new approach)
         let userType = localStorage.getItem('UserType')
-        let userId = localStorage.getItem('UserId')
-      
-        
-        // Log for debugging
-        console.log("Auth check - UserType:", userType, "UserId:", userId);
+        let userId = localStorage.getItem('Userid')
         
         if (userType === "individual") {
           await router.replace(`/events`);

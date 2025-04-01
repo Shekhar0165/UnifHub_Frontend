@@ -50,9 +50,7 @@ export default function Page() {
           icon: <CheckCircle className="h-4 w-4 text-green-500" />
         });
               
-        setTimeout(() => {
-          router.push("/");
-        }, 1000);
+        router.push("/");
       } else {
         toast({
           title: "Login failed",
