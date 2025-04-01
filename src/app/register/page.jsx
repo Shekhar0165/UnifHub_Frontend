@@ -23,10 +23,7 @@ export default function RegisterPage() {
     userid: "",
     email: "",
     password: "",
-    confirmPassword: "",
-    phone: "", // Optional
-    university: "",
-    location: ""
+    confirmPassword: ""
   });
 
   const handleChange = (e) => {
@@ -118,7 +115,7 @@ export default function RegisterPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    const { name, userid, email, password, confirmPassword, phone, university, location } = formData;
+    const { name, userid, email, password, confirmPassword } = formData;
 
     // Validation
     if (!name || !userid || !email || !password || !confirmPassword) {
@@ -160,22 +157,17 @@ export default function RegisterPage() {
 
       const res = await axios.post(
         endpoint,
-        { name, userid, email, password, phone, university, location, userType },
+        { name, userid, email, password, userType },
         {
           withCredentials: true,
           validateStatus: (status) => status < 400 // Accept 201 as success
         }
       );
-
       // Check if response contains required data
-      if (!res.data) {
-        throw new Error("Invalid response from server");
-      }
 
       // Store in localStorage as fallback
-      localStorage.setItem('UserType', res.data.user.userType);
+      localStorage.setItem('UserType', res.data.user.usertype);
       localStorage.setItem('UserId', res.data.user.userid);
-      localStorage.setItem("refreshToken", res.data.refreshToken);
 
       toast({
         title: "Registration successful!",
@@ -340,20 +332,8 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number (Optional)</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="university">
                     {userType === 'individual' ? "University" : "Organization Type"}
                   </Label>
@@ -365,20 +345,9 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     disabled={isLoading}
                   />
-                </div>
+                </div> */}
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    placeholder="City, Country"
-                    value={formData.location}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
-
+                
                 <Separator className="my-2" />
 
                 <div className="space-y-2">

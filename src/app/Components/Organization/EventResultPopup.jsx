@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Toaster } from '@/components/ui/toaster';
+import axios from 'axios';
 
 const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
     const [participants, setParticipants] = useState([]);
@@ -21,22 +22,22 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
     useEffect(() => {
         const fetchParticipants = async () => {
             if (!selectedResult?._id) return;
-            
+
             setIsLoading(true);
             try {
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API}/Participants/for-events/${selectedResult._id}`, 
+                    `${process.env.NEXT_PUBLIC_API}/Participants/for-events/${selectedResult._id}`,
                     {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
                         },
-                        withCredentials: true
+                        includes: true
                     }
                 );
-                
+
                 if (!response.ok) throw new Error('Failed to fetch participants');
-                
+
                 const data = await response.json();
                 setParticipants(data.participants || []);
             } catch (error) {
@@ -50,8 +51,8 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                 setIsLoading(false);
             }
         };
-        
-        fetchParticipants();    
+
+        fetchParticipants();
     }, [selectedResult?._id, toast]);
 
     // Check for duplicate positions whenever participants change
@@ -59,7 +60,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
         // Find duplicate positions
         const positionCounts = {};
         const duplicates = [];
-        
+
         participants.forEach(team => {
             if (team.position) {
                 if (positionCounts[team.position]) {
@@ -69,7 +70,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                 }
             }
         });
-        
+
         setDuplicatePositions([...new Set(duplicates)]);
     }, [participants]);
 
@@ -89,7 +90,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
 
     // Check if a position is already taken by another team
     const isPositionTaken = (position, currentTeamId) => {
-        return participants.some(team => 
+        return participants.some(team =>
             team.position === Number(position) && team._id !== currentTeamId
         );
     };
@@ -125,23 +126,23 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
             });
             return;
         }
-        
+
         // Prepare data in the format expected by backend
         const validTeams = participants.filter(team => team.position !== null && team.position !== undefined);
-        
+
         // Format data according to the backend API
         const results = validTeams.map(team => ({
             teamName: team.teamName,
             position: team.position
         }));
-        
+
         const requestData = {
             eventid: selectedResult._id,
             results: results
         };
-        
+
         console.log("Saving positions data:", requestData);
-        
+
         if (results.length === 0) {
             toast({
                 title: "Warning",
@@ -150,41 +151,46 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
             });
             return;
         }
-        
+
         setIsLoading(true);
         try {
-            const response = await fetch(
+            const response = await axios.post(
                 `${process.env.NEXT_PUBLIC_API}/Participants/declareResult`,
+                requestData,
                 {
-                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     withCredentials: true,
-                    body: JSON.stringify(requestData),
                 }
             );
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to update positions');
+
+            if (!response.data.success) {
+                throw new Error(response.data.message || "Failed to save positions");
             }
-            
+
+            if (response.data.message) {
+                toast({
+                    title: "Save Failed",
+                    description: response.data.message,
+                });
+            }
+
+
             toast({
                 title: "Positions Saved",
                 description: `Updated positions for ${results.length} teams`,
             });
-            
+
             setHasUnsavedChanges(false);
-            
+
             // Close the popup after successful save
             closeResultPopup();
         } catch (error) {
             console.error("Error saving positions:", error);
             toast({
                 title: "Save Failed",
-                description: error.message || "Could not update team positions. Please try again.",
+                description: error.response.data.message || "Could not update team positions. Please try again.",
                 variant: "destructive",
             });
         } finally {
@@ -234,7 +240,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Toaster/>
+            <Toaster />
             <Card className="w-full max-w-4xl shadow-xl">
                 <CardHeader className="pb-2 border-b">
                     <div className="flex justify-between items-center">
@@ -247,7 +253,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                         </Button>
                     </div>
                 </CardHeader>
-                
+
                 <CardContent className="p-6">
                     {duplicatePositions.length > 0 && (
                         <Alert variant="destructive" className="mb-4">
@@ -257,7 +263,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                             </AlertDescription>
                         </Alert>
                     )}
-                
+
                     <div className="flex items-center mb-4">
                         <Search className="h-4 w-4 mr-2 text-muted-foreground" />
                         <Input
@@ -267,7 +273,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                             className="max-w-sm"
                         />
                     </div>
-                    
+
                     {searchQuery ? (
                         <div className="mt-4">
                             <h3 className="font-medium mb-2">Search Results</h3>
@@ -286,37 +292,37 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                                     Unranked Teams ({unrankedTeams.length})
                                 </TabsTrigger>
                             </TabsList>
-                            
+
                             <TabsContent value="all">
                                 {renderTable(sortedParticipants)}
                             </TabsContent>
-                            
+
                             <TabsContent value="ranked">
                                 {renderTable(rankedTeams)}
                             </TabsContent>
-                            
+
                             <TabsContent value="unranked">
                                 {renderTable(unrankedTeams)}
                             </TabsContent>
                         </Tabs>
                     )}
-                    
+
                     <Separator className="my-6" />
-                    
+
                     <div className="flex justify-between">
-                        <Button 
-                            variant="default" 
-                            onClick={saveAllPositions} 
+                        <Button
+                            variant="default"
+                            onClick={saveAllPositions}
                             disabled={isLoading || !hasUnsavedChanges || duplicatePositions.length > 0}
                             className="px-6 gap-2"
                         >
                             <Save className="h-4 w-4" />
                             Save All Positions
                         </Button>
-                        
-                        <Button 
-                            variant="outline" 
-                            onClick={closeResultPopup} 
+
+                        <Button
+                            variant="outline"
+                            onClick={closeResultPopup}
                             className="px-6"
                         >
                             Close

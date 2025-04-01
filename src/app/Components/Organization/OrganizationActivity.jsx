@@ -287,34 +287,35 @@ const OrganizationActivity = ({ organizationId, organization, activityData: init
                 </Card>
 
                 {/* Weekly Performance */}
-                <Card className="md:col-span-3">
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <BarChart className="mr-2 text-primary" />
-                            Weekly Performance Breakdown
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-7 gap-2">
-                            {normalizedWeeklyScores.map((weekScore, index) =>(
-                                <div 
-                                    key={index} 
-                                    className={`
-                                        p-2 rounded-lg text-center 
-                                        ${weekScore.colorClass} 
-                                        text-primary-foreground
-                                        hover:scale-105 transition-transform
-                                    `}
-                                >
-                                    <span className="text-xs font-medium">
-                                        Week {weekScore.week}
-                                    </span>
-                                    <p className="text-sm font-bold">{weekScore.score}</p>
-                    </div>
-                ))}
-            </div>
-                    </CardContent>
-                </Card>
+                <Card className="md:col-span-3 w-full">
+    <CardHeader>
+        <CardTitle className="flex items-center">
+            <BarChart className="mr-2 text-primary" />
+            Weekly Performance Breakdown
+        </CardTitle>
+    </CardHeader>
+    <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+            {normalizedWeeklyScores.map((weekScore, index) => (
+                <div 
+                    key={index} 
+                    className={`
+                        p-3 rounded-lg text-center 
+                        ${weekScore.colorClass} 
+                        text-primary-foreground
+                        hover:scale-105 transition-transform
+                    `}
+                >
+                    <span className="text-xs font-medium block">
+                        Week {weekScore.week}
+                    </span>
+                    <p className="text-sm font-bold">{weekScore.score}</p>
+                </div>
+            ))}
+        </div>
+    </CardContent>
+</Card>
+
             </div>
         </div>
     );

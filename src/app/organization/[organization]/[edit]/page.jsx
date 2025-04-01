@@ -69,6 +69,8 @@ const OrganizationProfileEditForm = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
+        console.log(name, value);
+
         // Handle nested objects (socialLinks)
         if (name.includes('.')) {
             const [parent, child] = name.split('.');
@@ -85,6 +87,7 @@ const OrganizationProfileEditForm = () => {
                 [name]: value
             });
         }
+        console(organization.bio)
     };
 
     // Handle file changes
@@ -106,6 +109,7 @@ const OrganizationProfileEditForm = () => {
 
         try {
             const formData = new FormData();
+            console.log(organization);
             formData.append('organizationData', JSON.stringify(organization));
 
             if (profileImage) {
@@ -115,6 +119,8 @@ const OrganizationProfileEditForm = () => {
             if (coverImage) {
                 formData.append('coverImage', coverImage);
             }
+
+            console.log(formData.get('organizationData'));
 
             await axios.put(
                 `${process.env.NEXT_PUBLIC_API}/org/${organization._id}`,

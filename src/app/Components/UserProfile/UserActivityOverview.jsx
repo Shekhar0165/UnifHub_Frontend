@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Trophy as TrophyIcon,
-  FileText as FileIcon,
-  BarChart2 as ChartBarIcon,
-  Calendar as CalendarIcon,
-  Sparkles as SparklesIcon,
-  BarChart
+  Trophy,
+  FileText,
+  BarChart2,
+  Calendar,
+  Sparkles,
+  Activity,
+  BarChart,
+  Users
 } from 'lucide-react';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer, 
+  BarChart as RechartsBarChart,
+  Bar, 
+  CartesianGrid 
+} from 'recharts';
+
 
 const UserActivityOverview = ({ user }) => {
   const [userData, setUserData] = useState(null);
@@ -22,12 +36,11 @@ const UserActivityOverview = ({ user }) => {
   useEffect(() => {
     const fetchUserActivity = async () => {
       try {
-        const authToken = localStorage.getItem('accessToken');
-
         const response = await axios.get(`${api}/user-activity/${userid}`, {
           headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+            'content-type': 'application/json',
+          },
+          withCredentials: true,
         });
 
         setUserData(response.data.data);
@@ -43,9 +56,23 @@ const UserActivityOverview = ({ user }) => {
     }
   }, [userid, api]);
 
-  if (loading) return <div className="text-center py-4">Loading...</div>;
-  if (error) return <div className="text-center text-destructive py-4">Error: {error}</div>;
-  if (!userData) return <div className="text-center py-4">No user activity data available</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
+  
+  if (error) return (
+    <div className="text-center text-destructive py-4 bg-destructive/10 rounded-lg border border-destructive/20">
+      Error: {error}
+    </div>
+  );
+  
+  if (!userData) return (
+    <div className="text-center py-8 bg-accent/10 rounded-lg border border-accent/20">
+      <div className="text-muted-foreground">No user activity data available</div>
+    </div>
+  );
 
   const {
     totalScore = 0,
@@ -53,14 +80,15 @@ const UserActivityOverview = ({ user }) => {
     contributionData = [],
     eventOrganization = [],
     weeklyScores = [],
+    user: userDetails = { name: "User" }
   } = userData;
 
-  // Contribution Data Processing
+  // Process contribution data
   const processContributionData = () => {
     const flatData = contributionData.flat();
     const totalContributions = flatData.reduce((a, b) => a + b, 0);
 
-    // Create a more engaging visualization
+    // Using original color scheme
     const contributionLevels = [
       { label: 'Beginner', threshold: 5, color: 'bg-accent text-accent-foreground' },
       { label: 'Active', threshold: 15, color: 'bg-primary/20 text-primary' },
@@ -71,7 +99,7 @@ const UserActivityOverview = ({ user }) => {
 
     const currentLevel = contributionLevels.find(level =>
       totalContributions <= level.threshold
-    );
+    ) || contributionLevels[0];
 
     return {
       total: totalContributions,
@@ -95,164 +123,271 @@ const UserActivityOverview = ({ user }) => {
 
   const eventImpact = getEventImpact();
 
+  // Format data for weekly chart
+  const formatWeeklyData = () => {
+    if (!weeklyScores || weeklyScores.length === 0) {
+      // If no data, create placeholder data
+      return Array(7).fill().map((_, i) => ({
+        name: `Week ${i+1}`,
+        score: 0
+      }));
+    }
+    
+    return weeklyScores.map((item, index) => {
+      // Format date if needed
+      const weekNumber = `Week ${index + 1}`;
+      
+      return {
+        name: weekNumber,
+        score: item.score,
+        // Using the original color scheme variables
+        color: getColorForScore(item.score)
+      };
+    });
+  };
+  
+  const getColorForScore = (score) => {
+    if (score > 75) return "chart-1";
+    if (score > 50) return "chart-2";
+    if (score > 25) return "chart-3";
+    return "chart-4";
+  };
+
+  const weeklyChartData = formatWeeklyData();
+  
+  // Create heat map colors - using original scheme
+  const getHeatMapColor = (value) => {
+    if (value === 0) return "bg-accent/10";
+    if (value === 1) return "bg-primary/30";
+    if (value === 2) return "bg-primary/50";
+    if (value === 3) return "bg-primary/70";
+    return "bg-primary";
+  };
+
   return (
-    <div className="container mx-auto p-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Summary */}
-        <Card className="md:col-span-1">
-          <CardHeader className="pb-0">
-            <CardTitle className="flex items-center text-base sm:text-lg">
-              <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary" />
-              Profile Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-
-
-            {/* Current Streak */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
-              <div className="flex items-center col-span-1">
-                <FileIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-1" />
-                <span className="text-xs sm:text-sm md:text-base">Current Streak</span>
+    <div className="bg-background rounded-xl shadow-sm">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Activity Dashboard</h2>
+          <div className="text-sm text-muted-foreground">
+            Last updated: {new Date().toLocaleDateString()}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Streak Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg">
+                <Calendar className="h-5 w-5 mr-2 text-primary" />
+                Activity Streaks
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Current Streak</span>
+                    <div className="text-3xl font-bold text-primary">{streak.currentStreak}</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">consecutive days of activity</div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <FileIcon className="h-4 w-4 mr-2 text-chart-1" />
+                    <span className="text-sm">Longest Streak</span>
+                  </div>
+                  <div className="text-lg font-bold">{streak.longestStreak} days</div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-chart-2" />
+                    <span className="text-sm">Last Activity</span>
+                  </div>
+                  <div className="text-sm">
+                    {new Date(streak.lastActivityDate).toLocaleDateString()}
+                  </div>
+                </div>
               </div>
-              <div className="text-right sm:text-right col-span-1">
-                <span className="font-bold text-sm sm:text-base md:text-lg">
-                  {streak.currentStreak} days
-                </span>
-              </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Longest Streak */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors">
-              <div className="flex items-center col-span-1">
-                <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-chart-2" />
-                <span className="text-xs sm:text-sm md:text-base">Longest Streak</span>
+          {/* Total Score Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg">
+                <Trophy className="h-5 w-5 mr-2 text-primary" />
+                Score Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total Score</span>
+                    <div className="text-3xl font-bold text-primary">{totalScore}</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">across all activities</div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Contribution Level</span>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${contributionAnalysis.level.color}`}>
+                    {contributionAnalysis.level.label}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Total Contributions</span>
+                  <div className="text-sm font-medium">{contributionAnalysis.total} activities</div>
+                </div>
               </div>
-              <div className="text-right sm:text-right col-span-1">
-                <span className="font-bold text-sm sm:text-base md:text-lg">
-                  {streak.longestStreak} days
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Contribution Insights */}
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-0">
-            <CardTitle className="flex items-center">
-              <ChartBarIcon className="mr-2 text-primary" />
-              Contribution Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="bg-muted p-4 rounded-lg text-center">
-                      <h3 className="text-sm text-muted-foreground mb-2">Total Contributions</h3>
-                      <p className="text-2xl font-bold text-primary">
-                        {contributionAnalysis.total}
-                      </p>
+          {/* Event Impact Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg">
+                <Users className="h-5 w-5 mr-2 text-primary" />
+                Event Impact
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Events Organized</span>
+                    <div className="text-3xl font-bold text-primary">{eventImpact.eventsOrganized}</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">as organizer or vice-head</div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Total Participants</span>
+                  <div className="text-lg font-bold">{eventImpact.totalParticipants}</div>
+                </div>
+                
+                <div>
+                  <div className="text-sm mb-1">Recent Event</div>
+                  {eventOrganization.length > 0 ? (
+                    <div className="text-xs text-muted-foreground truncate max-w-full p-2 bg-accent/5 rounded">
+                      {eventOrganization[0].eventName}
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Your total number of contributions across all activities</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className={`${contributionAnalysis.level.color} p-4 rounded-lg text-center`}>
-                      <h3 className="text-sm mb-2">Contribution Level</h3>
-                      <p className="text-2xl font-bold">
-                        {contributionAnalysis.level.label}
-                      </p>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Your current contribution intensity level</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {/* Event Organization Impact */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
-
-
-              {/* Total Score */}
-             <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="bg-primary/5 p-4 rounded-lg text-center hover:bg-primary/20 transition-colors">
-                      <h3 className="text-sm text-muted-foreground mb-1">Total Score</h3>
-                      <div className="flex items-center justify-center">
-                        <TrophyIcon className="h-4 w-4 mr-2 text-chart-4" />
-                        <p className="text-2xl font-bold text-primary">{totalScore}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Your cumulative score from all activities</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <div className="bg-accent/30 p-4 rounded-lg">
-                <h3 className="text-sm text-accent-foreground mb-2">
-                  Events Organized
-                </h3>
-                <p className="text-2xl font-bold text-primary">
-                  {eventImpact.eventsOrganized}
-                </p>
+                  ) : (
+                    <div className="text-xs text-muted-foreground italic">No recent events</div>
+                  )}
+                </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Weekly Performance */}
-        <Card className="md:col-span-3">
+        {/* Weekly Performance Chart */}
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <BarChart className="mr-2 text-primary" />
-              Weekly Performance Breakdown
+              <BarChart className="h-5 w-5 mr-2 text-primary" />
+              Weekly Performance
             </CardTitle>
+            <CardDescription>
+              Tracking your progress over time
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-              {weeklyScores.map((weekScore, index) => {
-                // Normalize the score to get a value between 0 and 1
-                const normalizedScore = Math.min(weekScore.score / 100, 1);
-                // Select color from chart colors
-                const colorClass = normalizedScore > 0.7
-                  ? 'bg-chart-1/80 text-primary'
-                  : normalizedScore > 0.4
-                    ? 'bg-chart-2/80 text-primary'
-                    : 'bg-chart-3/80 text-primary-foreground';
-
-                return (
-                  <div
-                    key={index}
-                    className={`p-2 rounded text-center ${colorClass}`}
-                  >
-                    <span className="text-xs font-medium">
-                      Week {index + 1}
-                    </span>
-                    <p className="text-sm font-bold">{weekScore.score}</p>
-                  </div>
-                );
-              })}
+          <CardContent className="pt-2">
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={weeklyChartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--accent)" vertical={false} opacity={0.3} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                  <RechartsTooltip 
+                    cursor={{ fill: 'var(--accent)', opacity: 0.1 }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className=" shadow rounded-lg p-3 border">
+                            <p className="font-medium">{label}</p>
+                            <p className="text-sm text-muted-foreground">Score: <span className="font-medium text-foreground">{payload[0].value}</span></p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="score" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={35}
+                    fill="hsl(var(--foreground))" 
+                  />
+                </RechartsBarChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+        
+        {/* Contribution Heatmap */}
+        {/* <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BarChart2 className="h-5 w-5 mr-2 text-primary" />
+              Activity Heatmap
+            </CardTitle>
+            <CardDescription>
+              Your contribution patterns over time
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="overflow-x-auto">
+              <div className="min-w-max">
+                {contributionData.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex justify-end pr-2">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                        <div key={i} className="w-6 text-xs text-center text-muted-foreground">{day}</div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-y-2">
+                      {contributionData.slice(-12).map((week, weekIndex) => (
+                        <div key={weekIndex} className="flex">
+                          {week.map((day, dayIndex) => (
+                            <div 
+                              key={`${weekIndex}-${dayIndex}`} 
+                              className={`w-6 h-6 m-px rounded-sm ${getHeatMapColor(day)}`}
+                              title={`${day} contributions`}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center justify-end mt-2 space-x-2">
+                      <div className="text-xs text-muted-foreground">Less</div>
+                      <div className="flex space-x-1">
+                        <div className="w-3 h-3 bg-accent/10 rounded-sm"></div>
+                        <div className="w-3 h-3 bg-primary/30 rounded-sm"></div>
+                        <div className="w-3 h-3 bg-primary/50 rounded-sm"></div>
+                        <div className="w-3 h-3 bg-primary/70 rounded-sm"></div>
+                        <div className="w-3 h-3 bg-primary rounded-sm"></div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">More</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card> */}
       </div>
     </div>
   );
 };
+
+// For compatibility with the original component
+const FileIcon = FileText;
 
 export default UserActivityOverview;

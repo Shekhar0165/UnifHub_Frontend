@@ -200,7 +200,6 @@ const ProfileEditForm = () => {
         }
       );
 
-      console.log(res)
       
       toast({
         title: "Success",

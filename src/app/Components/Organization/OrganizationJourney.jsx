@@ -84,23 +84,7 @@ const OrganizationJourney = ({ organizationId }) => {
     badgeColor: 'text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800'
   }));
 
-  // Add organization creation item if needed
-  // Since we don't have organization details in the new data structure, we'll use the creation date of the journey
-  timelineItems.push({
-    type: 'creation',
-    date: new Date(journeyData.createdAt).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    }),
-    title: 'Journey Started',
-    description: 'The organization journey was established on our platform.',
-    subtext: 'This marks the beginning of the organization\'s tracked achievements and milestones.',
-    icon: 'Building',
-    bgColor: 'bg-blue-500 dark:bg-blue-600',
-    cardBg: 'bg-blue-50 dark:bg-blue-900/20',
-    badgeColor: 'text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800'
-  });
+ 
 
   // Sort timeline items by date (newest first)
   timelineItems.sort((a, b) => new Date(b.date) - new Date(a.date));

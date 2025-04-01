@@ -29,7 +29,7 @@ const OrganizationCard = ({ organization, onClick }) => {
           {organization.name}
         </CardTitle>
         <p className="text-sm text-muted-foreground line-clamp-2">
-          {organization.description}
+          {organization.bio || "No description available."}
         </p>
         
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -52,8 +52,8 @@ const OrganizationCard = ({ organization, onClick }) => {
 };
 
 const OrganizationsGrid = ({ organizations, router }) => {
-  const handleOpenOrganization = (userId) => {
-    router.push(`/organization/${userId}`);
+  const handleOpenOrganization = (org) => {
+    router.push(`/organization/${org.userid}`);
   };
 
   return (
@@ -62,7 +62,7 @@ const OrganizationsGrid = ({ organizations, router }) => {
         <OrganizationCard 
           key={org.id || org.userid} 
           organization={org} 
-          onClick={() => handleOpenOrganization(org.userid)}
+          onClick={() => handleOpenOrganization(org)}
         />
       ))}
     </div>

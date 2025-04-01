@@ -4,6 +4,7 @@ import { Calendar, Users, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { format } from "date-fns"
 
 const EventCard = ({ event, onClick }) => {
   return (
@@ -41,11 +42,11 @@ const EventCard = ({ event, onClick }) => {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-primary" />
-            <span>{new Date(event.date).toLocaleDateString()}</span>
+            <span>{format(event.eventDate, "PPP")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-primary" />
-            {/* <span>{event?.participants}</span> */}
+            <span>{event?.totalparticipants}</span>
           </div>
         </div>
       </CardContent>
@@ -64,17 +65,17 @@ const EventCard = ({ event, onClick }) => {
 };
 
 const EventsGrid = ({ events, router }) => {
-  const handleOpenEvent = (eventName) => {
-    router.push(`/events/${eventName}`);
+  const handleOpenEvent = (event) => {
+    router.push(`/events/${event.eventName}?id=${event._id}`);
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {events.map((event) => (
         <EventCard 
-          key={event.id || event.eventName} 
+          key={event._id || event.eventName} 
           event={event} 
-          onClick={() => handleOpenEvent(event.eventName)}
+          onClick={() => handleOpenEvent(event)}
         />
       ))}
     </div>

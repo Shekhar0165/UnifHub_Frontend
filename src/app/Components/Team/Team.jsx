@@ -105,11 +105,13 @@ export default function TeamManagement({ OrgId }) {
         setIsSearching(true);
 
         try {
-            const authToken = localStorage.getItem('accessToken');
             const response = await axios.get(
                 `${api}/user/members/search?query=${encodeURIComponent(query)}`,
                 {
-                    headers: { Authorization: `Bearer ${authToken}` },
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true
                 }
             );
 
@@ -207,8 +209,12 @@ export default function TeamManagement({ OrgId }) {
                 OrganizationId: OrgId,
                 teamMembers: newTeam.teamMembers
             }, {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
+                headers: { "Content-Type": "application/json"},
+            },
+            {
+                withCredentials: true
+            }
+        );
 
             toast({
                 title: "Success",

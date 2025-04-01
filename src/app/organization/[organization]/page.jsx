@@ -5,7 +5,7 @@ import {
     Users, UserPlus, History, UsersIcon, Award, FileText, Calendar,
     Share2, MapPin, GraduationCap, Mail, Phone, Star, Activity,
     BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, X,
-    BriefcaseIcon, ChevronDown, Building
+    BriefcaseIcon, ChevronDown, Building,Check
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -23,6 +23,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import OrganizationJourney from '@/app/Components/Organization/OrganizationJourney';
 import OrganizationActivity from '@/app/Components/Organization/OrganizationActivity';
+import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 
 
 
@@ -37,8 +39,37 @@ const getActivityColor = (count) => {
 
 
 const LeftComponent = ({ user }) => {
+    const { toast } = useToast();
+    const [copied, setCopied] = useState(false);
+
+
+    const handleCopyLink = () => {
+        const profileLink = window.location.href; // Get current URL
+
+        navigator.clipboard.writeText(profileLink)
+            .then(() => {
+                setCopied(true);
+                toast({
+                    title: "Success",
+                    description: "Profile link copied to clipboard!",
+                    variant: "default",
+                });
+
+                // Reset icon after 2 seconds
+                setTimeout(() => setCopied(false), 2000);
+            })
+            .catch((err) => {
+                console.error("Failed to copy: ", err);
+                toast({
+                    title: "Error",
+                    description: "Failed to copy profile link!",
+                    variant: "destructive",
+                });
+            });
+    };
     return (
         <>
+            <Toaster />
             <div className="w-full lg:w-1/3">
                 <div className="bg-background rounded-xl shadow-lg overflow-hidden mb-6 border border-border/40">
                     {/* Profile Picture and Basic Info */}
@@ -96,9 +127,13 @@ const LeftComponent = ({ user }) => {
 
 
                     <div className="p-4 border-t border-border">
-                        <button className="w-full flex justify-center items-center py-2 px-4 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-background hover:bg-secondary transition-colors">
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Share Profile
+                        <button onClick={handleCopyLink} className="w-full flex justify-center items-center py-2 px-4 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-background hover:bg-secondary transition-colors">
+                            {copied ? (
+                                <Check className="h-4 w-4 mr-2 text-green-500 transition-transform duration-300 scale-110" />
+                            ) : (
+                                <Share2 className="h-4 w-4 mr-2 transition-transform duration-300" />
+                            )}
+                            {copied ? "Copied!" : "Share Profile"}
                         </button>
                     </div>
                 </div>
