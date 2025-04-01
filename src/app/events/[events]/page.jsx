@@ -126,6 +126,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
     fetchData();
   }, [eventid, currentUser, isMounted]);
 
+
   // Check if current user is admin
   const isAdmin = currentUser && currentUser.role === "admin";
 
@@ -265,7 +266,6 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const hasParticipants = Array.isArray(participants?.participants) && participants.participants.length > 0;
 
   if (!hasParticipants) return null;
-
   return (
     <div className="max-w-2xl mx-auto mt-10">
       <Card className="p-6 shadow-lg border-t-4 border-primary overflow-hidden transition-all duration-300 hover:shadow-xl">
@@ -298,9 +298,9 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
                 href={`/user/${participant.userid}`}
                 className="flex items-center gap-4 flex-grow"
               >
-                {participant.profileImage ? (
+                {participant.ProfileImage ? (
                   <img
-                    src={participant.profileImage}
+                    src={participant.ProfileImage}
                     alt={participant.name || "User"}
                     className="w-12 h-12 rounded-full object-cover border-2 border-primary"
                   />
@@ -312,6 +312,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
                 <div>
                   <p className="font-semibold text-lg">{participant.name || "Unknown User"}</p>
                   <p className="text-gray-500 text-sm">{participant.userid || "No ID"}</p>
+                  <p className="text-gray-500 text-sm">{participant.profileImage}</p>
                 </div>
               </Link>
 
@@ -564,7 +565,19 @@ const AddTeamMember = ({
                     >
                       <div className="flex items-center">
                         <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3 shadow-sm">
-                          {member.name?.charAt(0).toUpperCase() || 'U'}
+         
+                       {member.profileImage ? (
+                            <img
+                              src={member.profileImage}
+                              alt={member.name || "User"}
+                              className="w-14 h-10 rounded-full object-cover border-2 border-primary"
+                            />
+                          ) : (
+                            <div className="w-14 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                              {member.name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                          )}
+
                         </div>
                         <div>
                           <div className="font-medium">{member.name}</div>
@@ -1428,7 +1441,6 @@ export default function EventDetailPage() {
       return "Event Cancelled";
     }
   };
-  console.log(eventData.image_path)
 
   return (
     <>

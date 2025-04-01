@@ -27,7 +27,7 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   // Filter states
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
@@ -68,7 +68,7 @@ const Page = () => {
   useEffect(() => {
     // Only run this effect on the client side after component is mounted
     if (!isMounted) return;
-    
+
     const fetchOrganizations = async () => {
       try {
         const data = await authenticatedFetch(
@@ -100,43 +100,43 @@ const Page = () => {
   // Apply filters to events
   const filteredEvents = events?.filter(event => {
     // Search query filter
-    const matchesSearch = 
+    const matchesSearch =
       event?.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event?.content?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Category filter
     const matchesCategory = selectedCategories?.length === 0 || selectedCategories?.includes(event.category);
-    
+
     // Status filter
     const matchesStatus = selectedStatuses?.length === 0 || selectedStatuses?.includes(event?.status);
-    
+
     // Tag filter (assuming events have tags property)
-    const matchesTags = selectedTags?.length === 0 || 
+    const matchesTags = selectedTags?.length === 0 ||
       (event.tags && selectedTags.some(tag => event.tags.includes(tag)));
-    
+
     return matchesSearch && matchesCategory && matchesStatus && matchesTags;
   });
 
   // Apply filters to organizations
   const filteredOrganizations = org?.filter(org => {
     // Search query filter
-    const matchesSearch = 
+    const matchesSearch =
       org?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       org?.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Category filter
     const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(org.category);
-    
+
     // Tag filter (assuming orgs have tags property)
-    const matchesTags = selectedTags.length === 0 || 
+    const matchesTags = selectedTags.length === 0 ||
       (org.tags && selectedTags.some(tag => org.tags.includes(tag)));
-    
+
     return matchesSearch && matchesCategory && matchesTags;
   });
 
   // Handle category filter toggle
   const toggleCategory = (category) => {
-    setSelectedCategories(prev => 
+    setSelectedCategories(prev =>
       prev.includes(category)
         ? prev.filter(item => item !== category)
         : [...prev, category]
@@ -145,7 +145,7 @@ const Page = () => {
 
   // Handle status filter toggle
   const toggleStatus = (status) => {
-    setSelectedStatuses(prev => 
+    setSelectedStatuses(prev =>
       prev.includes(status)
         ? prev.filter(item => item !== status)
         : [...prev, status]
@@ -154,7 +154,7 @@ const Page = () => {
 
   // Handle tag filter toggle
   const toggleTag = (tag) => {
-    setSelectedTags(prev => 
+    setSelectedTags(prev =>
       prev.includes(tag)
         ? prev.filter(item => item !== tag)
         : [...prev, tag]
@@ -174,7 +174,7 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation Bar */}
-      <Header 
+      <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
@@ -184,12 +184,12 @@ const Page = () => {
         {/* Sidebar for filters */}
         <aside className={cn(
           "transition-all duration-300 transform",
-          showFilters 
-            ? "translate-x-0 opacity-100 max-h-full overflow-visible w-full lg:w-64 lg:mr-8 lg:flex-shrink-0 mb-6 lg:mb-0" 
+          showFilters
+            ? "translate-x-0 opacity-100 max-h-full overflow-visible w-full lg:w-64 lg:mr-8 lg:flex-shrink-0 mb-6 lg:mb-0"
             : "-translate-x-full opacity-0 max-h-0 overflow-hidden w-0 lg:w-0"
         )}>
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar 
+            <FilterSidebar
               selectedCategories={selectedCategories}
               selectedStatuses={selectedStatuses}
               selectedTags={selectedTags}
@@ -209,7 +209,7 @@ const Page = () => {
         {/* Main content area */}
         <main className={cn("flex-1", showFilters ? "lg:ml-0" : "ml-0")}>
           {/* Mobile search */}
-          <div className="lg:hidden mb-6">
+          <div className="md:hidden mb-6">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -228,12 +228,36 @@ const Page = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Discover
               </h1>
-              
-              <div className="flex items-center gap-3">
+
+              <div className="md:block hidden mb-6">
+                <div className="relative group">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 h-10 rounded-full bg-muted/50 border-0"
+                  />
+                </div>
+              </div>
+
+            </div>
+            <div className='flex md:flex-row flex-col md:items-center md:justify-between'>
+
+
+              <TabsSection
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                filteredEvents={filteredEvents}
+                filteredOrganizations={filteredOrganizations}
+              />
+
+              <div className="flex items-center gap-3 md:mt-0 mt-8">
                 {/* Filter toggle for all screen sizes */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="rounded-full gap-2"
                   onClick={() => setShowFilters(!showFilters)}
                 >
@@ -247,26 +271,19 @@ const Page = () => {
                 </Button>
               </div>
             </div>
-            
-            <TabsSection 
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              filteredEvents={filteredEvents}
-              filteredOrganizations={filteredOrganizations}
-            />
-            
+
             {/* Active filters display */}
             {activeFilterCount > 0 && (
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-sm text-muted-foreground">Active filters:</span>
                 {selectedCategories.map(category => (
-                  <Badge 
-                    key={`active-${category}`} 
+                  <Badge
+                    key={`active-${category}`}
                     variant="secondary"
                     className="px-2 py-1 gap-1 text-xs"
                   >
                     {category}
-                    <button 
+                    <button
                       onClick={() => toggleCategory(category)}
                       className="ml-1 hover:text-primary"
                     >
@@ -275,13 +292,13 @@ const Page = () => {
                   </Badge>
                 ))}
                 {selectedStatuses.map(status => (
-                  <Badge 
-                    key={`active-${status}`} 
+                  <Badge
+                    key={`active-${status}`}
                     variant="secondary"
                     className="px-2 py-1 gap-1 text-xs"
                   >
                     {status}
-                    <button 
+                    <button
                       onClick={() => toggleStatus(status)}
                       className="ml-1 hover:text-primary"
                     >
@@ -290,13 +307,13 @@ const Page = () => {
                   </Badge>
                 ))}
                 {selectedTags.map(tag => (
-                  <Badge 
-                    key={`active-${tag}`} 
+                  <Badge
+                    key={`active-${tag}`}
                     variant="secondary"
                     className="px-2 py-1 gap-1 text-xs"
                   >
                     {tag}
-                    <button 
+                    <button
                       onClick={() => toggleTag(tag)}
                       className="ml-1 hover:text-primary"
                     >
@@ -304,9 +321,9 @@ const Page = () => {
                     </button>
                   </Badge>
                 ))}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={clearFilters}
                   className="h-7 px-2 text-xs rounded-full bg-muted/80 hover:bg-muted"
                 >
@@ -320,8 +337,8 @@ const Page = () => {
           {activeTab === "events" && (
             <>
               {filteredEvents?.length > 0 ? (
-                <EventsGrid 
-                  events={filteredEvents} 
+                <EventsGrid
+                  events={filteredEvents}
                   router={router}
                 />
               ) : loading ? (
@@ -331,10 +348,10 @@ const Page = () => {
                     <LoadingSpinner />
                   </div>
                   {activeFilterCount > 0 && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={clearFilters} 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearFilters}
                       className="mt-4"
                     >
                       Clear all filters
@@ -342,7 +359,7 @@ const Page = () => {
                   )}
                 </div>
               ) : (
-                <NoResultsFound 
+                <NoResultsFound
                   activeFilterCount={activeFilterCount}
                   clearFilters={clearFilters}
                   type="events"
@@ -355,12 +372,12 @@ const Page = () => {
           {activeTab === "organizations" && (
             <>
               {filteredOrganizations?.length > 0 ? (
-                <OrganizationsGrid 
-                  organizations={filteredOrganizations} 
+                <OrganizationsGrid
+                  organizations={filteredOrganizations}
                   router={router}
                 />
               ) : (
-                <NoResultsFound 
+                <NoResultsFound
                   activeFilterCount={activeFilterCount}
                   clearFilters={clearFilters}
                   type="organizations"

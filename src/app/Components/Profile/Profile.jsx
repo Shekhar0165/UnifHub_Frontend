@@ -21,15 +21,17 @@ const Profile = () => {
   const [theme, setTheme] = useState('light');
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [UserType, setUserType] = useState(''); 
 
-  const UserType = localStorage.getItem('UserType');
-
-  const endpoint = UserType === 'individual'
-    ? `${process.env.NEXT_PUBLIC_API}/user/one`
-    : `${process.env.NEXT_PUBLIC_API}/org`;
-
+  
   // Fetch user data on component mount
   useEffect(() => {
+    const Usertype = localStorage.getItem('UserType');
+    setUserType(Usertype);
+  
+    const endpoint = Usertype === 'individual'
+      ? `${process.env.NEXT_PUBLIC_API}/user/one`
+      : `${process.env.NEXT_PUBLIC_API}/org`;
     const fetchUserData = async () => {
       try {
         // Check if user is authenticated (has token)
@@ -65,7 +67,7 @@ const Profile = () => {
     };
 
     fetchUserData();
-  }, [router, endpoint]);
+  }, [router]);
 
   // Get user initials for avatar fallback
   const getUserInitials = () => {

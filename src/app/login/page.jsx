@@ -52,7 +52,7 @@ export default function Page() {
               
         setTimeout(() => {
           router.push("/");
-        }, 1500);
+        }, 1000);
       } else {
         toast({
           title: "Login failed",

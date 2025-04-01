@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from 'next/navigation';
 import { authenticatedFetch } from '@/utils/authUtils';
+import { format, formatDate } from 'date-fns';
 
 const MoreEvents = ({ currentEventId, currentCategory }) => {
   const router = useRouter();
@@ -94,7 +95,7 @@ const MoreEvents = ({ currentEventId, currentCategory }) => {
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{new Date(event?.date).toLocaleDateString()}</span>
+                    <span>{format(event?.eventDate,"PPP")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />

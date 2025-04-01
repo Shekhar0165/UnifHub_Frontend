@@ -163,10 +163,11 @@ export default function RegisterPage() {
           validateStatus: (status) => status < 400 // Accept 201 as success
         }
       );
+      console.log(res.data); // Log the response for debugging
       // Check if response contains required data
 
       // Store in localStorage as fallback
-      localStorage.setItem('UserType', res.data.user.usertype);
+      localStorage.setItem('UserType', res.data.user.userType);
       localStorage.setItem('UserId', res.data.user.userid);
 
       toast({
