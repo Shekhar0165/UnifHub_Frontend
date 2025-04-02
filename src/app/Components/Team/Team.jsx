@@ -81,11 +81,10 @@ export default function TeamManagement({ OrgId }) {
 
     const fetchTeams = async () => {
         try {
-            const authToken = localStorage.getItem('accessToken');
             setLoading(true);
             const response = await axios.get(`${api}/team/${OrgId}`, {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
+                withCredentials: true, 
+            });            
             setTeams(response.data);
         } catch (error) {
             toast({

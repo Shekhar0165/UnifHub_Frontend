@@ -137,7 +137,7 @@ const OrganizationProfileEditForm = () => {
 
             setProfileImage(null);
             setCoverImage(null);
-            window.location.href = `/organization/${organization.userid}`;
+            // window.location.href = `/organization/${organization.userid}`;
         } catch (error) {
             if (error.response?.status === 401) {
                 router.push('/');
@@ -378,15 +378,14 @@ const OrganizationProfileEditForm = () => {
                                     </div>
                                 </TabsContent>
 
+                            </CardContent>
                                 <TabsContent value="teams" className="space-y-4">
                                     <TeamManagement OrgId={organization._id} />
                                 </TabsContent>
-                            </CardContent>
 
-                            {activeTab !== "teams" && (  
+                            {activeTab !== "teams" && (
                                 <CardFooter className="flex justify-end p-6 border-t bg-muted/10">
                                     <Button
-                                        type="submit"
                                         disabled={isLoading}
                                         className="px-8 py-2 rounded-lg shadow-md hover:shadow-lg transition-all"
                                     >
@@ -396,6 +395,9 @@ const OrganizationProfileEditForm = () => {
                             )}
                         </Tabs>
                     </form>
+                    <Tabs>
+                        
+                    </Tabs>
                 </Card>
             </div>
         </>

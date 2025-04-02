@@ -25,7 +25,7 @@ const RichTextEditor = ({ value, onChange }) => {
   return (
     <div className="rich-text-editor">
       <Editor
-        apiKey="4czkjgcrc9r1cln3bnzp0q9t3wkypfltspflxa1ldb4npquo" // Get a free API key from TinyMCE website
+        apiKey="ps177gd33i7g87wh3l6n3a64aod6wv57agjoo8c5xch2x629" // Get a free API key from TinyMCE website
         onInit={(evt, editor) => {
           editorRef.current = editor;
           // Apply dark mode class on init if needed
