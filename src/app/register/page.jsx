@@ -163,7 +163,6 @@ export default function RegisterPage() {
           validateStatus: (status) => status < 400 // Accept 201 as success
         }
       );
-      console.log(res.data); // Log the response for debugging
       // Check if response contains required data
 
       // Store in localStorage as fallback
@@ -177,7 +176,7 @@ export default function RegisterPage() {
         icon: <CheckCircle className="h-4 w-4 text-green-500" />
       });
 
-      router.push("/");
+      window.location.href = "/";
 
     } catch (error) {
       console.error("Registration Error:", error.response?.data || error.message);

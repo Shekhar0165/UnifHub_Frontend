@@ -69,7 +69,6 @@ const OrganizationProfileEditForm = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        console.log(name, value);
 
         // Handle nested objects (socialLinks)
         if (name.includes('.')) {
@@ -87,7 +86,6 @@ const OrganizationProfileEditForm = () => {
                 [name]: value
             });
         }
-        console(organization.bio)
     };
 
     // Handle file changes
@@ -108,9 +106,9 @@ const OrganizationProfileEditForm = () => {
         setIsLoading(true);
 
         try {
-            const formData = new FormData();
-            console.log(organization);
+            const formData = new FormData();;
             formData.append('organizationData', JSON.stringify(organization));
+
 
             if (profileImage) {
                 formData.append('profileImage', profileImage);
@@ -120,7 +118,6 @@ const OrganizationProfileEditForm = () => {
                 formData.append('coverImage', coverImage);
             }
 
-            console.log(formData.get('organizationData'));
 
             await axios.put(
                 `${process.env.NEXT_PUBLIC_API}/org/${organization._id}`,
@@ -140,6 +137,7 @@ const OrganizationProfileEditForm = () => {
 
             setProfileImage(null);
             setCoverImage(null);
+            window.location.href = `/organization/${organization.userid}`;
         } catch (error) {
             if (error.response?.status === 401) {
                 router.push('/');

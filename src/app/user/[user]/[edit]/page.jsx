@@ -209,6 +209,7 @@ const ProfileEditForm = () => {
       // Reset file states after successful upload
       setProfileImage(null);
       setCoverImage(null);
+      window.location.href = `/user/${user.userid}`;
       
     } catch (error) {
       if (error.response?.status === 401) {
