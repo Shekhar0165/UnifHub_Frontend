@@ -4,7 +4,8 @@ import { useParams } from 'next/navigation'
 import {
   User, Award, FileText, Calendar, Download, Share2, MapPin,
   Briefcase, GraduationCap, Mail, Phone, Star, Activity,
-  BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, ChevronDown, Pencil, Menu, Check
+  BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, ChevronDown, Pencil, Menu, Check, MessageCircle, UserMinus,
+  Axis3D
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Header from '@/app/Components/Header/Header'
@@ -17,6 +18,12 @@ import { Toaster } from '@/components/ui/toaster'
 import useAuth from '@/hooks/useAuth'
 import axios from 'axios'
 import { format } from 'date-fns'
+import { Button } from '@/components/ui/button'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { Card, CardContent } from '@/components/ui/card'
+import { Separator } from '@radix-ui/react-dropdown-menu'
+import FollowerFollowingPopup from '@/app/Components/UserProfile/FollowerList'
+import PostsSection from '@/app/Components/UserProfile/CreatePost'
 
 // Helper function to get activity level color
 const getActivityColor = (count) => {
@@ -26,17 +33,20 @@ const getActivityColor = (count) => {
   return 'bg-blue-600 dark:bg-blue-600';
 };
 
-
 const LeftComponent = ({ user }) => {
   // const user = sampleUser;
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [UpcomingEvents, setUpcomingEvents] = useState([]);
+  const [follow, setfollow] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [List, setlist] = useState({ followerList: [], followingList: [] });
+  const [showPopup, setShowPopup] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (!user || !user._id) return;
-  
+
     const HandleFetchUpcomingEvents = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/events/upcoming/${user?._id}`, {
@@ -51,10 +61,143 @@ const LeftComponent = ({ user }) => {
         console.error("Error fetching upcoming events:", error);
       }
     };
-  
+
     HandleFetchUpcomingEvents();
   }, [user]);
-  
+
+  useEffect(() => {
+    if (!user || !user._id) return;
+    
+    const HandleGetFollowAndFollowingList = async () => {
+      try {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true,
+        });
+        setlist(response.data);
+      } catch (error) {
+        console.error("Error fetching follower/following lists:", error);
+      }
+    };
+    
+    HandleGetFollowAndFollowingList();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !user._id) return;
+    
+    const HandleCheckFollower = async () => {
+      try {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/checkfollower/${user?._id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true,
+        });
+        const isFollower = response.data.isFollower;
+        setfollow(isFollower);
+      } catch (error) {
+        console.error("Error checking follower status:", error);
+      }
+    };
+    
+    HandleCheckFollower();
+  }, [user]);
+
+  const handleFollowUser = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API}/follower/add`,
+        { userid: user._id },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+
+      console.log("Follow response:", response.data);
+      if (response.data.success) {
+        toast({
+          title: "Followed",
+          description: response.data.message,
+          variant: "default",
+        });
+        setfollow(true);
+        
+        // Refresh follower list after following
+        const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+          headers: { 'Content-Type': 'application/json' },
+          withCredentials: true,
+        });
+        setlist(listResponse.data);
+      } else {
+        toast({
+          title: "Error",
+          description: response.data.message || "Failed to follow",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error following user:", error.response?.data || error.message);
+      toast({
+        title: "Error",
+        description: "Failed to follow user",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnfollowUser = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API}/follower/remove`,
+        { userid: user._id },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+
+      console.log("Unfollow response:", response.data);
+      if (response.data.success) {
+        toast({
+          title: "Unfollowed",
+          description: "You have unfollowed this user",
+          variant: "default",
+        });
+        setfollow(false);
+        
+        // Refresh follower list after unfollowing
+        const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+          headers: { 'Content-Type': 'application/json' },
+          withCredentials: true,
+        });
+        setlist(listResponse.data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to unfollow",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error unfollowing user:", error.response?.data || error.message);
+      toast({
+        title: "Error",
+        description: "Failed to unfollow user",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCopyLink = () => {
     const profileLink = window.location.href; // Get current URL
 
@@ -80,6 +223,16 @@ const LeftComponent = ({ user }) => {
       });
   };
 
+  const stats = [
+    { value: "12", label: "Posts" },
+    { value: List?.followerList?.length || 0, label: "Followers" },
+    { value: List?.followingList?.length || 0, label: "Following" }
+  ];
+
+  const handleTogglePopup = () => {
+    setShowPopup(!showPopup);
+  };
+
   return (
     <>
       <Toaster />
@@ -94,15 +247,54 @@ const LeftComponent = ({ user }) => {
                 className="h-32 w-32 rounded-full border-4 border-background dark:border-gray-700 shadow-xl mb-4"
               />
               <h1 className="text-2xl font-bold text-foreground">{user?.name}</h1>
-              <p className="text-blue-600 dark:text-blue-400">{user?.university}</p>
-              <div className="flex items-center mt-2 text-muted-foreground">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span className="text-sm">{user?.location}</span>
+              <div className='flex justify-center items-center gap-3 mt-2'>
+                <p className="text-blue-600 dark:text-blue-400">{user?.university}</p>
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  <span className="text-sm">{user?.location}</span>
+                </div>
               </div>
             </div>
-
-            <div className="mt-6 space-y-4">
-              <p className="text-foreground text-sm">{user?.bio}</p>
+            
+            <div className="mt-2 space-y-4">
+              <div>
+                <p className="text-foreground text-sm">{user?.bio}</p>
+              </div>
+              <div className="mt-6 border rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10">
+                    <span className="text-xl font-bold text-foreground">12</span>
+                    <span className="text-xs text-muted-foreground mt-1">Posts</span>
+                  </div>
+                  
+                  <div onClick={handleTogglePopup} className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10 cursor-pointer">
+                    <span className="text-xl font-bold text-foreground">{List?.followerList?.length || 0}</span>
+                    <span className="text-xs text-muted-foreground mt-1">Followers</span>
+                  </div>
+                  
+                  <div onClick={handleTogglePopup} className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10 cursor-pointer">
+                    <span className="text-xl font-bold text-foreground">{List?.followingList?.length || 0}</span>
+                    <span className="text-xs text-muted-foreground mt-1">Following</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-center pt-2">
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={follow ? handleUnfollowUser : handleFollowUser}
+                    variant="outline"
+                    className="flex items-center px-4 py-2"
+                    disabled={loading}
+                  >
+                    {loading ? <LoadingSpinner fullScreen={false} istexthide={false} /> : follow ? 'Unfollow' : 'Follow'}
+                  </Button>
+                  <Button variant="outline" className="px-3 py-2">
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Message
+                  </Button>
+                </div>
+              </div>
 
               <div className="flex justify-center space-x-4 pt-4">
                 <a
@@ -133,7 +325,6 @@ const LeftComponent = ({ user }) => {
                 <Mail className="h-5 w-5 text-muted-foreground mr-3" />
                 <span className="text-sm text-foreground">{user?.email}</span>
               </div>
-
             </div>
           </div>
 
@@ -185,26 +376,24 @@ const LeftComponent = ({ user }) => {
                       </span>
                     </div>
                     <div className='flex justify-between items-center mt-2'>
-
-                    <p className="text-xs text-muted-foreground mt-1">
-                      <Calendar className="h-3 w-3 inline mr-1" />
-                      {format(event.date," PPP")}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      <MapPin className="h-3 w-3 inline mr-1" />
-                      {event.location}
-                    </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <Calendar className="h-3 w-3 inline mr-1" />
+                        {format(event.date, " PPP")}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <MapPin className="h-3 w-3 inline mr-1" />
+                        {event.location}
+                      </p>
                     </div>
                     <div className='flex justify-between items-center mt-2'>
-
-                    <button onClick={()=>{
-                      router.push(`/events/${event.title}`)
-                    }} className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-                      View details <ChevronRight className="h-3 w-3 ml-1" />
-                    </button>
-                    <p className="text-xs text-muted-foreground mt-1 mb-2">
-                      Organized by {event.organizer}
-                    </p>
+                      <button onClick={() => {
+                        router.push(`/events/${event.title}`)
+                      }} className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center">
+                        View details <ChevronRight className="h-3 w-3 ml-1" />
+                      </button>
+                      <p className="text-xs text-muted-foreground mt-1 mb-2">
+                        Organized by {event.organizer}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -214,13 +403,19 @@ const LeftComponent = ({ user }) => {
             )}
           </div>
         </div>
-
-
       </div>
-    </>
-  )
-}
 
+      {/* Improved Follower/Following Popup */}
+      <FollowerFollowingPopup 
+        isOpen={showPopup}
+        onClose={handleTogglePopup}
+        followerList={List?.followerList || []}
+        followingList={List?.followingList || []}
+        router={router}
+      />
+    </>
+  );
+};
 
 const RightComponent = ({ user }) => {
   const [activeTab, setActiveTab] = useState('achievements');
@@ -261,8 +456,8 @@ const RightComponent = ({ user }) => {
                     setIsMenuOpen(false);
                   }}
                   className={`w-full py-3 px-4 text-left text-sm ${activeTab === 'achievements'
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                      : 'text-muted-foreground hover:bg-secondary'
+                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                    : 'text-muted-foreground hover:bg-secondary'
                     }`}
                 >
                   <div className="flex items-center">
@@ -276,8 +471,8 @@ const RightComponent = ({ user }) => {
                     setIsMenuOpen(false);
                   }}
                   className={`w-full py-3 px-4 text-left text-sm ${activeTab === 'resume'
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                      : 'text-muted-foreground hover:bg-secondary'
+                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                    : 'text-muted-foreground hover:bg-secondary'
                     }`}
                 >
                   <div className="flex items-center">
@@ -402,6 +597,9 @@ const RightComponent = ({ user }) => {
             )} */}
           </div>
         </div>
+
+         {/* Post Creation and Feed Section */}
+         <PostsSection user={user} />
 
         {/* Activity Section */}
         <UserActivityOverview user={user} />

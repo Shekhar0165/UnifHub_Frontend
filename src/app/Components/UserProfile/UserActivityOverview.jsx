@@ -24,6 +24,7 @@ import {
   CartesianGrid 
 } from 'recharts';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import UserActivityHeatmap from './Heatmap';
 
 
 const UserActivityOverview = ({ user }) => {
@@ -56,6 +57,7 @@ const UserActivityOverview = ({ user }) => {
       fetchUserActivity();
     }
   }, [userid, api]);
+  console.log("user activity",userData)
 
   if (loading) return (
     <LoadingSpinner  fullScreen={false}/>
@@ -285,7 +287,7 @@ const UserActivityOverview = ({ user }) => {
         </div>
 
         {/* Weekly Performance Chart */}
-        <Card className="mt-6">
+        {/* <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart className="h-5 w-5 mr-2 text-primary" />
@@ -326,8 +328,7 @@ const UserActivityOverview = ({ user }) => {
               </ResponsiveContainer>
             </div>
           </CardContent>
-        </Card>
-        
+        </Card>      */}
         {/* Contribution Heatmap */}
         {/* <Card className="mt-6">
           <CardHeader>

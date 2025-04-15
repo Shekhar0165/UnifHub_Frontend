@@ -3,7 +3,7 @@ import React from 'react';
 import { Search } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import Profile from '../../Components/Profile/Profile';
-import { ModeToggle } from '../Components/ModeToggle/ModeToggle';
+import { ModeToggle } from '../ModeToggle/ModeToggle';
 
 const Header = ({ searchQuery, setSearchQuery }) => {
   return (

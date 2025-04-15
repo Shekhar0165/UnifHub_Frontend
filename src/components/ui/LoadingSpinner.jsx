@@ -93,6 +93,7 @@ const LoadingSpinner = ({
   spinnerClassName = "",
   textClassName = "",
   overlay = true,
+  istexthide = true
 }) => {
   const { theme } = useTheme();
   const [dots, setDots] = useState("");
@@ -150,11 +151,11 @@ const LoadingSpinner = ({
         )}
       </div>
       
-      {loadingText && (
+     {istexthide ? loadingText && (
         <p className={`${textVariants({ size, variant })} ${textClassName}`}>
           {loadingText}
         </p>
-      )}
+      ):" "}
     </div>
   );
 

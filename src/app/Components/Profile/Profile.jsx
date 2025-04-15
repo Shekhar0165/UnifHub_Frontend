@@ -18,7 +18,6 @@ import Cookies from 'js-cookie';
 
 const Profile = () => {
   const router = useRouter();
-  const [theme, setTheme] = useState('light');
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [UserType, setUserType] = useState(''); 
