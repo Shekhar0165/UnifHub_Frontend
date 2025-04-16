@@ -46,13 +46,13 @@ const CommentForm = ({ postId, onCommentSubmit }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-3 px-4 pb-3">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-3 px-2 sm:px-4 pb-3">
             <input
                 type="text"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Write a comment..."
-                className="flex-1 rounded-full bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 rounded-full bg-gray-100 dark:bg-gray-700 px-3 sm:px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
                 type="submit"
@@ -161,11 +161,6 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
                 
                 return prevData;
             });
-            
-            // Call the parent handleLike function if provided
-            if (handleLike) {
-                handleLike(post.data._id);
-            }
         } catch (error) {
             console.error('Error liking post:', error);
         }
@@ -233,21 +228,24 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
     
     return (
         <div
-            className="rounded-lg shadow-md mb-6 overflow-hidden post-item bg-white dark:bg-gray-800"
+            className="rounded-lg shadow-md mb-6 overflow-hidden post-item border border-primary/10"
             ref={isLastPost ? lastPostElementRef : null}
             data-post-id={post.data._id}
         >
             {/* Post Header with User Info */}
-            <div className="p-4 flex justify-between items-start">
-                <div onClick={()=>{router.push(`/user/${post.data.user.userid}`)}} className="flex gap-3 cursor-pointer hover:scale-105 transition-all duration-300 ease-in-out">
-                    <div className="rounded-full overflow-hidden h-10 w-10 flex-shrink-0">
+            <div className="p-3 sm:p-4 flex justify-between items-start">
+                <div 
+                    onClick={()=>{router.push(`/user/${post.data.user.userid}`)}} 
+                    className="flex gap-2 sm:gap-3 cursor-pointer hover:scale-105 transition-all duration-300 ease-in-out"
+                >
+                    <div className="rounded-full overflow-hidden h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
                         {post?.data?.user?.profileImage ? (
                             <img 
                                 src={post.data.user.profileImage} 
                                 alt={post.data.user.name || "User"} 
                                 className="h-full w-full object-cover" 
                             />
-                        ) : <UserCircle className="h-10 w-10" />}
+                        ) : <UserCircle className="h-9 w-9 sm:h-10 sm:w-10" />}
                     </div>
                     <div>
                         <h3 className="font-medium">{post.data.user?.name}</h3>
@@ -260,7 +258,7 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
             </div>
 
             {/* Post Title & Content */}
-            <div className="px-4 pb-3">
+            <div className="px-3 sm:px-4 pb-3">
                 {post.data.title && (
                     <h2 className="font-semibold text-base mb-2">{post.data.title}</h2>
                 )}
@@ -300,7 +298,7 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
             )}
 
             {/* Engagement Stats */}
-            <div className="px-4 py-2 border-t border-b flex justify-between items-center text-xs text-gray-500">
+            <div className="px-3 sm:px-4 py-2 border-t border-b flex justify-between items-center text-xs ">
                 <div className="flex items-center gap-1">
                     <Heart className="h-3 w-3 fill-current" />
                     <span>{postData.likes?.length || 0} likes</span>
@@ -311,32 +309,32 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
             </div>
 
             {/* Action Buttons */}
-            <div className="px-4 py-1 flex justify-between">
+            <div className="px-1 sm:px-4 py-1 flex justify-between">
                 <button
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${
                         isLiked ? 'text-red-500' : ''
                     }`}
                     onClick={()=>onLikeClick(post.data._id)}
                 >
                     <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-                    <span className="text-sm font-medium">Like</span>
+                    <span className="text-xs sm:text-sm font-medium">Like</span>
                 </button>
                 <button 
-                    className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={toggleComments}
                 >
                     <MessageCircle className="h-5 w-5" />
-                    <span className="text-sm font-medium">Comment</span>
+                    <span className="text-xs sm:text-sm font-medium">Comment</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                <button className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
                     <Share2 className="h-5 w-5" />
-                    <span className="text-sm font-medium">Share</span>
+                    <span className="text-xs sm:text-sm font-medium">Share</span>
                 </button>
             </div>
 
             {/* Comments Section */}
             {showComments && (
-                <div className="px-4 pb-3 pt-1 border-t">
+                <div className="px-3 sm:px-4 pb-3 pt-1 border-t">
                     {/* Display comments if available */}
                     {comments.comments && comments.comments.length > 0 ? (
                         comments.comments.map((comment, idx) => (

@@ -268,7 +268,7 @@ export default function LinkedInFeed() {
                 <div className="flex gap-4">
                     {/* Left Sidebar - Profile */}
                     <div className="w-64 flex-shrink-0 hidden md:block">
-                        <div className="rounded-lg shadow-md overflow-hidden sticky top-20">
+                        <div className="rounded-lg shadow-md overflow-hidden sticky top-20 border border-primary/10">
                             {/* Profile header with background and profile image */}
                             <div className="h-24 relative">
                                 {user?.backgroundImage && (
@@ -298,7 +298,7 @@ export default function LinkedInFeed() {
                             {/* Profile information */}
                             <div className="pt-14 pb-4 px-4 text-center">
                                 <h2 className="font-semibold text-lg">{user?.name || "Loading..."}</h2>
-                                <p className="text-sm mt-1">{user?.headline || user?.bio || "Add a headline"}</p>
+                                <p className="text-sm mt-1">{ user?.bio || "Add a headline"}</p>
                             </div>
 
                             {/* Location and other details */}

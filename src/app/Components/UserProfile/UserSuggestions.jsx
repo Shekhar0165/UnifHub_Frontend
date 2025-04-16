@@ -194,7 +194,7 @@ const UserSuggestions = () => {
     <>
       <Toaster/>
       <div className="w-64 flex-shrink-0 hidden md:block">
-        <div className="rounded-lg shadow-md overflow-hidden sticky top-20">
+        <div className="rounded-lg shadow-md overflow-hidden sticky top-20 border border-primary/10">
           <div className="p-3">
             <h3 className="font-semibold text-lg">Suggestions for you</h3>
 
