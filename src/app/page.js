@@ -33,7 +33,7 @@ export default function Home() {
         let userId = localStorage.getItem('UserId')
         
         if (userType === "individual") {
-          await router.replace(`/events`);
+          await router.replace(`/feed`);
         } else if (userType === "Organization" && userId) {
           await router.replace(`/organization/${userId}`);
         } 

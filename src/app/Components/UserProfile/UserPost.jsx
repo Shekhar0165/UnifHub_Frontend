@@ -212,7 +212,6 @@ export const UserPosts = ({ user }) => {
                     withCredentials: true,
                 }
             );
-            console.log("comment", res)
 
             if (!res.ok) {
                 throw new Error(data.message || "Failed to add comment");

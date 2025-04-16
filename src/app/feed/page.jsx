@@ -20,6 +20,7 @@ import { refreshTokens } from '@/utils/authUtils';
 import { useRouter } from 'next/navigation';
 import { CreatePost } from '../Components/UserProfile/CreatePost';
 import PostCard from '../Components/UserProfile/PostCard';
+import UserSuggestions from '../Components/UserProfile/UserSuggestions';
 
 export default function LinkedInFeed() {
     const [posts, setPosts] = useState([]);
@@ -392,43 +393,7 @@ export default function LinkedInFeed() {
                     </div>
 
                     {/* Right Sidebar - Suggestions */}
-                    <div className="w-64 flex-shrink-0 hidden md:block">
-                        <div className="rounded-lg shadow-md overflow-hidden sticky top-20">
-                            <div className="p-4">
-                                <h3 className="font-semibold text-lg">Suggestions for you</h3>
-
-                                {/* Suggestions List */}
-                                <ul className="mt-3 space-y-3">
-                                    {suggestions.map((suggestion) => (
-                                        <li key={suggestion.id} className="flex items-start gap-2 p-1 border-b pb-3">
-                                            <div className="flex-shrink-0">
-                                                <div className="h-10 w-10 rounded-full overflow-hidden">
-                                                    <img
-                                                        src={suggestion.image}
-                                                        alt={suggestion.name}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-medium truncate">{suggestion.name}</h4>
-                                                <p className="text-xs line-clamp-2 mt-1">{suggestion.role}</p>
-                                                <button className="mt-2 text-sm font-medium hover:underline flex items-center gap-1">
-                                                    <Users className="h-3.5 w-3.5" /> Connect
-                                                </button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <div className="mt-4 text-center">
-                                    <button className="hover:underline text-sm font-medium">
-                                        View all suggestions
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                            <UserSuggestions/>
                 </div>
             </main>
         </div>
