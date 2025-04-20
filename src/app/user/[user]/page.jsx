@@ -5,7 +5,8 @@ import {
   User, Award, FileText, Calendar, Download, Share2, MapPin,
   Briefcase, GraduationCap, Mail, Phone, Star, Activity,
   BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, ChevronDown, Pencil, Menu, Check, MessageCircle, UserMinus,
-  Axis3D
+  Axis3D,
+  Edit
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Header from '@/app/Components/Header/Header'
@@ -42,10 +43,15 @@ const LeftComponent = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [List, setlist] = useState({ followerList: [], followingList: [] });
   const [showPopup, setShowPopup] = useState(false);
+  const [Userid, SetUserid] = useState('')
+  const [PostCount, SetPostCount] = useState(0)
+
   const router = useRouter();
 
   useEffect(() => {
     if (!user || !user._id) return;
+    const UserIDByLocalStorge = localStorage.getItem('UserId')
+    SetUserid(UserIDByLocalStorge)
 
     const HandleFetchUpcomingEvents = async () => {
       try {
@@ -65,12 +71,26 @@ const LeftComponent = ({ user }) => {
     HandleFetchUpcomingEvents();
   }, [user]);
 
+
   useEffect(() => {
-    if (!user || !user._id) return;
-    
+    const FetchPostCount = async () => {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/post/count/${user?._id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true,
+      })
+      SetPostCount(response.data.PostCount)
+    }
+    FetchPostCount()
+  }, [user])
+
+  useEffect(() => {
+    if (!user || !user?._id) return;
+
     const HandleGetFollowAndFollowingList = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user?._id}`, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -81,13 +101,13 @@ const LeftComponent = ({ user }) => {
         console.error("Error fetching follower/following lists:", error);
       }
     };
-    
+
     HandleGetFollowAndFollowingList();
   }, [user]);
 
   useEffect(() => {
     if (!user || !user._id) return;
-    
+
     const HandleCheckFollower = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/checkfollower/${user?._id}`, {
@@ -102,7 +122,7 @@ const LeftComponent = ({ user }) => {
         console.error("Error checking follower status:", error);
       }
     };
-    
+
     HandleCheckFollower();
   }, [user]);
 
@@ -126,7 +146,7 @@ const LeftComponent = ({ user }) => {
           variant: "default",
         });
         setfollow(true);
-        
+
         // Refresh follower list after following
         const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
           headers: { 'Content-Type': 'application/json' },
@@ -172,7 +192,7 @@ const LeftComponent = ({ user }) => {
           variant: "default",
         });
         setfollow(false);
-        
+
         // Refresh follower list after unfollowing
         const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
           headers: { 'Content-Type': 'application/json' },
@@ -255,7 +275,7 @@ const LeftComponent = ({ user }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-2 space-y-4">
               <div>
                 <p className="text-foreground text-sm">{user?.bio}</p>
@@ -263,38 +283,85 @@ const LeftComponent = ({ user }) => {
               <div className="mt-6 border rounded-lg p-4">
                 <div className="flex justify-between items-center">
                   <div className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10">
-                    <span className="text-xl font-bold text-foreground">12</span>
+                    <span className="text-xl font-bold text-foreground">{PostCount || '0'}</span>
                     <span className="text-xs text-muted-foreground mt-1">Posts</span>
                   </div>
-                  
+
                   <div onClick={handleTogglePopup} className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10 cursor-pointer">
                     <span className="text-xl font-bold text-foreground">{List?.followerList?.length || 0}</span>
                     <span className="text-xs text-muted-foreground mt-1">Followers</span>
                   </div>
-                  
+
                   <div onClick={handleTogglePopup} className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10 cursor-pointer">
                     <span className="text-xl font-bold text-foreground">{List?.followingList?.length || 0}</span>
                     <span className="text-xs text-muted-foreground mt-1">Following</span>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-center pt-2">
                 <div className="flex space-x-2">
                   <Button
-                    onClick={follow ? handleUnfollowUser : handleFollowUser}
+                    onClick={
+                      Userid === user?.userid
+                        ? handleCopyLink
+                        : follow
+                          ? handleUnfollowUser
+                          : handleFollowUser
+                    }
                     variant="outline"
                     className="flex items-center px-4 py-2"
                     disabled={loading}
                   >
-                    {loading ? <LoadingSpinner fullScreen={false} istexthide={false} /> : follow ? 'Unfollow' : 'Follow'}
+                    {Userid === user?.userid ? (
+                      <>
+                        {copied ? (
+                          <>
+                            <Check className="h-4 w-4 mr-2 text-green-500 transition-transform duration-300 scale-110" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="h-4 w-4 mr-2 transition-transform duration-300" />
+                            Share Profile
+                          </>
+                        )}
+                      </>
+                    ) : loading ? (
+                      <LoadingSpinner fullScreen={false} istexthide={false} />
+                    ) : follow ? (
+                      'Unfollow'
+                    ) : (
+                      'Follow'
+                    )}
                   </Button>
-                  <Button variant="outline" className="px-3 py-2">
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    Message
+
+                  <Button
+                    onClick={
+                      Userid === user?.userid
+                        ? () => {
+                          router.push(`/user/${Userid}/edit`);
+                        }
+                        : () => { }
+                    }
+                    variant="outline"
+                    className="px-3 py-2"
+                  >
+                    {Userid === user?.userid ? (
+                      <>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        Message
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
+
 
               <div className="flex justify-center space-x-4 pt-4">
                 <a
@@ -342,7 +409,7 @@ const LeftComponent = ({ user }) => {
             </div>
           </div>
 
-          <div className="p-4 border-t border-border">
+          {/* <div className="p-4 border-t border-border">
             <button onClick={handleCopyLink} className="w-full flex justify-center items-center py-2 px-4 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-background hover:bg-secondary transition-colors">
               {copied ? (
                 <Check className="h-4 w-4 mr-2 text-green-500 transition-transform duration-300 scale-110" />
@@ -351,7 +418,7 @@ const LeftComponent = ({ user }) => {
               )}
               {copied ? "Copied!" : "Share Profile"}
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Upcoming Events Section */}
@@ -406,7 +473,7 @@ const LeftComponent = ({ user }) => {
       </div>
 
       {/* Improved Follower/Following Popup */}
-      <FollowerFollowingPopup 
+      <FollowerFollowingPopup
         isOpen={showPopup}
         onClose={handleTogglePopup}
         followerList={List?.followerList || []}
@@ -598,8 +665,8 @@ const RightComponent = ({ user }) => {
           </div>
         </div>
 
-         {/* Post Creation and Feed Section */}
-         <PostsSection user={user} />
+        {/* Post Creation and Feed Section */}
+        <PostsSection user={user} />
 
         {/* Activity Section */}
         <UserActivityOverview user={user} />

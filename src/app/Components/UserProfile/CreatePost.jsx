@@ -179,6 +179,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
 
             // Trigger refresh of posts list
             if (onPostCreated) onPostCreated();
+            location.reload();
 
         } catch (error) {
             console.error('Error creating post:', error);
@@ -225,6 +226,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
 
             // Trigger refresh of posts list
             if (onPostCreated) onPostCreated();
+            location.reload();
 
         } catch (error) {
             console.error('Error creating achievement post:', error);
@@ -284,7 +286,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                 )}
             </CardContent>
 
-            {activeTab === 'normal' && (
+            {/* {activeTab === 'normal' && (
                 <CardFooter className="px-4 py-3 border-t border-border flex justify-between">
                     <div className="flex space-x-1">
                         <Button variant="ghost" size="sm" className="text-muted-foreground">
@@ -296,7 +298,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </CardFooter>
-            )}
+            )} */}
 
             {/* Normal Post Dialog */}
             <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>

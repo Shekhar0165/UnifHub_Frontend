@@ -90,6 +90,7 @@ export default function LinkedInFeed() {
         fetchUserData();
     }, []);
 
+    // First, update the initial fetch posts function to properly handle empty responses
     useEffect(() => {
         const fetchPosts = async (pageNum = 1) => {
             try {
@@ -100,11 +101,16 @@ export default function LinkedInFeed() {
                     },
                     withCredentials: true
                 });
-                setPosts(response.data.feed || []);
-                setHasMore(response.data.hasMore);
+
+                const feedData = response.data.feed || [];
+                setPosts(feedData);
+
+                // If the initial fetch returns no posts, set hasMore to false immediately
+                setHasMore(feedData.length > 0 && response.data.hasMore);
                 setPage(1);
             } catch (error) {
                 console.error("Error fetching posts:", error);
+                setHasMore(false); // Set hasMore to false on error too
             } finally {
                 setLoading(false);
             }
@@ -112,13 +118,7 @@ export default function LinkedInFeed() {
         fetchPosts()
     }, [])
 
-
-
-
-    // Function to fetch initial posts
-
-
-    // Function to load more posts (infinite scrolling)
+    // Similarly update the loadMorePosts function
     const loadMorePosts = async () => {
         if (loading || !hasMore) return;
 
@@ -152,11 +152,11 @@ export default function LinkedInFeed() {
             }
         } catch (error) {
             console.error("Error loading more posts:", error);
+            setHasMore(false); // Set hasMore to false on error too
         } finally {
             setLoading(false);
         }
     };
-
     // Set up infinite scrolling with Intersection Observer
     const lastPostElementRef = useCallback(node => {
         if (loading) return;
@@ -298,7 +298,7 @@ export default function LinkedInFeed() {
                             {/* Profile information */}
                             <div className="pt-14 pb-4 px-4 text-center">
                                 <h2 className="font-semibold text-lg">{user?.name || "Loading..."}</h2>
-                                <p className="text-sm mt-1">{ user?.bio || "Add a headline"}</p>
+                                <p className="text-sm mt-1">{user?.bio || "Add a headline"}</p>
                             </div>
 
                             {/* Location and other details */}
@@ -321,7 +321,7 @@ export default function LinkedInFeed() {
                             </div>
 
                             {/* Stats section */}
-                            <div className="border-t px-4 py-3">
+                            {/* <div className="border-t px-4 py-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="flex items-center gap-1">
                                         <Users className="h-4 w-4" />
@@ -336,12 +336,12 @@ export default function LinkedInFeed() {
                                     </span>
                                     <span className="font-medium">{user?.views || 0} this week</span>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Call to action */}
                             <div className="border-t p-4">
                                 <button
-                                    onClick={() => { router.push(`/user/${user?.userid}`) }}
+                                    onClick={() => { router.push(`/user/${user.userid}`) }}
                                     className="w-full font-medium py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                     View Complete Profile
@@ -384,7 +384,8 @@ export default function LinkedInFeed() {
                         )}
 
                         {/* No more posts message */}
-                        {!hasMore && posts.length > 0 && (
+                        {/* No more posts message */}
+                        {!loading && !hasMore && (
                             <div className="text-center py-4 rounded-lg shadow-md mt-4">
                                 <p>You've reached the end of your feed</p>
                                 <button className="mt-2 hover:underline font-medium">Discover more connections</button>
@@ -393,7 +394,7 @@ export default function LinkedInFeed() {
                     </div>
 
                     {/* Right Sidebar - Suggestions */}
-                            <UserSuggestions/>
+                    <UserSuggestions />
                 </div>
             </main>
         </div>
