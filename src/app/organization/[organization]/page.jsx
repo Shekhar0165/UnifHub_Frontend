@@ -5,9 +5,11 @@ import {
     Users, UserPlus, History, UsersIcon, Award, FileText, Calendar,
     Share2, MapPin, GraduationCap, Mail, Phone, Star, Activity,
     BarChart2, Github, Linkedin, Twitter, Clock, ChevronRight, X,
-    BriefcaseIcon, ChevronDown, Building,Check
+    BriefcaseIcon, ChevronDown, Building, Check, Edit
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import axios from 'axios';
+import FollowerFollowingPopup from '@/app/Components/UserProfile/FollowerList';
 
 // UI components from shadcn/ui or your UI library
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -41,10 +43,131 @@ const getActivityColor = (count) => {
 const LeftComponent = ({ user }) => {
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
+    const [follow, setFollow] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [List, setList] = useState({ followerList: [], followingList: [] });
+    const [showPopup, setShowPopup] = useState(false);
+    const [Userid, SetUserid] = useState('');
+    const router = useRouter();
 
+    useEffect(() => {
+        if (!user || !user._id) return;
+        const UserIDByLocalStorage = localStorage.getItem('UserId');
+        SetUserid(UserIDByLocalStorage);
+
+        const fetchFollowerList = async () => {
+            try {
+                const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+                    headers: { 'Content-Type': 'application/json' },
+                    withCredentials: true,
+                });
+                setList(listResponse.data);
+            } catch (error) {
+                console.error("Error fetching follower list:", error);
+            }
+        };
+
+        fetchFollowerList();
+    }, [user]);
+
+    useEffect(() => {
+        if (!user || !user._id) return;
+
+        const checkFollowerStatus = async () => {
+            try {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/checkfollower/${user?._id}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    withCredentials: true,
+                });
+                setFollow(response.data.isFollower);
+            } catch (error) {
+                console.error("Error checking follower status:", error);
+            }
+        };
+
+        checkFollowerStatus();
+    }, [user]);
+
+    const handleFollowOrganization = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API}/follower/add`,
+                { userid: user._id },
+                {
+                    headers: { "Content-Type": "application/json" },
+                    withCredentials: true,
+                }
+            );
+
+            if (response.data.success) {
+                toast({
+                    title: "Followed",
+                    description: response.data.message,
+                    variant: "default",
+                });
+                setFollow(true);
+
+                const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+                    headers: { 'Content-Type': 'application/json' },
+                    withCredentials: true,
+                });
+                setList(listResponse.data);
+            }
+        } catch (error) {
+            console.error("Error following organization:", error);
+            toast({
+                title: "Error",
+                description: "Failed to follow organization",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUnfollowOrganization = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API}/follower/remove`,
+                { userid: user._id },
+                {
+                    headers: { "Content-Type": "application/json" },
+                    withCredentials: true,
+                }
+            );
+
+            if (response.data.success) {
+                toast({
+                    title: "Unfollowed",
+                    description: "You have unfollowed this organization",
+                    variant: "default",
+                });
+                setFollow(false);
+
+                const listResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/follower/list/${user._id}`, {
+                    headers: { 'Content-Type': 'application/json' },
+                    withCredentials: true,
+                });
+                setList(listResponse.data);
+            }
+        } catch (error) {
+            console.error("Error unfollowing organization:", error);
+            toast({
+                title: "Error",
+                description: "Failed to unfollow organization",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleCopyLink = () => {
-        const profileLink = window.location.href; // Get current URL
+        const profileLink = window.location.href;
 
         navigator.clipboard.writeText(profileLink)
             .then(() => {
@@ -54,8 +177,6 @@ const LeftComponent = ({ user }) => {
                     description: "Profile link copied to clipboard!",
                     variant: "default",
                 });
-
-                // Reset icon after 2 seconds
                 setTimeout(() => setCopied(false), 2000);
             })
             .catch((err) => {
@@ -67,6 +188,11 @@ const LeftComponent = ({ user }) => {
                 });
             });
     };
+
+    const handleTogglePopup = () => {
+        setShowPopup(!showPopup);
+    };
+
     return (
         <>
             <Toaster />
@@ -90,6 +216,73 @@ const LeftComponent = ({ user }) => {
 
                         <div className="mt-6 space-y-4">
                             <p className="text-foreground text-sm">{user?.bio}</p>
+
+                            <div className="mt-6 border rounded-lg p-4">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10">
+                                        <span className="text-xl font-bold text-foreground">{user?.events?.length || 12}</span>
+                                        <span className="text-xs text-muted-foreground mt-1">Events</span>
+                                    </div>
+                                    <div onClick={handleTogglePopup} className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10 cursor-pointer">
+                                        <span className="text-xl font-bold text-foreground">{List?.followerList?.length || 0}</span>
+                                        <span className="text-xs text-muted-foreground mt-1">Followers</span>
+                                    </div>
+                                    <div onClick={handleTogglePopup} className="flex flex-col items-center rounded-lg p-2 transition-all duration-200 ease-in-out hover:bg-white/10 cursor-pointer">
+                                        <span className="text-xl font-bold text-foreground">{List?.followingList?.length || 0}</span>
+                                        <span className="text-xs text-muted-foreground mt-1">Following</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center pt-2">
+                                <div className="flex space-x-2">
+                                    <Button
+                                        onClick={
+                                            Userid === user?.userid
+                                                ? handleCopyLink
+                                                : follow
+                                                    ? handleUnfollowOrganization
+                                                    : handleFollowOrganization
+                                        }
+                                        variant="outline"
+                                        className="flex items-center px-4 py-2"
+                                        disabled={loading}
+                                    >
+                                        {Userid === user?.userid ? (
+                                            <>
+                                                {copied ? (
+                                                    <>
+                                                        <Check className="h-4 w-4 mr-2 text-green-500 transition-transform duration-300 scale-110" />
+                                                        Copied!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Share2 className="h-4 w-4 mr-2 transition-transform duration-300" />
+                                                        Share Profile
+                                                    </>
+                                                )}
+                                            </>
+                                        ) : loading ? (
+                                            <LoadingSpinner fullScreen={false} istexthide={false} />
+                                        ) : follow ? (
+                                            'Unfollow'
+                                        ) : (
+                                            'Follow'
+                                        )}
+                                    </Button>
+
+                                    {Userid === user?.userid && (
+                                        <Button
+                                            onClick={() => router.push(`/organization/${user.userid}/edit`)}
+                                            variant="outline"
+                                            className="px-3 py-2"
+                                        >
+                                            <Edit className="h-4 w-4 mr-1" />
+                                            Edit
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
 
                             <div className="flex justify-center space-x-4 pt-4">
                                 <a
@@ -184,6 +377,16 @@ const LeftComponent = ({ user }) => {
 
 
             </div>
+
+            {showPopup && (
+                <FollowerFollowingPopup
+                    isOpen={showPopup}
+                    onClose={() => setShowPopup(false)}
+                    followerList={List?.followerList}
+                    followingList={List?.followingList}
+                    router={router}
+                />
+            )}
         </>
     )
 }
