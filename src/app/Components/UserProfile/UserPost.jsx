@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { ChevronDown, ChevronUp, Heart, MessageCircle, MoreHorizontal, Share2, UserCircle, Send, Edit, Trash2, X, Bold, Italic, Heading, List, AtSign, Image, ImageIcon, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, Heart, MessageCircle, MoreHorizontal, Share2, UserCircle, Send, Edit, Trash2, X, Bold, Italic, Heading, List, AtSign, Image, ImageIcon, Star, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
@@ -145,6 +145,7 @@ export const UserPosts = ({ user }) => {
   const [postImage, setPostImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+    const [copied, setCopied] = useState(false);
 
   const { toast } = useToast();
   const textareaRef = useRef(null);
@@ -649,6 +650,7 @@ export const UserPosts = ({ user }) => {
         }
       );
 
+
       if (response.data.success) {
         // Update the post in local state
         setPosts(prevPosts => {
@@ -691,6 +693,30 @@ export const UserPosts = ({ user }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCopyLink = (postlink) => {
+    console.log('Copying post link:', postlink);
+    navigator.clipboard.writeText(postlink)
+      .then(() => {
+        setCopied(true);
+        toast({
+          title: "Success",
+          description: "post link copied to clipboard!",
+          variant: "default",
+        });
+
+        // Reset icon after 2 seconds
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((err) => {
+        console.error("Failed to copy: ", err);
+        toast({
+          title: "Error",
+          description: "Failed to copy profile link!",
+          variant: "destructive",
+        });
+      });
   };
 
   // Dialog close handler
@@ -912,6 +938,7 @@ export const UserPosts = ({ user }) => {
             className="rounded-lg shadow-md overflow-hidden post-item border border-primary/10 relative"
             data-post-id={post._id}
           >
+            {console.log('Post:', post)}
             {/* Post Header with User Info */}
             <div className="p-3 sm:p-4 flex justify-between items-start">
               <div className="flex gap-2 sm:gap-3 cursor-pointer hover:scale-105 transition-all duration-300 ease-in-out">
@@ -946,8 +973,8 @@ export const UserPosts = ({ user }) => {
                   />
                 )}
               </div> : <button className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition-colors">
-                      {post.isAchivementPosted && <Star size={20} color='lightblue' />}
-                      </button>}
+                {post.isAchivementPosted && <Star size={20} color='lightblue' />}
+              </button>}
               {/* {<div ref={activeOptionsMenu === post._id ? optionsMenuRef : null}>
                 <button
                   className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition-colors"
@@ -1041,13 +1068,22 @@ export const UserPosts = ({ user }) => {
                 <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="text-xs sm:text-sm font-medium">Comment</span>
               </button>
-              <button
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Share post"
-              >
-                <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-xs sm:text-sm font-medium">Share</span>
-              </button>
+              {user.userid && (
+                <button
+                  onClick={() => handleCopyLink(`${window.location.origin}/user/${user.userid}/post/${post._id}`)}
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  aria-label="Share post"
+                >
+                  {copied ? (
+                    <Check className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Share2 className="h-5 w-5" />
+                  )}
+                  <span className="text-xs sm:text-sm font-medium">
+                    {copied ? "Copied!" : "Share"}
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Comments Section */}

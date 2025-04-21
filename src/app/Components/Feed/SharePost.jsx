@@ -224,14 +224,22 @@ const formatUtils = {
   }
 };
 
-export default function PostCard({ post, isLastPost, lastPostElementRef, user }) {
+export default function SharePost({ post, user }) {
+  // Validate post data is available before any state initialization
+  if (!post?.data && !post?.post) {
+    return null; // Return null instead of error message to prevent multiple messages
+  }
+
+  // Initialize post data from either post.data or post.post
+  const initialPostData = post?.data || post?.post || {};
+
   // State management with proper initialization
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLongContent, setIsLongContent] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState({ comments: [] });
-  const [postData, setPostData] = useState(post?.data || {});
+  const [postData, setPostData] = useState(initialPostData);
   const [contentPreview, setContentPreview] = useState('');
   const [fullContent, setFullContent] = useState('');
   const [copied, setCopied] = useState(false);
@@ -240,14 +248,6 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
   const CONTENT_MAX_LENGTH = 300;
   const contentRef = useRef(null);
   const router = useRouter();
-
-  // Validate post data is available
-  if (!post?.data) {
-    console.error('Post data is missing or invalid');
-    return null; // Return null or a fallback UI
-  }
-
-  console.log('post copy:', copied);
 
   // Process post content for preview/full display
   const processPostContent = useCallback(() => {
@@ -284,17 +284,12 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
     }
   }, [postData]);
 
-  // Format post date on component mount
-  useEffect(() => {
-    // No need to call formatTimeAgo here since it's used directly in render
-  }, [postData?.createdAt]);
-
   // Update local post data when prop changes
   useEffect(() => {
-    if (post?.data) {
-      setPostData(post.data);
+    if (post?.post) { // Fixed: Changed from post?.data to post?.post
+      setPostData(post.post);
     }
-  }, [post?.data]);
+  }, [post?.post]); // Fixed: Changed from post?.data to post?.post
 
   // Process content when post data changes
   useEffect(() => {
@@ -434,7 +429,6 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
       <Toaster />
       <div
         className="rounded-lg shadow-md mb-6 overflow-hidden post-item border border-primary/10"
-        ref={isLastPost ? lastPostElementRef : null}
         data-post-id={postData?._id}
       >
         {/* Post Header with User Info */}
