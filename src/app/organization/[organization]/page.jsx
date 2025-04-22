@@ -213,7 +213,7 @@ const LeftComponent = ({ user }) => {
                                 <span className="text-sm">{user?.location}</span>
                             </div>
                         </div>
-
+                        {/* add some code  */}
                         <div className="mt-6 space-y-4">
                             <p className="text-foreground text-sm">{user?.bio}</p>
 
