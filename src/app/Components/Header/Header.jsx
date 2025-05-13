@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ModeToggle } from '../ModeToggle/ModeToggle';
 import Profile from '../Profile/Profile';
 import Link from 'next/link';
-import { Search, X, Loader2, User, Home, CalendarDays, Menu, X as Close } from 'lucide-react';
+import { Search, X, Loader2, User, Home, CalendarDays, Menu, X as Close, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import axios from 'axios';
@@ -230,6 +230,18 @@ export default function Header() {
                 >
                   <CalendarDays size={isActive('/events') ? 22 : 20} strokeWidth={isActive('/events') ? 2.5 : 2} />
                   <span>Events</span>
+                </Button>
+              </Link>
+              <Link href="/messages">
+                <Button
+                  variant="ghost"
+                  className={`flex items-center gap-2 px-4 py-2 transition-all ${isActive('/messages')
+                      ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
+                      : "hover:bg-muted/40"
+                    }`}
+                >
+                  <MessageCircle size={isActive('/messages') ? 22 : 20} strokeWidth={isActive('/messages') ? 2.5 : 2} />
+                  <span>Message</span>
                 </Button>
               </Link>
             </nav>
