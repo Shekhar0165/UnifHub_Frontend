@@ -62,15 +62,27 @@ export default function ChatBox({ recipientUser, currentUser }) {
   const [pendingMessageIds, setPendingMessageIds] = useState(new Set());
   const fileInputRef = useRef(null);
   const scrollAreaRef = useRef(null);
-  
-  // Initialize chat with room joining and message listeners
+    // Initialize chat with room joining and message listeners
   useEffect(() => {
     if (!currentUser?._id || !recipientUser?._id) return;
     
-    // Add welcome message when chat starts
-
-    setMessages(prev => [
-      ...prev, ]);
+    // Clear previous messages when switching to a new chat
+    setMessages([]);
+    setPendingMessageIds(new Set());
+    
+    // Add welcome message for the new chat
+    const welcomeMessage = {
+      id: 'welcome-' + Date.now(),
+      content: `Start of your conversation with ${recipientUser?.name}`,
+      timestamp: new Date(),
+      sender: {
+        id: 'system',
+        name: 'System',
+        profileImage: '/avatar-placeholder.png'
+      }
+    };
+    
+    setMessages([welcomeMessage]);
     
     // Join the chat room
     const joinData = {
@@ -87,19 +99,31 @@ export default function ChatBox({ recipientUser, currentUser }) {
       socket.off('joined');
       socket.off('error');
     };
-  }, [recipientUser?._id, currentUser?._id, recipientUser?.name, recipientUser?.profileImage]);
-
+  }, [recipientUser?._id, currentUser?._id, recipientUser?.name]);
   // Set up message listener after initial setup
   useEffect(() => {
     // Add socket listener for new messages
     const handleNewMessage = (data) => {
       console.log('Received message:', data);
       
-      // If this is our own message coming back from the server, ignore it
-      // because we've already added it to the UI
-      if (data.sender === currentUser?._id && 
-          pendingMessageIds.has(data.message.content)) {
-        // Remove this message from pending set
+      // Generate a unique message ID
+      const messageId = data.message._id || 'msg-' + Date.now();
+      
+      // Check if message already exists in messages array
+      const messageExists = messages.some(msg => 
+        msg.id === messageId || 
+        (msg.content === data.message.content && 
+         msg.sender.id === data.sender &&
+         // Compare timestamps within a 1 second window
+         Math.abs(new Date(msg.timestamp) - new Date()) < 1000)
+      );
+      
+      if (messageExists) {
+        return;
+      }
+
+      // For our own messages, only acknowledge receipt
+      if (data.sender === currentUser?._id) {
         setPendingMessageIds(prev => {
           const newSet = new Set(prev);
           newSet.delete(data.message.content);
@@ -108,21 +132,20 @@ export default function ChatBox({ recipientUser, currentUser }) {
         return;
       }
       
-      // If it's a message from the other user, add it
-      if (data.sender !== currentUser?._id) {
-        const newMessage = {
-          id: data.message._id || 'msg-' + Date.now(),
-          content: data.message.content,
-          image: data.message.image,
-          timestamp: new Date(),
-          sender: {
-            id: data.sender,
-            name: recipientUser?.name,
-            profileImage: recipientUser?.profileImage
-          }
-        };
-        setMessages(prev => [...prev, newMessage]);
-      }
+      // Add new message from other user
+      const newMessage = {
+        id: messageId,
+        content: data.message.content,
+        image: data.message.image,
+        timestamp: new Date(),
+        sender: {
+          id: data.sender,
+          name: recipientUser?.name,
+          profileImage: recipientUser?.profileImage
+        }
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
     };
     
     socket.on('new-message', handleNewMessage);
@@ -130,7 +153,7 @@ export default function ChatBox({ recipientUser, currentUser }) {
     return () => {
       socket.off('new-message', handleNewMessage);
     };
-  }, [currentUser, recipientUser, pendingMessageIds]);
+  }, [currentUser?._id, recipientUser?.name, recipientUser?.profileImage, messages]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {

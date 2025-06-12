@@ -278,7 +278,9 @@ export default function LinkedInFeed() {
                         <CreatePost user={user} />
 
                         {/* Posts */}
-                        {posts?.length > 0 ? (
+                        {loading ? (
+                            <LoadingSpinner fullScreen={true} />
+                        ) : posts?.length > 0 ? (
                             posts.map((post, index) => {
                                 // Check if this is the last post for ref callback
                                 const isLastPost = index === posts.length - 1;
@@ -295,7 +297,11 @@ export default function LinkedInFeed() {
                                 );
                             })
                         ) : (
-                            <LoadingSpinner fullScreen={true} />
+                            <div className="text-center py-8 border rounded-lg shadow-md mt-4">
+                                <h3 className="text-xl font-semibold mb-2">No Posts Yet</h3>
+                                <p className="text-gray-600 dark:text-gray-400">There are no posts in your feed right now.</p>
+                                <p className="text-gray-600 dark:text-gray-400 mt-1">Start following people or create your first post!</p>
+                            </div>
                         )}
 
                         {/* Loading indicator */}
