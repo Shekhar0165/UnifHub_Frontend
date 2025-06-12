@@ -166,9 +166,9 @@ export default function RegisterPage() {
       // Check if response contains required data
 
       document.cookie = `accessToken=${res.data.accessToken}; path=/; max-age=900; SameSite=Strict`;
-        document.cookie = `refreshToken=${res.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
-        document.cookie = `UserType=${res.data.user.usertype}; path=/; max-age=900; SameSite=Strict`;
-        document.cookie = `UserId=${res.data.user.userid}; path=/; max-age=900; SameSite=Strict`;
+      document.cookie = `refreshToken=${res.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+      document.cookie = `UserType=${res.data.user.usertype}; path=/; max-age=900; SameSite=Strict`;
+      document.cookie = `UserId=${res.data.user.userid}; path=/; max-age=900; SameSite=Strict`;
 
       // Store in localStorage as fallback
       localStorage.setItem('UserType', res.data.user.userType);
@@ -350,7 +350,7 @@ export default function RegisterPage() {
                   />
                 </div> */}
 
-                
+
                 <Separator className="my-2" />
 
                 <div className="space-y-2">
