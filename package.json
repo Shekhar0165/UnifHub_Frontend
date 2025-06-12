@@ -52,6 +52,7 @@
     "recharts": "^2.15.1",
     "rich-text-editor": "^8.2.4",
     "select": "^1.1.2",
+    "socket.io-client": "^4.8.1",
     "sonner": "^2.0.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
