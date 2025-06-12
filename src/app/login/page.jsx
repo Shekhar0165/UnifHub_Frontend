@@ -19,7 +19,7 @@ export default function Page() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-      
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API}/login`, {
         method: 'POST',
@@ -29,18 +29,18 @@ export default function Page() {
         credentials: 'include',
         body: JSON.stringify({ identifier, password }),
       });
-          
+
       const data = await response.json();
-      
+
       if (response.ok) {
-        document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+        document.cookie = `accessToken=${data.accessToken}; path=/; max-age=900; SameSite=Strict`;
         document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
-        document.cookie = `UserType=${data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
-        document.cookie = `UserId=${data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+        document.cookie = `UserType=${data.user.usertype}; path=/; max-age=900; SameSite=Strict`;
+        document.cookie = `UserId=${data.user.userid}; path=/; max-age=900; SameSite=Strict`;
 
         localStorage.setItem("UserType", data.user.usertype);
         localStorage.setItem("UserId", data.user.userid);
-        
+
         toast({
           title: "Login successful!",
           description: "Redirecting you to events page...",
@@ -48,7 +48,7 @@ export default function Page() {
           variant: "default",
           icon: <CheckCircle className="h-4 w-4 text-green-500" />
         });
-              
+
         window.location.href = "/";
       } else {
         toast({
@@ -69,7 +69,7 @@ export default function Page() {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Toaster />
@@ -84,7 +84,7 @@ export default function Page() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="identifier">Email or User ID</Label>
-              <Input 
+              <Input
                 id="identifier"
                 type="text"
                 placeholder="Email or User ID"
@@ -96,7 +96,7 @@ export default function Page() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input 
+              <Input
                 id="password"
                 type="password"
                 placeholder="Password"
@@ -113,7 +113,7 @@ export default function Page() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Signing in...
                 </>
               ) : (
@@ -124,14 +124,14 @@ export default function Page() {
             </Button>
           </form>
           <div className="flex justify-between text-sm text-muted-foreground">
-            <button 
-              onClick={() => router.push('/forgot-password')} 
+            <button
+              onClick={() => router.push('/forgot-password')}
               className="hover:underline"
             >
               Forgot password?
             </button>
-            <button 
-              onClick={() => router.push('/register')} 
+            <button
+              onClick={() => router.push('/register')}
               className="hover:underline"
             >
               Create a new account
