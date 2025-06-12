@@ -4,6 +4,8 @@ import { LinkIcon, MapPin, UserCircle } from 'lucide-react'
 import React from 'react'
 import { useRouter } from "next/navigation";
 
+
+
 export default function UserProfile({user}) {
     return (
         <>

@@ -72,7 +72,7 @@ export default function Page() {
             if (!postId) return;
 
             try {
-                const response = await axios.post(`${process.env.NEXT_PUBLIC_API}/post/${postId}`, { userid: userId }, {
+                const response = await axios.post(`${process.env.NEXT_PUBLIC_API}/post/user/one/${postId}`, { userid: userId }, {
                     headers: {
                         'Content-Type': 'application/json',
                     },

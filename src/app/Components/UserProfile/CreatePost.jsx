@@ -1,3 +1,4 @@
+'use client'
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -361,7 +362,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                 </Tooltip>
                             </TooltipProvider>
 
-                            <TooltipProvider>
+                            {/* <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
@@ -375,7 +376,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                     </TooltipTrigger>
                                     <TooltipContent>Heading</TooltipContent>
                                 </Tooltip>
-                            </TooltipProvider>
+                            </TooltipProvider> */}
 
                             <TooltipProvider>
                                 <Tooltip>
@@ -393,7 +394,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                 </Tooltip>
                             </TooltipProvider>
 
-                            <TooltipProvider>
+                            {/* <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
@@ -407,7 +408,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                     </TooltipTrigger>
                                     <TooltipContent>Mention</TooltipContent>
                                 </Tooltip>
-                            </TooltipProvider>
+                            </TooltipProvider> */}
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -540,7 +541,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                         </Tooltip>
                                     </TooltipProvider>
 
-                                    <TooltipProvider>
+                                    {/* <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button
@@ -554,7 +555,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                             </TooltipTrigger>
                                             <TooltipContent>Heading</TooltipContent>
                                         </Tooltip>
-                                    </TooltipProvider>
+                                    </TooltipProvider> */}
 
                                     <TooltipProvider>
                                         <Tooltip>
@@ -572,7 +573,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                         </Tooltip>
                                     </TooltipProvider>
 
-                                    <TooltipProvider>
+                                    {/* <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button
@@ -586,7 +587,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                             </TooltipTrigger>
                                             <TooltipContent>Mention</TooltipContent>
                                         </Tooltip>
-                                    </TooltipProvider>
+                                    </TooltipProvider> */}
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
@@ -991,9 +992,16 @@ export const CreatePost = ({ user, onPostCreated }) => {
 
 // Main component to integrate CreatePost and UserPosts
 const PostsSection = ({ user }) => {
+    const [MainUser,SetMainUser] = useState('');
+    const UserIDByLocalStorge = localStorage.getItem('UserId')
+    useEffect(()=>{
+        SetMainUser(UserIDByLocalStorge)
+    },[])
+
+    console.log("inside cretaf afkjasb jkfbasfd",MainUser)
     return (
         <div className="space-y-6">
-            <CreatePost user={user} />
+            {MainUser === user?.userid ? <CreatePost user={user} /> : ''}
             <UserPosts user={user} />
         </div>
     );

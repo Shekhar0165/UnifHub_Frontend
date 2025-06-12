@@ -122,6 +122,46 @@ const PostOptionsMenu = ({ post, onDelete, onEdit, onClose }) => {
   );
 };
 
+
+const convertMarkdownToHtml = (text) => {
+  if (!text) return '';
+  
+  let html = text;
+  
+  // Convert ****bold**** or **bold** to <strong>bold</strong> (do this first)
+  html = html.replace(/\*{4}([^*]+)\*{4}/g, '<strong>$1</strong>');
+  html = html.replace(/\*{2}([^*]+)\*{2}/g, '<strong>$1</strong>');
+  
+  // Convert *italic* to <em>italic</em> (single asterisks only, after bold is processed)
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  
+  // Convert __underline__ to <u>underline</u>
+  html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
+  
+  // Convert ~strikethrough~ to <del>strikethrough</del>
+  html = html.replace(/~([^~]+)~/g, '<del>$1</del>');
+  
+  // Convert # Headings (at start of line or after line break)
+  html = html.replace(/^#\s+(.+)$/gm, '<h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">$1</h2>');
+  html = html.replace(/^##\s+(.+)$/gm, '<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">$1</h3>');
+  html = html.replace(/^###\s+(.+)$/gm, '<h4 class="text-md font-medium text-gray-600 dark:text-gray-400 mb-1">$1</h4>');
+  
+  // Convert #hashtags to styled hashtags (only if not at start of line)
+  html = html.replace(/(?<!^|\n)#([a-zA-Z0-9_]+)/g, '<span class="text-blue-600 font-medium">#$1</span>');
+  
+  // Convert @mentions to styled mentions
+  html = html.replace(/@([a-zA-Z0-9_]+)/g, '<span class="text-purple-600 font-medium">@$1</span>');
+  
+  // Convert -lists to styled bullet points
+  html = html.replace(/^-\s+(.+)$/gm, '<div class="flex items-start gap-2 my-1"><span class="text-gray-500">•</span><span>$1</span></div>');
+  
+  // Convert line breaks to <br> tags
+  html = html.replace(/\n/g, '<br>');
+  
+  return html;
+};
+
+
 /**
  * Main UserPosts component
  */
@@ -229,37 +269,40 @@ export const UserPosts = ({ user }) => {
 
   // Process post content for preview/full display
   const processPostContent = (post) => {
-    if (!post.content) return;
+  if (!post.content) return;
 
-    // Create temporary element to parse HTML and get text content
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = post.content;
-    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+  // First convert markdown to HTML
+  const convertedContent = convertMarkdownToHtml(post.content);
 
-    // Set full content
-    setFullContents(prev => ({
+  // Create temporary element to parse HTML and get text content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = convertedContent;
+  const textContent = tempDiv.textContent || tempDiv.innerText || '';
+
+  // Set full content with converted markdown
+  setFullContents(prev => ({
+    ...prev,
+    [post._id]: convertedContent
+  }));
+
+  // Check if content is long enough to need truncation
+  if (textContent.length > CONTENT_MAX_LENGTH) {
+    // Find a good break point near the max length
+    const breakPoint = findBreakPoint(textContent, CONTENT_MAX_LENGTH);
+    const previewText = textContent.substring(0, breakPoint) + '...';
+
+    // Create preview HTML with converted content
+    setContentPreviews(prev => ({
       ...prev,
-      [post._id]: post.content
+      [post._id]: `<div>${previewText}</div>`
     }));
-
-    // Check if content is long enough to need truncation
-    if (textContent.length > CONTENT_MAX_LENGTH) {
-      // Find a good break point near the max length
-      const breakPoint = findBreakPoint(textContent, CONTENT_MAX_LENGTH);
-      const previewText = textContent.substring(0, breakPoint) + '...';
-
-      // Create preview HTML
-      setContentPreviews(prev => ({
-        ...prev,
-        [post._id]: `<div>${previewText}</div>`
-      }));
-    } else {
-      setContentPreviews(prev => ({
-        ...prev,
-        [post._id]: post.content
-      }));
-    }
-  };
+  } else {
+    setContentPreviews(prev => ({
+      ...prev,
+      [post._id]: convertedContent
+    }));
+  }
+};
 
   // Find a good break point for text (at a space after a sentence if possible)
   const findBreakPoint = (text, maxLength) => {

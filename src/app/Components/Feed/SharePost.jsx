@@ -224,6 +224,46 @@ const formatUtils = {
   }
 };
 
+const convertMarkdownToHtml = (text) => {
+  if (!text) return '';
+  
+  let html = text;
+  
+  // Convert ****bold**** or **bold** to <strong>bold</strong> (do this first)
+  html = html.replace(/\*{4}([^*]+)\*{4}/g, '<strong>$1</strong>');
+  html = html.replace(/\*{2}([^*]+)\*{2}/g, '<strong>$1</strong>');
+  
+  // Convert *italic* to <em>italic</em> (single asterisks only, after bold is processed)
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  
+  // Convert __underline__ to <u>underline</u>
+  html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
+  
+  // Convert ~strikethrough~ to <del>strikethrough</del>
+  html = html.replace(/~([^~]+)~/g, '<del>$1</del>');
+  
+  // Convert # Headings (at start of line or after line break)
+  html = html.replace(/^#\s+(.+)$/gm, '<h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">$1</h2>');
+  html = html.replace(/^##\s+(.+)$/gm, '<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">$1</h3>');
+  html = html.replace(/^###\s+(.+)$/gm, '<h4 class="text-md font-medium text-gray-600 dark:text-gray-400 mb-1">$1</h4>');
+  
+  // Convert #hashtags to styled hashtags (only if not at start of line)
+  html = html.replace(/(?<!^|\n)#([a-zA-Z0-9_]+)/g, '<span class="text-blue-600 font-medium">#$1</span>');
+  
+  // Convert @mentions to styled mentions
+  html = html.replace(/@([a-zA-Z0-9_]+)/g, '<span class="text-purple-600 font-medium">@$1</span>');
+  
+  // Convert -lists to styled bullet points
+  html = html.replace(/^-\s+(.+)$/gm, '<div class="flex items-start gap-2 my-1"><span class="text-gray-500">•</span><span>$1</span></div>');
+  
+  // Convert line breaks to <br> tags
+  html = html.replace(/\n/g, '<br>');
+  
+  return html;
+};
+
+
+
 export default function SharePost({ post, user }) {
   // Validate post data is available before any state initialization
   if (!post?.data && !post?.post) {
@@ -250,17 +290,20 @@ export default function SharePost({ post, user }) {
   const router = useRouter();
 
   // Process post content for preview/full display
-  const processPostContent = useCallback(() => {
+ const processPostContent = useCallback(() => {
     if (!postData?.description) return;
 
     try {
+      // First convert markdown to HTML
+      const convertedContent = convertMarkdownToHtml(postData.description);
+      
       // Create temporary element to parse HTML and get text content
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = postData.description;
+      tempDiv.innerHTML = convertedContent;
       const textContent = tempDiv.textContent || tempDiv.innerText || '';
 
-      // Set full content
-      setFullContent(postData.description);
+      // Set full content with converted markdown
+      setFullContent(convertedContent);
 
       // Check if content is long enough to need truncation
       if (textContent.length > CONTENT_MAX_LENGTH) {
@@ -271,19 +314,20 @@ export default function SharePost({ post, user }) {
         const previewText = textContent.substring(0, breakPoint) + '...';
 
         // Create preview HTML by replacing text while keeping structure
-        const previewHtml = formatUtils.createPreviewHtml(postData.description, previewText);
+        const previewHtml = formatUtils.createPreviewHtml(convertedContent, previewText);
         setContentPreview(previewHtml);
       } else {
         setIsLongContent(false);
-        setContentPreview(postData.description);
+        setContentPreview(convertedContent);
       }
     } catch (error) {
       console.error('Error processing post content:', error);
-      setFullContent(postData.description || '');
-      setContentPreview(postData.description || '');
+      // Fallback: still try to convert markdown even if other processing fails
+      const fallbackContent = convertMarkdownToHtml(postData.description || '');
+      setFullContent(fallbackContent);
+      setContentPreview(fallbackContent);
     }
   }, [postData]);
-
   // Update local post data when prop changes
   useEffect(() => {
     if (post?.post) { // Fixed: Changed from post?.data to post?.post
@@ -418,6 +462,8 @@ export default function SharePost({ post, user }) {
       });
   };
 
+  
+
   // Determine what comments to display
   const displayComments = comments?.comments?.length > 0
     ? comments.comments
@@ -488,7 +534,6 @@ export default function SharePost({ post, user }) {
               <div dangerouslySetInnerHTML={{ __html: fullContent }} />
             )}
           </div>
-
           {/* Show more/less button */}
           {isLongContent && (
             <button
