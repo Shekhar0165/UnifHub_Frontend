@@ -82,6 +82,11 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const [removingUserId, setRemovingUserId] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  // New state for confirmation popup
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const UserId = localStorage.getItem('UserId') || null;
 
   // Ensure we only run client-side code after mount
   useEffect(() => {
@@ -104,7 +109,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
         };
 
         const response = await api.post(
-          `/participants/user`,
+          `/participants/user/verify`,
           data
         );
 
@@ -126,6 +131,55 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
     fetchData();
   }, [eventid, currentUser, isMounted]);
 
+  // Handle event response with confirmation
+  const handleEventResponse = (action) => {
+    setConfirmationAction(action);
+    setShowConfirmation(true);
+  };
+
+  // Handle confirmation
+  const handleConfirmAction = async () => {
+    console.log('Event ID:', eventid);
+    console.log('Team Name:', participants.teamName);
+    console.log('Action:', confirmationAction);
+
+    setIsConfirming(true);
+
+    try {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API}/Participants/verify/${confirmationAction}`, {
+        eventid: eventid,
+        teamName: participants.teamName
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+      
+      console.log('Response:', res.data);
+      
+      // Close the confirmation popup first
+      setShowConfirmation(false);
+      setConfirmationAction(null);
+      
+      // Refresh the page after successful action
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Error:', error);
+      // Handle error - maybe show a toast notification
+      setIsConfirming(false);
+      // Close popup even on error
+      setShowConfirmation(false);
+      setConfirmationAction(null);
+    }
+  };
+
+  // Handle cancellation
+  const handleCancelAction = () => {
+    setShowConfirmation(false);
+    setConfirmationAction(null);
+  };
 
   // Check if current user is admin
   const isAdmin = currentUser && currentUser.role === "admin";
@@ -235,6 +289,8 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
     }
   };
 
+  console.log(participants)
+
   // Get initials from name
   const getInitials = (name) => {
     if (!name) return "?";
@@ -266,6 +322,7 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
   const hasParticipants = Array.isArray(participants?.participants) && participants.participants.length > 0;
 
   if (!hasParticipants) return null;
+  
   return (
     <div className="max-w-2xl mx-auto mt-10">
       <Card className="p-6 shadow-lg border-t-4 border-primary overflow-hidden transition-all duration-300 hover:shadow-xl">
@@ -298,21 +355,62 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
                 href={`/user/${participant.userid}`}
                 className="flex items-center gap-4 flex-grow"
               >
-                {participant.ProfileImage ? (
-                  <img
-                    src={participant.ProfileImage}
-                    alt={participant.name || "User"}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-primary"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                    {getInitials(participant.name)}
+                <div className='flex items-center gap-4 flex-grow'>
+                  {participant.ProfileImage ? (
+                    <img
+                      src={participant.ProfileImage}
+                      alt={participant.name || "User"}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-primary"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                      {getInitials(participant.name)}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-semibold text-lg">{participant.name || "Unknown User"}</p>
+                    <p className="text-gray-500 text-sm">{participant.userid || "No ID"}</p>
+                    <p className="text-gray-500 text-sm">{participant.profileImage}</p>
                   </div>
-                )}
-                <div>
-                  <p className="font-semibold text-lg">{participant.name || "Unknown User"}</p>
-                  <p className="text-gray-500 text-sm">{participant.userid || "No ID"}</p>
-                  <p className="text-gray-500 text-sm">{participant.profileImage}</p>
+                </div>
+                <div className="gap-4 flex">
+                  {participant.verified ? (
+                    <div>
+                      <CheckCircle className="w-4 h-4" />
+                    </div>
+                  ) : UserId === participant.userid ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-10 hover:bg-green-50 hover:text-green-700 hover:border-green-300 
+                   border-green-200 transition-all duration-200 ease-in-out
+                   active:scale-95 focus:ring-2 focus:ring-green-200 focus:outline-none
+                   text-sm font-medium flex items-center justify-center"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEventResponse('accept');
+                        }}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-10 hover:bg-red-50 hover:text-red-700 hover:border-red-300 
+                   border-red-200 transition-all duration-200 ease-in-out
+                   active:scale-95 focus:ring-2 focus:ring-red-200 focus:outline-none
+                   text-sm font-medium flex items-center justify-center"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEventResponse('reject');
+                        }}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
                 </div>
               </Link>
 
@@ -388,6 +486,60 @@ const ShowParticipants = ({ eventid, currentUser, event }) => {
               description
             })}
           />
+        )}
+
+        {/* Confirmation Popup */}
+        {showConfirmation && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4 p-6 shadow-xl border border-gray-200">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-4">
+                  {confirmationAction === 'accept' ? (
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-red-600" />
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-primary mb-2">
+                  Confirm {confirmationAction === 'accept' ? 'Accept' : 'Reject'}
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Are you sure you want to {confirmationAction === 'accept' ? 'accept' : 'reject'} this invitation?
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelAction}
+                    disabled={isConfirming}
+                    className="px-6"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConfirmAction}
+                    disabled={isConfirming}
+                    className={`px-6 ${
+                      confirmationAction === 'accept' 
+                        ? 'bg-green-600 hover:bg-green-700 text-white' 
+                        : 'bg-red-600 hover:bg-red-700 text-white'
+                    }`}
+                  >
+                    {isConfirming ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      'Confirm'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
         )}
       </Card>
     </div>
@@ -1322,7 +1474,7 @@ export default function EventDetailPage() {
         };
 
         const response = await api.post(
-          `/participants/user`,
+          `/participants/user/verify`,
           data
         );
 

@@ -49,7 +49,7 @@ export default function Home() {
     // Fallback timeout in case navigation gets stuck
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 2500);
+    }, 1500);
     
     return () => clearTimeout(timeout);
   }, [router, isMounted]);
