@@ -21,36 +21,37 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
+
   useEffect(() => {
     // Only run after component is mounted on client
     if (!isMounted) return;
-    
+
     // Check for authentication and redirect within useEffect (client-side only)
     const checkAuthAndRedirect = async () => {
       try {
         // Try cookies first (new approach)
         let userType = localStorage.getItem('UserType')
         let userId = localStorage.getItem('UserId')
-        
+
         if (userType === "individual") {
           await router.replace(`/feed`);
         } else if (userType === "Organization" && userId) {
           await router.replace(`/organization/${userId}`);
-        } 
+        }
       } catch (error) {
         console.error("Navigation error:", error);
         // Set loading to false if navigation fails
         setLoading(false);
       }
     };
-    
+
     checkAuthAndRedirect();
-    
+
     // Fallback timeout in case navigation gets stuck
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 1500);
-    
+
     return () => clearTimeout(timeout);
   }, [router, isMounted]);
 

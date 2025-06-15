@@ -342,7 +342,9 @@ const LeftComponent = ({ user }) => {
                         ? () => {
                           router.push(`/user/${Userid}/edit`);
                         }
-                        : () => { }
+                        : () => {
+                          router.push(`/messages?tab=${user?.userid}`);
+                        }
                     }
                     variant="outline"
                     className="px-3 py-2"

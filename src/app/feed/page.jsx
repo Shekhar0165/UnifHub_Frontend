@@ -13,15 +13,19 @@ import {
     Eye,
     Briefcase
 } from 'lucide-react';
-import Header from '../Components/Header/Header';
+import Header from '@/app/Components/Header/Header';
 import axios from 'axios';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { refreshTokens } from '@/utils/authUtils';
 import { useRouter } from 'next/navigation';
-import { CreatePost } from '../Components/UserProfile/CreatePost';
-import PostCard from '../Components/UserProfile/PostCard';
-import UserSuggestions from '../Components/UserProfile/UserSuggestions';
-import UserProfile from '../Components/Feed/UserProfile';
+import { CreatePost } from '@/app/Components/UserProfile/CreatePost';
+import PostCard from '@/app/Components/UserProfile/PostCard';
+import UserSuggestions from '@/app/Components/UserProfile/UserSuggestions';
+import UserProfile from '@/app/Components/Feed/UserProfile';
+import { io } from "socket.io-client";
+
+// Create socket connection only once
+let socket;
 
 export default function LinkedInFeed() {
     const [posts, setPosts] = useState([]);
@@ -31,14 +35,11 @@ export default function LinkedInFeed() {
     const [viewedPosts, setViewedPosts] = useState([]);
     const [user, setUser] = useState(null);
     const loaderRef = useRef(null);
-    const [suggestions] = useState([
-        { id: 1, name: "Alex Morgan", role: "UX Designer at Google", image: "https://unifhub.s3.ap-south-1.amazonaws.com/users/coverImage-1743570589257-638798549.png" },
-        { id: 2, name: "Sarah Johnson", role: "Product Manager at Meta", image: "https://unifhub.s3.ap-south-1.amazonaws.com/users/coverImage-1743570589257-638798549.png" },
-        { id: 3, name: "Michael Chen", role: "Software Engineer at Amazon", image: "https://unifhub.s3.ap-south-1.amazonaws.com/users/coverImage-1743570589257-638798549.png" },
-        { id: 4, name: "Priya Patel", role: "Data Scientist at Netflix", image: "https://unifhub.s3.ap-south-1.amazonaws.com/users/coverImage-1743570589257-638798549.png" },
-    ]);
-
     const router = useRouter();
+
+    if (!socket) {
+        socket = io(process.env.NEXT_PUBLIC_API);
+    }
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -90,6 +91,9 @@ export default function LinkedInFeed() {
 
         fetchUserData();
     }, []);
+
+
+ 
 
     // First, update the initial fetch posts function to properly handle empty responses
     useEffect(() => {
@@ -226,6 +230,8 @@ export default function LinkedInFeed() {
         const cleanup = observePostImpressions();
         return cleanup;
     }, [posts, observePostImpressions]);
+
+
 
     // Improved handleLike function as per the suggestion
     const handleLikePost = async (postId) => {

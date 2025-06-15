@@ -22,7 +22,7 @@ const ChatPreview = ({ chat, isActive, onClick }) => (
     <div className="relative">
       <Avatar className="h-12 w-12 transition-transform hover:scale-105">
         <AvatarImage src={chat.user.profileImage} className="object-cover" />
-        <AvatarFallback>{chat.user.name[0]}</AvatarFallback>
+        <AvatarFallback>{chat.user.name?.[0] || 'U'}</AvatarFallback>
       </Avatar>
       {chat.user.isOnline && (
         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
@@ -64,7 +64,7 @@ const ChatList = ({ chats = [], activeChat, onChatSelect }) => {
   const handleChatSelect = (item) => {
     onChatSelect(item);
     // Navigate to /messages with the selected user's ID as a tab parameter
-    router.push(`/messages?tab=${item._id || item.id}`);
+    router.push(`/messages?tab=${item.userid || item._id}`);
   };
 
   // Debounce search to prevent too many requests
@@ -97,10 +97,14 @@ const ChatList = ({ chats = [], activeChat, onChatSelect }) => {
       );
 
       if (response.data.success) {
-        setSearchResults(response.data.members);
+        // Fixed: Use 'results' instead of 'members' and add fallback
+        setSearchResults(response.data.results || []);
+      } else {
+        setSearchResults([]);
       }
     } catch (error) {
       console.error("Error searching users:", error);
+      setSearchResults([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }
@@ -109,9 +113,9 @@ const ChatList = ({ chats = [], activeChat, onChatSelect }) => {
   // Filter chats based on search query or show search results
   const filteredItems = searchQuery.trim()
     ? searchResults
-    : chats.filter(chat => 
-        chat.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        chat.lastMessage.text.toLowerCase().includes(searchQuery.toLowerCase())
+    : (chats || []).filter(chat => 
+        chat?.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        chat?.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
   return (
@@ -160,21 +164,24 @@ const ChatList = ({ chats = [], activeChat, onChatSelect }) => {
             <div className="flex items-center justify-center p-6">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : filteredItems.length > 0 ? (
+          ) : (filteredItems && filteredItems.length > 0) ? (
             filteredItems.map((item) => (
               <ChatPreview
                 key={item._id || item.id}
                 chat={{
                   id: item._id || item.id,
                   user: {
-                    name: item.name || item.user?.name,
+                    name: item.name || item.user?.name || 'Unknown User',
                     profileImage: item.profileImage || item.user?.profileImage,
-                    isOnline: item.isOnline || item.user?.isOnline
+                    isOnline: item.isOnline || item.user?.isOnline || false
                   },
-                  lastMessage: item.lastMessage || { text: '', timestamp: new Date() },
+                  lastMessage: item.lastMessage || { 
+                    text: searchQuery.trim() ? 'Start a conversation' : '', 
+                    timestamp: new Date() 
+                  },
                   unreadCount: item.unreadCount || 0
                 }}
-                isActive={searchParams.get('tab') === (item._id || item.id)}
+                isActive={searchParams.get('tab') === (item.userid || item._id)}
                 onClick={() => handleChatSelect(item)}
               />
             ))

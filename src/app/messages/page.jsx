@@ -6,8 +6,9 @@ import ChatBox from '../Components/Chat/ChatBox';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import Header from '../Components/Header/Header';
+import Cookies from 'js-cookie';
+import axios from 'axios';
 
-// Single mock chat for testing - you'll replace this with real data
 const mockChats = [
     {
         id: '1',
@@ -15,39 +16,36 @@ const mockChats = [
             name: 'Alice Johnson',
             profileImage: '/Profile.webp',
             isOnline: true,
-            status: 'Online'
+            status: 'Online',
         },
         lastMessage: {
             text: 'Hey, how are you doing?',
-            timestamp: new Date(Date.now() - 1000 * 60 * 5)
+            timestamp: new Date(Date.now() - 1000 * 60 * 5),
         },
-        unreadCount: 2
-    }
+        unreadCount: 2,
+    },
 ];
 
 export default function MessagesPage() {
     const [selectedChat, setSelectedChat] = useState(null);
     const [showChatList, setShowChatList] = useState(true);
-    const searchParams = useSearchParams();
-    const router = useRouter();
-
-    // Handle initial load and URL changes
-
+    const [recipientUser, setRecipientUser] = useState(null);
+    const [recipientLoading, setRecipientLoading] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
-    // Fetch user data on component mount
     useEffect(() => {
-        const Usertype = localStorage.getItem('UserType');
-
-        const endpoint = Usertype === 'individual'
-            ? `${process.env.NEXT_PUBLIC_API}/user/one`
-            : `${process.env.NEXT_PUBLIC_API}/org`;
         const fetchUserData = async () => {
-            try {
-                // Check if user is authenticated (has token)
+            const userType = localStorage.getItem('UserType');
+            const endpoint =
+                userType === 'individual'
+                    ? `${process.env.NEXT_PUBLIC_API}/user/one`
+                    : `${process.env.NEXT_PUBLIC_API}/org`;
 
+            try {
                 const response = await fetch(endpoint, {
                     method: 'GET',
                     headers: {
@@ -61,9 +59,7 @@ export default function MessagesPage() {
                     setUserData(data);
                 } else {
                     console.error('Failed to fetch user data');
-                    // Handle authentication error (e.g., token expired)
                     if (response.status === 401) {
-                        // Clear tokens and redirect to login
                         Cookies.remove('accessToken');
                         Cookies.remove('refreshToken');
                         Cookies.remove('UserType');
@@ -81,20 +77,39 @@ export default function MessagesPage() {
         fetchUserData();
     }, [router]);
 
-
     useEffect(() => {
         const tabId = searchParams.get('tab');
-        if (tabId) {
-            // Find the chat that matches the URL parameter
-            const chatFromUrl = mockChats.find(chat => chat.id === tabId);
-            if (chatFromUrl) {
-                setSelectedChat(chatFromUrl);
+        if (!tabId) return;
+
+        const fetchRecipientUser = async () => {
+            setRecipientLoading(true); 
+
+            try {
+                const res = await axios.get(
+                    `${process.env.NEXT_PUBLIC_API}/chat/user/${tabId}`,
+                    {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        withCredentials: true,
+                    }
+                );
+                setRecipientUser(res.data);
+                setSelectedChat(res.data);
+
                 if (window.innerWidth < 768) {
                     setShowChatList(false);
                 }
+            } catch (error) {
+                console.error('Error fetching recipient user:', error);
+            } finally {
+                setRecipientLoading(false); // <-- Stop loading
             }
-        }
+        };
+
+        fetchRecipientUser();
     }, [searchParams]);
+
 
     const handleChatSelect = (chat) => {
         setSelectedChat(chat);
@@ -103,13 +118,10 @@ export default function MessagesPage() {
         }
     };
 
-    console.log("message", selectedChat);
-
     return (
         <>
             <Header />
             <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-                {/* Mobile toggle button */}
                 <Button
                     variant="ghost"
                     size="icon"
@@ -119,13 +131,10 @@ export default function MessagesPage() {
                     <Menu className="h-5 w-5" />
                 </Button>
 
-                {/* Chat List */}
-                <div className={`
-        fixed md:relative  left-0 z-20 w-full md:w-80 lg:w-96
-        transform transition-transform duration-300 ease-in-out
-        ${showChatList ? 'translate-x-0' : '-translate-x-full'}
-        md:transform-none
-      `}>
+                <div
+                    className={`fixed md:relative left-0 z-20 w-full md:w-80 lg:w-96 transform transition-transform duration-300 ease-in-out ${showChatList ? 'translate-x-0' : '-translate-x-full'
+                        } md:transform-none`}
+                >
                     <ChatList
                         chats={mockChats}
                         activeChat={selectedChat}
@@ -133,9 +142,12 @@ export default function MessagesPage() {
                     />
                 </div>
 
-                {/* Chat Box or Empty State */}
                 <div className="flex-1 md:ml-0">
-                    {selectedChat ? (
+                    {loading || recipientLoading ? (
+                        <div className="h-full flex items-center justify-center">
+                            <p className="text-lg text-muted-foreground">Loading chat...</p>
+                        </div>
+                    ) : selectedChat ? (
                         <ChatBox recipientUser={selectedChat} currentUser={userData} />
                     ) : (
                         <div className="h-full flex items-center justify-center p-4">
@@ -148,6 +160,7 @@ export default function MessagesPage() {
                         </div>
                     )}
                 </div>
+
             </div>
         </>
     );

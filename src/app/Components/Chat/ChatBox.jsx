@@ -1,330 +1,381 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image as ImageIcon, X, MoreVertical } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { io } from "socket.io-client";
-
-// Create socket connection only once
-const socket = io(process.env.NEXT_PUBLIC_API || '');
-
-// Separate Message component with proper sender check
-const Message = ({ message, currentUserId }) => {
-  const isOwn = message.sender.id === currentUserId;
-  
-  return (
-    <div className={`flex mb-4 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[70%]`}>
-        <Avatar className="w-8 h-8 mx-2">
-          <AvatarImage src={message.sender.profileImage} alt={message.sender.name} />
-          <AvatarFallback>{message.sender.name[0]}</AvatarFallback>
-        </Avatar>
-
-        <div className="flex flex-col">
-          {message.image && (
-            <div className="my-1">
-              <img
-                src={message.image}
-                alt="Message attachment"
-                className="max-w-full h-auto rounded"
-              />
-            </div>
-          )}
-
-          <div 
-            className={`p-3 rounded-lg break-words overflow-wrap-normal ${
-              isOwn 
-                ? 'bg-blue-500 text-white rounded-tr-none' 
-                : 'bg-gray-200 text-gray-800 rounded-tl-none'
-            }`}
-          >
-            {message.content}
-          </div>
-
-          <div className={`text-xs text-gray-500 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-            {new Date(message.timestamp).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import Link from 'next/link';
+import axios from 'axios';
 
 export default function ChatBox({ recipientUser, currentUser }) {
   const [message, setMessage] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [pendingMessageIds, setPendingMessageIds] = useState(new Set());
-  const fileInputRef = useRef(null);
-  const scrollAreaRef = useRef(null);
-    // Initialize chat with room joining and message listeners
-  useEffect(() => {
-    if (!currentUser?._id || !recipientUser?._id) return;
-    
-    // Clear previous messages when switching to a new chat
-    setMessages([]);
-    setPendingMessageIds(new Set());
-    
-    // Add welcome message for the new chat
-    const welcomeMessage = {
-      id: 'welcome-' + Date.now(),
-      content: `Start of your conversation with ${recipientUser?.name}`,
-      timestamp: new Date(),
-      sender: {
-        id: 'system',
-        name: 'System',
-        profileImage: '/avatar-placeholder.png'
-      }
-    };
-    
-    setMessages([welcomeMessage]);
-    
-    // Join the chat room
-    const joinData = {
-      userId: currentUser._id,
-      recipientId: recipientUser._id,
-    };
-    
-    console.log('Socket connection established:', joinData);
-    socket.emit('join-chat', joinData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const messagesEndRef = useRef(null);
+  const hasLoadedOldMessages = useRef(false);
 
-    // Clean up function to remove listeners when component unmounts
-    return () => {
-      socket.off('new-message');
-      socket.off('joined');
-      socket.off('error');
-    };
-  }, [recipientUser?._id, currentUser?._id, recipientUser?.name]);
-  // Set up message listener after initial setup
-  useEffect(() => {
-    // Add socket listener for new messages
-    const handleNewMessage = (data) => {
-      console.log('Received message:', data);
-      
-      // Generate a unique message ID
-      const messageId = data.message._id || 'msg-' + Date.now();
-      
-      // Check if message already exists in messages array
-      const messageExists = messages.some(msg => 
-        msg.id === messageId || 
-        (msg.content === data.message.content && 
-         msg.sender.id === data.sender &&
-         // Compare timestamps within a 1 second window
-         Math.abs(new Date(msg.timestamp) - new Date()) < 1000)
-      );
-      
-      if (messageExists) {
-        return;
-      }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-      // For our own messages, only acknowledge receipt
-      if (data.sender === currentUser?._id) {
-        setPendingMessageIds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(data.message.content);
-          return newSet;
-        });
-        return;
-      }
-      
-      // Add new message from other user
-      const newMessage = {
-        id: messageId,
-        content: data.message.content,
-        image: data.message.image,
-        timestamp: new Date(),
-        sender: {
-          id: data.sender,
-          name: recipientUser?.name,
-          profileImage: recipientUser?.profileImage
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Check for pending notification message
+  const checkPendingMessage = useCallback(() => {
+    const pendingMessage = sessionStorage.getItem('pendingMessage');
+    if (pendingMessage) {
+      try {
+        const messageData = JSON.parse(pendingMessage);
+        
+        // Only add if it's for the current recipient
+        if (messageData.sender === recipientUser?._id) {
+          setMessages(prev => {
+            // Check if message already exists
+            const exists = prev.some(msg => 
+              msg.id === messageData.id || 
+              (msg.content === messageData.content && 
+               Math.abs(new Date(msg.timestamp) - new Date(messageData.timestamp)) < 5000)
+            );
+            
+            if (!exists) {
+              console.log("Adding pending notification message:", messageData);
+              return [...prev, messageData];
+            }
+            return prev;
+          });
         }
-      };
-      
-      setMessages(prev => [...prev, newMessage]);
-    };
-    
-    socket.on('new-message', handleNewMessage);
-    
-    return () => {
-      socket.off('new-message', handleNewMessage);
-    };
-  }, [currentUser?._id, recipientUser?.name, recipientUser?.profileImage, messages]);
-
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        
+        // Clear the pending message
+        sessionStorage.removeItem('pendingMessage');
+      } catch (error) {
+        console.error("Error processing pending message:", error);
+        sessionStorage.removeItem('pendingMessage');
       }
     }
-  }, [messages]);
+  }, [recipientUser?._id]);
+
+  // Load old messages when component mounts or users change
+  useEffect(() => {
+    const getOldMessages = async () => {
+      if (!recipientUser?._id || !currentUser?._id) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      hasLoadedOldMessages.current = false;
+      
+      try {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_API}/chat/get-messages`,
+          {
+            userId: currentUser._id,
+            recipientId: recipientUser._id
+          },
+          {
+            headers: {
+              "Content-Type": "application/json"
+            },
+            withCredentials: true
+          }
+        );
+
+        const data = res.data;
+        console.log("Old messages loaded:", data);
+
+        // Format messages with proper type based on sender
+        const formattedMessages = data.map(msg => ({
+          id: msg._id || msg.id,
+          content: msg.message || msg.content,
+          timestamp: msg.timestamp || msg.createdAt,
+          sender: msg.sender,
+          type: msg.sender === currentUser._id ? 'sent' : 'received'
+        }));
+
+        setMessages(formattedMessages);
+        hasLoadedOldMessages.current = true;
+        
+        // Check for pending notification message after loading old messages
+        setTimeout(() => {
+          checkPendingMessage();
+        }, 100);
+        
+      } catch (err) {
+        console.error("Error fetching old messages:", err);
+        setMessages([]);
+        hasLoadedOldMessages.current = true;
+        
+        // Still check for pending message even if old messages failed to load
+        setTimeout(() => {
+          checkPendingMessage();
+        }, 100);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getOldMessages();
+  }, [recipientUser?._id, currentUser?._id, checkPendingMessage]);
+
+  // Handle incoming messages without duplicating
+  const handlePrivateMessage = useCallback((data) => {
+    console.log("📨 Received message:", data);
+    
+    const newMessage = {
+      id: data.id || Date.now(),
+      content: data.message || data.content,
+      timestamp: data.timestamp || new Date().toISOString(),
+      sender: data.from || data.sender,
+      type: 'received'
+    };
+
+    setMessages(prev => {
+      // Check if message already exists to prevent duplicates
+      const exists = prev.some(msg => 
+        msg.id === newMessage.id || 
+        (msg.content === newMessage.content && 
+         msg.sender === newMessage.sender &&
+         Math.abs(new Date(msg.timestamp) - new Date(newMessage.timestamp)) < 5000)
+      );
+      
+      if (exists) {
+        console.log("Duplicate message prevented");
+        return prev;
+      }
+      
+      return [...prev, newMessage];
+    });
+  }, []);
+
+  // Handle sent message confirmation
+  const handleMessageSent = useCallback((data) => {
+    console.log("✅ Message sent confirmation:", data);
+    
+    const sentMessage = {
+      id: data.id || Date.now(),
+      content: data.message || data.content,
+      timestamp: data.timestamp || new Date().toISOString(),
+      sender: data.from || data.sender || currentUser._id,
+      type: 'sent'
+    };
+
+    setMessages(prev => {
+      // Check if message already exists to prevent duplicates
+      const exists = prev.some(msg => 
+        msg.id === sentMessage.id || 
+        (msg.content === sentMessage.content && 
+         msg.sender === sentMessage.sender &&
+         Math.abs(new Date(msg.timestamp) - new Date(sentMessage.timestamp)) < 5000)
+      );
+      
+      if (exists) {
+        console.log("Duplicate sent message prevented");
+        return prev;
+      }
+      
+      return [...prev, sentMessage];
+    });
+  }, [currentUser._id]);
+
+  // Socket connection and event listeners
+  useEffect(() => {
+    if (!recipientUser?._id || !currentUser?._id) return;
+
+    let cleanupFn = null;
+
+    const setupSocketListeners = () => {
+      if (window.socket) {
+        console.log("🎯 Setting up chat listeners for:", recipientUser.name);
+        
+        setSocketConnected(window.socket.connected);
+
+        // Notify backend that user entered this chat
+        window.socket.emit('enter-chat', {
+          userId: currentUser._id,
+          chatWith: recipientUser._id
+        });
+
+        // Remove existing listeners to prevent duplicates
+        window.socket.off('privateMessage');
+        window.socket.off('messageSent');
+        window.socket.off('connect');
+        window.socket.off('disconnect');
+        
+        // Add new listeners
+        window.socket.on('privateMessage', handlePrivateMessage);
+        window.socket.on('messageSent', handleMessageSent);
+        window.socket.on('connect', () => setSocketConnected(true));
+        window.socket.on('disconnect', () => setSocketConnected(false));
+
+        cleanupFn = () => {
+          console.log("🧹 Cleaning up chat listeners");
+          
+          // Notify backend that user left this chat
+          window.socket.emit('leave-chat', {
+            userId: currentUser._id
+          });
+          
+          window.socket.off('privateMessage', handlePrivateMessage);
+          window.socket.off('messageSent', handleMessageSent);
+          window.socket.off('connect');
+          window.socket.off('disconnect');
+        };
+
+        return true;
+      }
+      return false;
+    };
+
+    if (!setupSocketListeners()) {
+      const interval = setInterval(() => {
+        if (setupSocketListeners()) {
+          clearInterval(interval);
+        }
+      }, 100);
+
+      cleanupFn = () => {
+        clearInterval(interval);
+        if (window.socket) {
+          window.socket.emit('leave-chat', { userId: currentUser._id });
+          window.socket.off('privateMessage', handlePrivateMessage);
+          window.socket.off('messageSent', handleMessageSent);
+          window.socket.off('connect');
+          window.socket.off('disconnect');
+        }
+      };
+    }
+
+    return cleanupFn;
+  }, [recipientUser?._id, currentUser?._id, handlePrivateMessage, handleMessageSent]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!message.trim() && !selectedImage) return;
-    
-    // Track this message content to avoid duplicates
-    setPendingMessageIds(prev => {
-      const newSet = new Set(prev);
-      newSet.add(message);
-      return newSet;
-    });
-    
-    // Create message object
-    const newMessage = {
-      id: 'local-' + Date.now(),
-      content: message,
-      image: selectedImage ? URL.createObjectURL(selectedImage) : null,
-      timestamp: new Date(),
-      sender: {
-        id: currentUser?._id,
-        name: currentUser?.name,
-        profileImage: currentUser?.profileImage
-      }
+    if (!message.trim() || !window.socket || !socketConnected) return;
+
+    const messageData = {
+      from: currentUser._id,
+      to: recipientUser._id,
+      message: message.trim(),
+      timestamp: new Date().toISOString()
     };
 
-    // Add message to UI immediately (optimistic UI update)
-    setMessages(prev => [...prev, newMessage]);
-
-    // Emit the message to the server
-    socket.emit('send-message', {
-      senderId: currentUser?._id,
-      recipientId: recipientUser?._id,
-      content: message,
-      image: selectedImage ? URL.createObjectURL(selectedImage) : null,
-    });
-
-    // Reset form
+    console.log("📤 Sending message:", messageData);
+    window.socket.emit('privateMessage', messageData);
     setMessage('');
-    setSelectedImage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  };
+
+  const formatTime = (timestamp) => {
+    try {
+      return new Date(timestamp).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (error) {
+      return 'Invalid time';
     }
   };
 
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center text-muted-foreground">
+          <p>Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       {/* Chat Header */}
-      <div className="px-4 py-3 border-b flex items-center justify-between bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0 z-10">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 transition-transform hover:scale-105">
-            <AvatarImage src={recipientUser?.profileImage} className="object-cover" />
-            <AvatarFallback>{recipientUser?.name?.[0] || 'U'}</AvatarFallback>
-          </Avatar>
+      <div className="px-4 py-3 border-b flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
+        <Link href={`/${recipientUser.type}/${recipientUser.userid}`} className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
+            {recipientUser?.profileImage ? (
+              <img 
+                className='w-full h-full rounded-full object-cover' 
+                src={recipientUser.profileImage} 
+                alt={recipientUser.name || 'User'} 
+              />
+            ) : (
+              <span className="text-sm font-medium text-primary">
+                {recipientUser?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </span>
+            )}
+          </div>
           <div>
-            <h3 className="font-medium leading-none mb-1">{recipientUser?.name || 'User'}</h3>
+            <h3 className="font-medium">{recipientUser?.name || 'User'}</h3>
             <p className="text-xs text-muted-foreground">
-              {recipientUser?.isOnline ? 'Online' : 'Offline'}
+              {socketConnected ? 'Online' : 'Offline'}
             </p>
           </div>
+        </Link>
+        <div className="ml-auto text-xs text-muted-foreground">
+          {messages.length} messages
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View Profile</DropdownMenuItem>
-            <DropdownMenuItem>Clear Chat</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">Block User</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Messages Area */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-6">
-        <div className="space-y-4 max-w-3xl mx-auto">
-          {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              No messages yet. Start the conversation!
+      <div className="flex-1 px-4 py-4 overflow-y-auto space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-muted-foreground">
+              <p>Start your conversation with {recipientUser?.name}</p>
+              <p className="text-xs mt-2 opacity-60">Messages are end-to-end encrypted</p>
             </div>
-          ) : (
-            messages.map((msg) => (
-              <Message
-                key={msg.id}
-                message={msg}
-                currentUserId={currentUser?._id}
-              />
-            ))
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Selected Image Preview */}
-      {selectedImage && (
-        <div className="px-4 py-3 border-t bg-muted/30 flex-shrink-0">
-          <div className="relative inline-block group">
-            <img
-              src={URL.createObjectURL(selectedImage)}
-              alt="Selected"
-              className="h-20 w-20 object-cover rounded-lg border-2 border-background"
-            />
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => {
-                setSelectedImage(null);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = '';
-                }
-              }}
-            >
-              <X className="h-3 w-3" />
-            </Button>
           </div>
-        </div>
-      )}
+        ) : (
+          messages.map((msg, index) => (
+            <div
+              key={msg.id || index}
+              className={`flex ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                  msg.type === 'sent'
+                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    : 'bg-secondary text-secondary-foreground rounded-bl-md'
+                } ${msg.isFromNotification ? 'ring-2 ring-blue-500/20 animate-pulse' : ''}`}
+              >
+                <p className="text-sm pt-1">{msg.content}</p>
+                <p className={`text-xs mt-1 opacity-70 ${
+                  msg.type === 'sent' ? 'text-right' : 'text-left'
+                }`}>
+                  {formatTime(msg.timestamp)}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
 
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <div className="flex gap-2 max-w-3xl mx-auto">
           <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="rounded-full hover:bg-secondary"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImageIcon className="h-5 w-5" />
-          </Button>
-          <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={`Message ${recipientUser?.name || 'user'}...`}
             className="flex-1 bg-secondary rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-shadow"
+            disabled={!socketConnected}
           />
           <Button
             type="submit"
             size="icon"
             className="rounded-full shadow-sm hover:shadow-md transition-shadow"
-            disabled={!message.trim() && !selectedImage}
+            disabled={!message.trim() || !socketConnected}
           >
             <Send className="h-5 w-5" />
           </Button>
         </div>
+        {!socketConnected && (
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            Connecting to chat...
+          </p>
+        )}
       </form>
     </div>
   );

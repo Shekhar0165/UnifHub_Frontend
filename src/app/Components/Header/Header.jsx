@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ModeToggle } from '../ModeToggle/ModeToggle';
 import Profile from '../Profile/Profile';
 import Link from 'next/link';
-import { Search, X, Loader2, User, Home, CalendarDays, Menu, X as Close, MessageCircle } from 'lucide-react';
+import { Search, X, Loader2, User, Home, CalendarDays, Menu, X as Close, MessageCircle, Building } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import axios from 'axios';
@@ -63,11 +63,16 @@ export default function Header() {
       );
 
       if (response.data.success) {
-        setSearchResults(response.data.members);
+        // Fixed: Use 'results' instead of 'members' and add fallback
+        setSearchResults(response.data.results || []);
         setShowResults(true);
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
       }
     } catch (error) {
       console.error("Error searching users:", error);
+      setSearchResults([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +95,78 @@ export default function Header() {
     return pathname === path;
   };
 
+  // Render search result item
+  const renderSearchResult = (item) => {
+    const isOrganization = item.type === 'organization';
+    const displayName = item.name || 'Unknown';
+    const displayBio = item.bio ? truncateBio(item.bio, 60) : (item.university || item.location || "");
+    
+    return (
+      <li key={item._id} className="px-1">
+        <Link
+          href={`/${isOrganization ? 'organization' : 'user'}/${item.userid}`}
+          className="flex items-center gap-3 p-3 rounded-md hover:bg-muted transition-colors"
+          onClick={() => {
+            setShowResults(false);
+            setShowMobileSearch(false);
+          }}
+        >
+          <div className="relative flex-shrink-0 w-12 h-12">
+            {item.profileImage ? (
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
+                <Image
+                  src={item.profileImage}
+                  alt={displayName}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentNode.classList.add('fallback-active');
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 fallback">
+                  {isOrganization ? (
+                    <Building className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <span className="text-lg font-medium text-muted-foreground">
+                  {displayName?.charAt(0).toUpperCase() || 
+                    (isOrganization ? <Building className="h-5 w-5" /> : <User className="h-5 w-5" />)
+                  }
+                </span>
+              </div>
+            )}
+            {/* Type indicator */}
+            {isOrganization && (
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                <Building className="h-2.5 w-2.5 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-foreground truncate">{displayName}</p>
+              {isOrganization && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  Org
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-2">
+              {displayBio}
+            </p>
+          </div>
+        </Link>
+      </li>
+    );
+  };
+
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
@@ -106,7 +183,7 @@ export default function Header() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search users..."
+                  placeholder="Search users and organizations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => searchQuery.trim() && setShowResults(true)}
@@ -135,56 +212,15 @@ export default function Header() {
                     </div>
                   ) : (
                     <>
-                      {searchResults.length > 0 ? (
+                      {searchResults && searchResults.length > 0 ? (
                         <ul className="py-1">
-                          {searchResults.map((user) => (
-                            <li key={user._id} className="px-1">
-                              <Link
-                                href={`/user/${user.userid}`}
-                                className="flex items-center gap-3 p-3 rounded-md hover:bg-muted transition-colors"
-                                onClick={() => setShowResults(false)}
-                              >
-                                <div className="relative flex-shrink-0 w-12 h-12">
-                                  {user.profileImage ? (
-                                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
-                                      <Image
-                                        src={user.profileImage}
-                                        alt={user.name || "User"}
-                                        fill
-                                        sizes="48px"
-                                        className="object-cover"
-                                        onError={(e) => {
-                                          e.target.style.display = 'none';
-                                          e.target.parentNode.classList.add('fallback-active');
-                                        }}
-                                      />
-                                      <div className="absolute inset-0 flex items-center justify-center opacity-0 fallback">
-                                        <User className="h-5 w-5 text-muted-foreground" />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                                      <span className="text-lg font-medium text-muted-foreground">
-                                        {user.name?.charAt(0).toUpperCase() || <User className="h-5 w-5" />}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-foreground truncate">{user.name}</p>
-                                  <p className="text-xs text-muted-foreground line-clamp-2">
-                                    {user.bio ? truncateBio(user.bio, 60) : (user.university || user.location || "")}
-                                  </p>
-                                </div>
-                              </Link>
-                            </li>
-                          ))}
+                          {searchResults.map((item) => renderSearchResult(item))}
                         </ul>
                       ) : (
                         searchQuery.trim() && (
                           <div className="flex flex-col items-center justify-center py-8 px-4">
                             <Search className="h-10 w-10 text-muted-foreground opacity-40 mb-2" />
-                            <p className="text-center text-muted-foreground">No users found matching "{searchQuery}"</p>
+                            <p className="text-center text-muted-foreground">No results found matching "{searchQuery}"</p>
                           </div>
                         )
                       )}
@@ -204,7 +240,6 @@ export default function Header() {
             >
               <Search size={20} />
             </button>
-
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-1">
@@ -267,7 +302,7 @@ export default function Header() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search users..."
+                placeholder="Search users and organizations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => searchQuery.trim() && setShowResults(true)}
@@ -297,59 +332,15 @@ export default function Header() {
                   </div>
                 ) : (
                   <>
-                    {searchResults.length > 0 ? (
+                    {searchResults && searchResults.length > 0 ? (
                       <ul className="py-1">
-                        {searchResults.map((user) => (
-                          <li key={user._id} className="px-1">
-                            <Link
-                              href={`/user/${user.userid}`}
-                              className="flex items-center gap-3 p-3 rounded-md hover:bg-muted transition-colors"
-                              onClick={() => {
-                                setShowResults(false);
-                                setShowMobileSearch(false);
-                              }}
-                            >
-                              <div className="relative flex-shrink-0 w-12 h-12">
-                                {user.profileImage ? (
-                                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
-                                    <Image
-                                      src={user.profileImage}
-                                      alt={user.name || "User"}
-                                      fill
-                                      sizes="48px"
-                                      className="object-cover"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentNode.classList.add('fallback-active');
-                                      }}
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 fallback">
-                                      <User className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                                    <span className="text-lg font-medium text-muted-foreground">
-                                      {user.name?.charAt(0).toUpperCase() || <User className="h-5 w-5" />}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-foreground truncate">{user.name}</p>
-                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                  {user.bio ? truncateBio(user.bio, 60) : (user.university || user.location || "")}
-                                </p>
-                              </div>
-                            </Link>
-                          </li>
-                        ))}
+                        {searchResults.map((item) => renderSearchResult(item))}
                       </ul>
                     ) : (
                       searchQuery.trim() && (
                         <div className="flex flex-col items-center justify-center py-8 px-4">
                           <Search className="h-10 w-10 text-muted-foreground opacity-40 mb-2" />
-                          <p className="text-center text-muted-foreground">No users found matching "{searchQuery}"</p>
+                          <p className="text-center text-muted-foreground">No results found matching "{searchQuery}"</p>
                         </div>
                       )
                     )}
