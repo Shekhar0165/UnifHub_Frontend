@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle, Pencil, Moon, Sun } from 'lucide-react';
+import { Bell, ChevronDown, User, LogOut, Settings, HelpCircle, Pencil, Moon, Sun, BellIcon, CalendarDays } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -177,15 +177,15 @@ const Profile = () => {
               ) : null}
               <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
-            <div className="hidden md:flex flex-col items-start">
+            {/* <div className="hidden md:flex flex-col items-start">
               <span className="text-sm font-medium">{userData.name || 'User'}</span>
               <span className="text-xs text-muted-foreground">{UserType || 'Student'}</span>
-            </div>
+            </div> */}
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-64 p-2">
+        <DropdownMenuContent align="end" className="w-64 p-2 my-4">
           <div className="flex items-center p-2 bg-accent/50 rounded-md mb-2">
             <Avatar className="h-10 w-10 border-2 border-primary">
               {userData.profileImage ? (
@@ -199,8 +199,8 @@ const Profile = () => {
             <div className="ml-3 space-y-0.5">
               <p className="text-sm font-medium">{userData.name || 'User'}</p>
               <p className="text-xs text-muted-foreground">{userData.email || ''}</p>
-              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                {userData.subscription || 'Free Plan'}
+              <Badge variant="outline" className="text-xs px-1.5 py-1">
+                {UserType}
               </Badge>
             </div>
           </div>
@@ -229,11 +229,21 @@ const Profile = () => {
 
           <DropdownMenuItem
             onClick={HandleEditButton}
-            className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
+            className="flex items-center cursor-pointer md:hidden rounded-md p-2 hover:bg-accent"
           >
-            <Pencil className="mr-2 h-4 w-4" />
+            <CalendarDays className="mr-2 h-4 w-4" />
             <div className="flex flex-col">
-              <span>Edit</span>
+              <span>Events</span>
+              <span className="text-xs text-muted-foreground">Get assistance</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={HandleEditButton}
+            className="flex items-center cursor-pointer md:hidden rounded-md p-2 hover:bg-accent"
+          >
+            <BellIcon className="mr-2 h-4 w-4" />
+            <div className="flex flex-col">
+              <span>Notification</span>
               <span className="text-xs text-muted-foreground">Get assistance</span>
             </div>
           </DropdownMenuItem>

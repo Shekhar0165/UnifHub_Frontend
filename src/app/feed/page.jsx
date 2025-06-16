@@ -27,7 +27,7 @@ import { io } from "socket.io-client";
 // Create socket connection only once
 let socket;
 
-export default function LinkedInFeed() {
+export default function page() {
     const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);

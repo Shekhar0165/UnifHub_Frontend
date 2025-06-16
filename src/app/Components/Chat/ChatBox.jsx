@@ -1,30 +1,52 @@
 'use client';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Send, Check, CheckCheck } from 'lucide-react';
+import { Send, Check, CheckCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import axios from 'axios';
 
-export default function ChatBox({ recipientUser, currentUser ,type}) {
+export default function ChatBox({ recipientUser, currentUser, type }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [typingStatus, setTypingStatus] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const hasLoadedOldMessages = useRef(false);
   const visibilityRef = useRef(null);
   const readTimeoutRef = useRef(null);
+  const isLoadingMoreRef = useRef(false);
 
+  const MESSAGES_PER_PAGE = 10;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = true) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? "smooth" : "instant" 
+      });
+    }
   };
 
+  const scrollToPosition = (position) => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = position;
+    }
+  };
+
+  // Scroll to bottom for initial load and new messages, but not when loading more
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isLoadingMore && hasLoadedOldMessages.current) {
+      // Use instant scroll for initial load, smooth for new messages
+      const shouldUseSmooth = messages.some(msg => msg.isFromNotification);
+      scrollToBottom(shouldUseSmooth);
+    }
+  }, [messages, isLoadingMore]);
 
   // Intersection Observer for marking messages as read
   useEffect(() => {
@@ -37,7 +59,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
             const messageStatus = messageElement.getAttribute('data-message-status');
             const messageSender = messageElement.getAttribute('data-message-sender');
             
-            // Only mark as read if it's not our own message and not already read
             if (messageId && messageSender !== currentUser?._id && messageStatus !== 'read') {
               markMessageAsRead(messageId);
             }
@@ -55,7 +76,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
   const markMessageAsRead = useCallback((messageId) => {
     if (!window.socket || !conversationId || !messageId) return;
 
-    // Debounce read events
     if (readTimeoutRef.current) {
       clearTimeout(readTimeoutRef.current);
     }
@@ -88,10 +108,8 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
       try {
         const messageData = JSON.parse(pendingMessage);
         
-        // Only add if it's for the current recipient
         if (messageData.sender === recipientUser?._id) {
           setMessages(prev => {
-            // Check if message already exists
             const exists = prev.some(msg => 
               msg.id === messageData.id || 
               (msg.content === messageData.content && 
@@ -106,7 +124,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
           });
         }
         
-        // Clear the pending message
         sessionStorage.removeItem('pendingMessage');
       } catch (error) {
         console.error("Error processing pending message:", error);
@@ -115,84 +132,141 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
     }
   }, [recipientUser?._id]);
 
-  // Load old messages when component mounts or users change
-  useEffect(() => {
-    const getOldMessages = async () => {
-      if (!recipientUser?._id || !currentUser?._id) {
-        setIsLoading(false);
-        return;
-      }
+  // Load messages with pagination
+  const loadMessages = async (page = 0, isLoadMore = false) => {
+    if (!recipientUser?._id || !currentUser?._id) {
+      if (!isLoadMore) setIsLoading(false);
+      return;
+    }
 
+    if (isLoadMore) {
+      setIsLoadingMore(true);
+      isLoadingMoreRef.current = true;
+    } else {
       setIsLoading(true);
       hasLoadedOldMessages.current = false;
-      
-      try {
-        const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_API}/chat/get-messages`,
-          {
-            userId: currentUser._id,
-            recipientId: recipientUser._id
+    }
+    
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API}/chat/get-messages`,
+        {
+          userId: currentUser._id,
+          recipientId: recipientUser._id,
+          page: page,
+          limit: MESSAGES_PER_PAGE
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
           },
-          {
-            headers: {
-              "Content-Type": "application/json"
-            },
-            withCredentials: true
-          }
-        );
-
-        const data = res.data;
-        console.log("Old messages loaded:", data);
-
-        // Set conversation ID
-        if (data.conversationId) {
-          setConversationId(data.conversationId);
+          withCredentials: true
         }
+      );
 
-        // Format messages with proper type and read status
-        const formattedMessages = (data.messages || []).map(msg => {
-          const isRead = msg.readBy?.some(read => read.userId === currentUser._id);
-          const isSent = msg.sender === currentUser._id;
-          
-          return {
-            id: msg.id || msg._id,
-            content: msg.content || msg.message,
-            timestamp: msg.timestamp || msg.createdAt,
-            sender: msg.sender,
-            type: isSent ? 'sent' : 'received',
-            status: msg.status || (isRead ? 'read' : 'sent'),
-            readBy: msg.readBy || []
-          };
-        });
+      const data = res.data;
 
+      // Set conversation ID
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+      }
+
+      // Check if there are more messages to load
+      setHasMoreMessages(data.hasMore || false);
+
+      // Format messages with proper type and read status
+      const formattedMessages = (data.messages || []).map(msg => {
+        const isRead = msg.readBy?.some(read => read.userId === currentUser._id);
+        const isSent = msg.sender === currentUser._id;
+        
+        return {
+          id: msg.id || msg._id,
+          content: msg.content || msg.message,
+          timestamp: msg.timestamp || msg.createdAt,
+          sender: msg.sender,
+          type: isSent ? 'sent' : 'received',
+          status: msg.status || (isRead ? 'read' : 'sent'),
+          readBy: msg.readBy || []
+        };
+      });
+
+      if (isLoadMore) {
+        // Save current scroll position before adding new messages
+        const container = messagesContainerRef.current;
+        const scrollHeight = container.scrollHeight;
+        const scrollTop = container.scrollTop;
+        
+        // Prepend older messages to the beginning
+        setMessages(prev => [...formattedMessages, ...prev]);
+        
+        // Restore scroll position after new messages are added
+        setTimeout(() => {
+          const newScrollHeight = container.scrollHeight;
+          const heightDifference = newScrollHeight - scrollHeight;
+          container.scrollTop = scrollTop + heightDifference;
+        }, 50);
+      } else {
         setMessages(formattedMessages);
         hasLoadedOldMessages.current = true;
         
-        // Check for pending notification message after loading old messages
+        // Scroll to bottom immediately after setting initial messages
+        setTimeout(() => {
+          scrollToBottom(false); // Use instant scroll for initial load
+        }, 50);
+        
+        // Check for pending notification message after loading initial messages
         setTimeout(() => {
           checkPendingMessage();
         }, 100);
-        
-      } catch (err) {
-        console.error("Error fetching old messages:", err);
+      }
+      
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+      if (!isLoadMore) {
         setMessages([]);
         hasLoadedOldMessages.current = true;
         
-        // Still check for pending message even if old messages failed to load
+        // Ensure scroll to bottom even when no messages
+        setTimeout(() => {
+          scrollToBottom(false);
+        }, 50);
+        
         setTimeout(() => {
           checkPendingMessage();
         }, 100);
-      } finally {
+      }
+    } finally {
+      if (isLoadMore) {
+        setIsLoadingMore(false);
+        isLoadingMoreRef.current = false;
+      } else {
         setIsLoading(false);
       }
-    };
+    }
+  };
 
-    getOldMessages();
+  // Load initial messages when component mounts or users change
+  useEffect(() => {
+    setCurrentPage(0);
+    setHasMoreMessages(true);
+    loadMessages(0, false);
   }, [recipientUser?._id, currentUser?._id, checkPendingMessage]);
+
+  // Handle scroll event for loading more messages
+  const handleScroll = useCallback((e) => {
+    const container = e.target;
+    const scrollTop = container.scrollTop;
+    
+    // Load more messages when user scrolls to top and there are more messages
+    if (scrollTop < 100 && hasMoreMessages && !isLoadingMore && !isLoadingMoreRef.current) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      loadMessages(nextPage, true);
+    }
+  }, [currentPage, hasMoreMessages, isLoadingMore]);
 
   // Handle incoming messages without duplicating
   const handlePrivateMessage = useCallback((data) => {
-    
     const newMessage = {
       id: data.id || Date.now(),
       content: data.message || data.content,
@@ -204,7 +278,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
     };
 
     setMessages(prev => {
-      // Check if message already exists to prevent duplicates
       const exists = prev.some(msg => 
         msg.id === newMessage.id || 
         (msg.content === newMessage.content && 
@@ -220,7 +293,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
       return [...prev, newMessage];
     });
 
-    // Store conversation ID if provided
     if (data.conversationId) {
       setConversationId(data.conversationId);
     }
@@ -241,7 +313,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
     };
 
     setMessages(prev => {
-      // Check if message already exists to prevent duplicates
       const exists = prev.some(msg => 
         msg.id === sentMessage.id || 
         (msg.content === sentMessage.content && 
@@ -257,7 +328,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
       return [...prev, sentMessage];
     });
 
-    // Store conversation ID if provided
     if (data.conversationId) {
       setConversationId(data.conversationId);
     }
@@ -312,15 +382,13 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
         console.log("🎯 Setting up chat listeners for:", recipientUser.name);
         
         setSocketConnected(window.socket.connected);
-        console.log("socekt connection",window.socket.connected)
+        console.log("socket connection", window.socket.connected);
 
-        // Notify backend that user entered this chat
         window.socket.emit('enter-chat', {
           userId: currentUser._id,
           chatWith: recipientUser._id
         });
 
-        // Remove existing listeners to prevent duplicates
         window.socket.off('privateMessage');
         window.socket.off('messageSent');
         window.socket.off('messageRead');
@@ -328,7 +396,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
         window.socket.off('connect');
         window.socket.off('disconnect');
         
-        // Add new listeners
         window.socket.on('privateMessage', handlePrivateMessage);
         window.socket.on('messageSent', handleMessageSent);
         window.socket.on('messageRead', handleMessageRead);
@@ -339,7 +406,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
         cleanupFn = () => {
           console.log("🧹 Cleaning up chat listeners");
           
-          // Notify backend that user left this chat
           window.socket.emit('leave-chat', {
             userId: currentUser._id
           });
@@ -384,7 +450,6 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
   // Mark all messages as read when component mounts and messages are loaded
   useEffect(() => {
     if (hasLoadedOldMessages.current && conversationId && messages.length > 0) {
-      // Delay to ensure all messages are rendered
       setTimeout(() => {
         markAllMessagesAsRead();
       }, 1000);
@@ -450,6 +515,7 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
           <p>Loading messages...</p>
         </div>
       </div>
@@ -481,13 +547,24 @@ export default function ChatBox({ recipientUser, currentUser ,type}) {
             </p>
           </div>
         </Link>
-        {/* <div className="ml-auto text-xs text-muted-foreground">
-          {messages.length} messages
-        </div> */}
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 px-4 py-4 overflow-y-auto space-y-4">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 px-4 py-4 overflow-y-auto space-y-4"
+        onScroll={handleScroll}
+      >
+        {/* Loading more indicator */}
+        {isLoadingMore && (
+          <div className="flex justify-center py-2">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading older messages...</span>
+            </div>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-muted-foreground">

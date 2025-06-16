@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ChatList from '../Components/Chat/ChatList';
 import ChatBox from '../Components/Chat/ChatBox';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
+import { Menu, MessageCircle, MessageSquare, MessagesSquare } from 'lucide-react';
 import Header from '../Components/Header/Header';
 import Cookies from 'js-cookie';
 import axios from 'axios';
@@ -34,7 +34,6 @@ export default function MessagesPage() {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [OtherUserType,setOtherUserType] = useState('')
-
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -123,6 +122,8 @@ export default function MessagesPage() {
 
     
 
+    
+
     return (
         <>
             <Header />
@@ -130,10 +131,10 @@ export default function MessagesPage() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden fixed top-20 left-4 z-30 rounded-full bg-background shadow-md"
+                    className="md:hidden fixed top-20 right-4 z-30 rounded-full bg-background shadow-md"
                     onClick={() => setShowChatList(!showChatList)}
                 >
-                    <Menu className="h-5 w-5" />
+                    <MessagesSquare className="h-5 w-5" />
                 </Button>
 
                 <div
@@ -147,7 +148,7 @@ export default function MessagesPage() {
                     />
                 </div>
 
-                <div className="flex-1 md:ml-0">
+                <div className=" flex-1 md:ml-0 ">
                     {loading || recipientLoading ? (
                         <div className="h-full flex items-center justify-center">
                             <p className="text-lg text-muted-foreground">Loading chat...</p>

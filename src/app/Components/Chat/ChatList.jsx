@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
+
+
 const ChatPreview = ({ chat, isActive, onClick }) => {
   const [socketConnected, setSocketConnected] = useState(false);
   const [userStatus, SetUserStatus] = useState(false);
@@ -30,9 +32,7 @@ const ChatPreview = ({ chat, isActive, onClick }) => {
     const handleLastSeen = (data) => {
       if (data.from._id === chat.participant.id) {
         setLastmess(data.message);
-        setUnreadCount(prev => prev + 1);
         setlastseen(data.timestamp)
-        console.log("data",data)
       }
     };
 
@@ -56,6 +56,23 @@ const ChatPreview = ({ chat, isActive, onClick }) => {
       window.socket.off("last-seen", handleLastSeen);
     };
   }, [chat.participant.id]);
+
+  useEffect(() => {
+  if (!window.socket) return;
+
+  const handleCount = (data) => {
+    if (data.from._id === chat.participant.id) {
+      setUnreadCount(prev => prev + 1);
+    }
+  };
+
+  window.socket.on("message-count", handleCount);
+
+  return () => {
+    window.socket.off("message-count", handleCount);
+  };
+}, [chat.participant.id]);
+
 
   const handleClick = () => {
   setUnreadCount(0);
@@ -116,6 +133,104 @@ const ChatList = ({ onChatSelect }) => {
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [pagination, setPagination] = useState({});
   const [unreadCount, setUnreadCount] = useState({ totalUnreadMessages: 0, unreadChatsCount: 0 });
+
+  // Function to move chat to top when new message arrives
+  const moveChatToTop = (participantId, newMessage, timestamp) => {
+    setChats(prevChats => {
+      const chatIndex = prevChats.findIndex(chat => chat.participant.id === participantId);
+      if (chatIndex === -1) return prevChats;
+
+      const updatedChats = [...prevChats];
+      const chatToMove = { ...updatedChats[chatIndex] };
+      
+      // Update the chat with new message info
+      chatToMove.lastMessage = {
+        ...chatToMove.lastMessage,
+        content: newMessage,
+        timestamp: timestamp
+      };
+
+      // Remove chat from current position and add to top
+      updatedChats.splice(chatIndex, 1);
+      updatedChats.unshift(chatToMove);
+
+      return updatedChats;
+    });
+
+    // Also update search results if currently searching
+    if (searchQuery.trim()) {
+      setSearchResults(prevResults => {
+        const resultIndex = prevResults.findIndex(chat => chat.participant.id === participantId);
+        if (resultIndex === -1) return prevResults;
+
+        const updatedResults = [...prevResults];
+        const resultToMove = { ...updatedResults[resultIndex] };
+        
+        // Update the search result with new message info
+        resultToMove.lastMessage = {
+          ...resultToMove.lastMessage,
+          content: newMessage,
+          timestamp: timestamp
+        };
+
+        // Remove from current position and add to top
+        updatedResults.splice(resultIndex, 1);
+        updatedResults.unshift(resultToMove);
+
+        return updatedResults;
+      });
+    }
+  };
+
+  // Set up global socket listener for last-seen events
+  useEffect(() => {
+    if (!window.socket) return;
+
+    const handleGlobalLastSeen = (data) => {
+      // Move the chat to top when new message arrives (from others)
+      moveChatToTop(data.from._id, data.message, data.timestamp);
+    };
+
+    const handleMessageSent = (data) => {
+      // Move the chat to top when YOU send a message
+      // data should contain recipient info and your message
+      if (data.to && data.to._id) {
+        moveChatToTop(data.to._id, data.message, data.timestamp);
+      }
+    };
+
+    const handleNewMessage = (data) => {
+      // General handler for any new message (sent or received)
+      const participantId = data.from ? data.from._id : (data.to ? data.to._id : null);
+      if (participantId) {
+        moveChatToTop(participantId, data.message, data.timestamp);
+      }
+    };
+
+    // Listen for last-seen events globally (when receiving messages)
+    window.socket.off("last-seen-global", handleGlobalLastSeen);
+    window.socket.on("last-seen-global", handleGlobalLastSeen);
+
+    // If your socket doesn't have a global event, use the regular last-seen
+    window.socket.off("last-seen", handleGlobalLastSeen);
+    window.socket.on("last-seen", handleGlobalLastSeen);
+
+    // Listen for when YOU send messages
+    window.socket.off("message-sent", handleMessageSent);
+    window.socket.on("message-sent", handleMessageSent);
+
+    // Alternative: Listen for general new message events
+    window.socket.off("new-message", handleNewMessage);
+    window.socket.on("new-message", handleNewMessage);
+
+    return () => {
+      window.socket.off("last-seen-global", handleGlobalLastSeen);
+      window.socket.off("last-seen", handleGlobalLastSeen);
+      window.socket.off("message-sent", handleMessageSent);
+      window.socket.off("new-message", handleNewMessage);
+    };
+  }, [searchQuery]);
+
   // Fetch chat list from backend
   const fetchChatList = async (page = 1, limit = 20) => {
     setIsLoading(true);
@@ -144,28 +259,29 @@ const ChatList = ({ onChatSelect }) => {
 
 
   // Fetch unread count
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API}/chat/list/unread-count`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true
-        }
-      );
+  // const fetchUnreadCount = async () => {
+  //   try {
+  //     const response = await axios.get(
+  //       `${process.env.NEXT_PUBLIC_API}/chat/list/unread-count`,
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         withCredentials: true
+  //       }
+  //     );
 
-      if (response.data.success) {
-        setUnreadCount({
-          totalUnreadMessages: response.data.totalUnreadMessages,
-          unreadChatsCount: response.data.unreadChatsCount
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching unread count:", error);
-    }
-  };
+      
+  //     if (response.data.success) {
+  //       setUnreadCount({
+  //         totalUnreadMessages: response.data.totalUnreadMessages,
+  //         unreadChatsCount: response.data.unreadChatsCount
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching unread count:", error);
+  //   }
+  // };
 
   // Search chats through backend
   const searchChats = async (query) => {
@@ -246,8 +362,9 @@ const ChatList = ({ onChatSelect }) => {
   // Initial data fetch
   useEffect(() => {
     fetchChatList();
-    fetchUnreadCount();
+    // fetchUnreadCount();
   }, []);
+
 
   // Get current items to display
   const currentItems = searchQuery.trim() ? searchResults : chats;
@@ -258,13 +375,13 @@ const ChatList = ({ onChatSelect }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h2 className="font-semibold text-lg">Messages</h2>
-            {unreadCount.unreadChatsCount > 0 && (
-              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 text-xs font-medium rounded-full bg-red-500 text-white">
+            {/* {unreadCount.unreadChatsCount > 0 && (
+              <span className="inline-flex items-center justify-center h-3 min-w-2 px-1.5 text-xs font-medium rounded-full bg-red-500 text-white">
                 {unreadCount.unreadChatsCount}
               </span>
-            )}
+            )} */}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mx-10">
             <Button
               variant="ghost"
               size="icon"
@@ -272,9 +389,6 @@ const ChatList = ({ onChatSelect }) => {
               onClick={() => setShowSearchInput(!showSearchInput)}
             >
               <Search className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Plus className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -301,7 +415,7 @@ const ChatList = ({ onChatSelect }) => {
       </div>
 
       <ScrollArea className="flex-1 h-[calc(100vh-10rem)]">
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-border h-screen">
           {isLoading ? (
             <div className="flex items-center justify-center p-6">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />

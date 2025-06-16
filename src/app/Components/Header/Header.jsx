@@ -2,7 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ModeToggle } from '../ModeToggle/ModeToggle';
 import Profile from '../Profile/Profile';
 import Link from 'next/link';
-import { Search, X, Loader2, User, Home, CalendarDays, Menu, X as Close, MessageCircle, Building } from 'lucide-react';
+import {
+  Search,
+  X,
+  Loader2,
+  User,
+  Home,
+  CalendarDays,
+  Menu,
+  X as Close,
+  MessageCircle,
+  Building,
+  Bell,
+  BellRing,
+  Sun,
+  Moon,
+  BellIcon
+} from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import axios from 'axios';
@@ -16,14 +33,49 @@ export default function Header() {
   const [showResults, setShowResults] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const searchRef = useRef(null);
-  const pathname = usePathname();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'like',
+      message: 'John Doe liked your post',
+      time: '2 minutes ago',
+      read: false,
+      avatar: null
+    },
+    {
+      id: 2,
+      type: 'comment',
+      message: 'Sarah commented on your event',
+      time: '1 hour ago',
+      read: false,
+      avatar: null
+    },
+    {
+      id: 3,
+      type: 'follow',
+      message: 'Tech University started following you',
+      time: '3 hours ago',
+      read: true,
+      avatar: null
+    }
+  ]);
 
-  // Close dropdown when clicking outside
+  const searchRef = useRef(null);
+  const notificationRef = useRef(null);
+  const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowResults(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
       }
     }
 
@@ -63,7 +115,6 @@ export default function Header() {
       );
 
       if (response.data.success) {
-        // Fixed: Use 'results' instead of 'members' and add fallback
         setSearchResults(response.data.results || []);
         setShowResults(true);
       } else {
@@ -72,7 +123,7 @@ export default function Header() {
       }
     } catch (error) {
       console.error("Error searching users:", error);
-      setSearchResults([]); // Set empty array on error
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +133,20 @@ export default function Header() {
     setSearchQuery('');
     setSearchResults([]);
     setShowResults(false);
+  };
+
+  const markNotificationAsRead = (id) => {
+    setNotifications(prev =>
+      prev.map(notif =>
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev =>
+      prev.map(notif => ({ ...notif, read: true }))
+    );
   };
 
   // Function to truncate bio text
@@ -100,7 +165,7 @@ export default function Header() {
     const isOrganization = item.type === 'organization';
     const displayName = item.name || 'Unknown';
     const displayBio = item.bio ? truncateBio(item.bio, 60) : (item.university || item.location || "");
-    
+
     return (
       <li key={item._id} className="px-1">
         <Link
@@ -136,13 +201,12 @@ export default function Header() {
             ) : (
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <span className="text-lg font-medium text-muted-foreground">
-                  {displayName?.charAt(0).toUpperCase() || 
+                  {displayName?.charAt(0).toUpperCase() ||
                     (isOrganization ? <Building className="h-5 w-5" /> : <User className="h-5 w-5" />)
                   }
                 </span>
               </div>
             )}
-            {/* Type indicator */}
             {isOrganization && (
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
                 <Building className="h-2.5 w-2.5 text-primary-foreground" />
@@ -178,7 +242,7 @@ export default function Header() {
             </Link>
 
             {/* Desktop Search */}
-            <div className="hidden md:block mx-4 relative" ref={searchRef}>
+            <div className="hidden lg:block mx-4 relative" ref={searchRef}>
               <div className="relative group">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -187,7 +251,7 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => searchQuery.trim() && setShowResults(true)}
-                  className="w-full pl-10 pr-10 h-10 rounded-full bg-muted/50 border-0"
+                  className="w-64 xl:w-80 pl-10 pr-10 h-10 rounded-full bg-muted/50 border-0"
                 />
                 {searchQuery && (
                   <button
@@ -232,13 +296,13 @@ export default function Header() {
           </div>
 
           {/* Right Side Items */}
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-1 md:gap-2">
             {/* Mobile Search Button */}
             <button
               onClick={() => setShowMobileSearch(!showMobileSearch)}
-              className="md:hidden p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
             >
-              <Search size={20} />
+              <Search size={16} />
             </button>
 
             {/* Desktop Navigation */}
@@ -246,58 +310,100 @@ export default function Header() {
               <Link href="/feed">
                 <Button
                   variant="ghost"
-                  className={`flex items-center gap-2 px-4 py-2 transition-all ${isActive('/feed')
-                      ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
-                      : "hover:bg-muted/40"
+                  className={`flex items-center gap-2 px-3 lg:px-4 py-2 transition-all ${isActive('/feed')
+                    ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
+                    : "hover:bg-muted/40"
                     }`}
                 >
                   <Home size={isActive('/feed') ? 22 : 20} strokeWidth={isActive('/feed') ? 2.5 : 2} />
-                  <span>Home</span>
+                  <span className="hidden lg:block">Home</span>
                 </Button>
               </Link>
               <Link href="/events">
                 <Button
                   variant="ghost"
-                  className={`flex items-center gap-2 px-4 py-2 transition-all ${isActive('/events')
-                      ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
-                      : "hover:bg-muted/40"
+                  className={`flex items-center gap-2 px-3 lg:px-4 py-2 transition-all ${isActive('/events')
+                    ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
+                    : "hover:bg-muted/40"
                     }`}
                 >
                   <CalendarDays size={isActive('/events') ? 22 : 20} strokeWidth={isActive('/events') ? 2.5 : 2} />
-                  <span>Events</span>
+                  <span className="hidden lg:block">Events</span>
                 </Button>
               </Link>
               <Link href="/messages">
                 <Button
                   variant="ghost"
-                  className={`flex items-center gap-2 px-4 py-2 transition-all ${isActive('/messages')
-                      ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
-                      : "hover:bg-muted/40"
+                  className={`flex items-center gap-2 px-3 lg:px-4 py-2 transition-all ${isActive('/messages')
+                    ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
+                    : "hover:bg-muted/40"
                     }`}
                 >
                   <MessageCircle size={isActive('/messages') ? 22 : 20} strokeWidth={isActive('/messages') ? 2.5 : 2} />
-                  <span>Message</span>
+                  <span className="hidden lg:block">Messages</span>
                 </Button>
               </Link>
+              <Link href="/notification">
+                <Button
+                  variant="ghost"
+                  className={`flex items-center gap-2 px-3 lg:px-4 py-2 transition-all ${isActive('/messages')
+                    ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
+                    : "hover:bg-muted/40"
+                    }`}
+                >
+                  <BellIcon size={isActive('/notification') ? 22 : 20} strokeWidth={isActive('/messages') ? 2.5 : 2} />
+                  <span className="hidden lg:block">Notification</span>
+                </Button>
+              </Link>
+
+              {/* Theme Toggle Button */}
+              <Button
+                variant="ghost"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center gap-2 px-3 lg:px-4 py-2 hover:bg-muted/40 transition-all"
+              >
+                <ModeToggle />
+                <span className="text-xs mt-1 font-medium text-muted-foreground"></span>
+              </Button>
             </nav>
 
-            {/* Dark Mode Toggle and Profile */}
-            <ModeToggle />
+            <Link
+              href="/feed"
+              className={`flex flex-col items-center px-3 md:hidden py-3 rounded-lg transition-colors ${isActive('/feed')
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Home size={14} strokeWidth={isActive('/feed') ? 2.5 : 2} />
+            </Link>
+
+            <Link
+              href="/messages"
+              className={`flex flex-col items-center px-3 md:hidden py-3 rounded-lg transition-colors ${isActive('/messages')
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <MessageCircle size={14} strokeWidth={isActive('/messages') ? 2.5 : 2} />
+            </Link>
+            <Button
+              variant="ghost"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="flex items-center gap-2 px-0 lg:px-4 py-2 hover:bg-muted/40 transition-all"
+            >
+              <ModeToggle />
+              <span className="text-xs mt-1 font-medium text-muted-foreground"></span>
+            </Button>
             <Profile />
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
-            >
-              {mobileMenuOpen ? <Close size={20} /> : <Menu size={20} />}
-            </button>
           </div>
         </div>
 
         {/* Mobile Search Bar */}
         {showMobileSearch && (
-          <div className="md:hidden pt-2 pb-3 px-2" ref={searchRef}>
+          <div className="lg:hidden pt-2 pb-3 px-2" ref={searchRef}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -351,31 +457,6 @@ export default function Header() {
           </div>
         )}
 
-        {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-2 px-2 border-t">
-            <nav className="flex justify-around">
-              <Link
-                href="/"
-                className={`flex flex-col items-center px-3 py-2 rounded-md transition-colors ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Home size={20} />
-                <span className="text-xs mt-1">Home</span>
-              </Link>
-              <Link
-                href="/events"
-                className={`flex flex-col items-center px-3 py-2 rounded-md transition-colors ${isActive('/events') ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <CalendarDays size={20} />
-                <span className="text-xs mt-1">Events</span>
-              </Link>
-            </nav>
-          </div>
-        )}
       </div>
     </header>
   );
