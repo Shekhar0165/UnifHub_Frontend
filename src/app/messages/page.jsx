@@ -33,6 +33,7 @@ export default function MessagesPage() {
     const [recipientLoading, setRecipientLoading] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [OtherUserType,setOtherUserType] = useState('')
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -110,13 +111,17 @@ export default function MessagesPage() {
         fetchRecipientUser();
     }, [searchParams]);
 
+    
 
     const handleChatSelect = (chat) => {
         setSelectedChat(chat);
+        setOtherUserType(chat.type)
         if (window.innerWidth < 768) {
             setShowChatList(false);
         }
     };
+
+    
 
     return (
         <>
@@ -148,7 +153,7 @@ export default function MessagesPage() {
                             <p className="text-lg text-muted-foreground">Loading chat...</p>
                         </div>
                     ) : selectedChat ? (
-                        <ChatBox recipientUser={selectedChat} currentUser={userData} />
+                        <ChatBox recipientUser={selectedChat} type={OtherUserType} currentUser={userData} />
                     ) : (
                         <div className="h-full flex items-center justify-center p-4">
                             <div className="text-center">

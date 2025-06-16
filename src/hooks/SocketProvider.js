@@ -20,7 +20,6 @@ export default function SocketProvider() {
           },
           withCredentials: true
         });
-        console.log("res from socket use", res);
         setUserid(res.data.id);
       } catch (error) {
         console.error("Error getting user ID:", error);
@@ -35,20 +34,17 @@ export default function SocketProvider() {
     const socket = io(process.env.NEXT_PUBLIC_API);
     window.socket = socket;
         
-    console.log("🔌 Socket created with ID:", socket.id);
 
     socket.on('connect', () => {
-      console.log("✅ Socket connected:", socket.id);
       socket.emit('user-connected', userid);
     });
 
-    socket.on('user-status', (data) => {
-      console.log("👤 User status:", data);
-    });
+    // socket.on('user-status', (data) => {
+    //   console.log("👤 User status:", data);
+    // });
 
     // Call notification component when message received
     socket.on('messageNotification', (data) => {
-      console.log("🔔 Global notification received:", data);
       
       // Set notification data to trigger the Notification component
       setNotificationData({
@@ -63,12 +59,11 @@ export default function SocketProvider() {
       }, 100);
     });
 
-    socket.on('disconnect', () => {
-      console.log("❌ Socket disconnected");
-    });
+    // socket.on('disconnect', () => {
+    //   console.log("❌ Socket disconnected");
+    // });
 
     socket.on('reconnect', () => {
-      console.log("🔄 Socket reconnected");
       socket.emit('user-connected', userid);
     });
 
