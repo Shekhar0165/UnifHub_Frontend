@@ -346,12 +346,12 @@ export default function Header() {
               <Link href="/notification">
                 <Button
                   variant="ghost"
-                  className={`flex items-center gap-2 px-3 lg:px-4 py-2 transition-all ${isActive('/messages')
+                  className={`flex items-center gap-2 px-3 lg:px-4 py-2 transition-all ${isActive('/notification')
                     ? "border-b-2 border-primary text-primary font-medium rounded-t-md rounded-b-none"
                     : "hover:bg-muted/40"
                     }`}
                 >
-                  <BellIcon size={isActive('/notification') ? 22 : 20} strokeWidth={isActive('/messages') ? 2.5 : 2} />
+                  <BellIcon size={isActive('/notification') ? 22 : 20} strokeWidth={isActive('/notification') ? 2.5 : 2} />
                   <span className="hidden lg:block">Notification</span>
                 </Button>
               </Link>
@@ -360,7 +360,7 @@ export default function Header() {
               <Button
                 variant="ghost"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="flex items-center gap-2 px-3 lg:px-4 py-2 hover:bg-muted/40 transition-all"
+                className="flex items-center gap-2 px-3 lg:px-4 md:hidden py-2 hover:bg-muted/40 transition-all"
               >
                 <ModeToggle />
                 <span className="text-xs mt-1 font-medium text-muted-foreground"></span>
@@ -391,7 +391,7 @@ export default function Header() {
             <Button
               variant="ghost"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex items-center gap-2 px-0 lg:px-4 py-2 hover:bg-muted/40 transition-all"
+              className="flex items-center gap-2 px-0 lg:px-0 py-2 hover:bg-muted/40 transition-all"
             >
               <ModeToggle />
               <span className="text-xs mt-1 font-medium text-muted-foreground"></span>

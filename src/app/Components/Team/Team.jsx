@@ -144,7 +144,7 @@ export default function TeamManagement({ OrgId }) {
 
         try {
             const response = await axios.get(
-                `${api}/user/members/search?query=${encodeURIComponent(query)}`,
+                `${api}/user/members/search/user?query=${encodeURIComponent(query)}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -155,6 +155,7 @@ export default function TeamManagement({ OrgId }) {
 
             const data = response.data;
 
+            console.log(data)
             if (data.success) {
                 setEditSearchResults(data.members || []);
             } else {

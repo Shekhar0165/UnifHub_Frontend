@@ -155,11 +155,11 @@ const Profile = () => {
     router.push(newroute)
   }
 
-  const HandleEditButton = () => {
-    const newEdit = UserType === 'individual'
-      ? `/user/${userData.userid}`
-      : `/organization/${userData.userid}`
-    router.push(`${newEdit}/edit`)
+  const HandleEventsButton = () => {
+    router.push(`/events`)
+  }
+  const HandleNotificationButton = () => {
+    router.push(`/notification`)
   }
   return (
     <div className="flex items-center gap-2">
@@ -228,27 +228,27 @@ const Profile = () => {
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={HandleEditButton}
+            onClick={HandleEventsButton}
             className="flex items-center cursor-pointer md:hidden rounded-md p-2 hover:bg-accent"
           >
             <CalendarDays className="mr-2 h-4 w-4" />
             <div className="flex flex-col">
               <span>Events</span>
-              <span className="text-xs text-muted-foreground">Get assistance</span>
+              <span className="text-xs text-muted-foreground">New Events</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={HandleEditButton}
+            onClick={HandleNotificationButton}
             className="flex items-center cursor-pointer md:hidden rounded-md p-2 hover:bg-accent"
           >
             <BellIcon className="mr-2 h-4 w-4" />
             <div className="flex flex-col">
               <span>Notification</span>
-              <span className="text-xs text-muted-foreground">Get assistance</span>
+              <span className="text-xs text-muted-foreground">View Notification</span>
             </div>
           </DropdownMenuItem>
 
-
+{/* 
           <DropdownMenuItem
             onClick={() => router.push('/help')}
             className="flex items-center cursor-pointer rounded-md p-2 hover:bg-accent"
@@ -258,7 +258,7 @@ const Profile = () => {
               <span>Help & Support</span>
               <span className="text-xs text-muted-foreground">Get assistance</span>
             </div>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
 
           <DropdownMenuSeparator />
 
