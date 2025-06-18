@@ -33,6 +33,7 @@ export default function NotificationPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalNotifications, setTotalNotifications] = useState(0);
+   const [notificationData, setNotificationData] = useState(null);
 
   // Helper function to refresh tokens (implement according to your auth system)
   const refreshTokens = async () => {
@@ -284,12 +285,8 @@ export default function NotificationPage() {
 
     // Handle like notifications
     const handleNotification = (data) => {
-      console.log("Like notification received:", data);
-
-      // Process the notification data from backend
       const processedNotification = {
         ...data,
-        // time: formatTime(data.time),
       };
 
 
@@ -303,39 +300,17 @@ export default function NotificationPage() {
       setRefreshKey(prevKey => prevKey + 1);
     };
 
-    // Handle comment notifications
-    const handleCommentNotification = (data) => {
-      console.log("Comment notification received:", data);
-
-      // Process the notification data from backend
-      const processedNotification = {
-        ...data,
-        // time: formatTime(data.time),
-      };
-
-      setNotifications(prev => {
-        const newNotifications = [processedNotification, ...prev];
-        console.log('Updated notifications after comment:', newNotifications);
-        return newNotifications;
-      });
-
-      // Force re-render
-      setRefreshKey(prevKey => prevKey + 1);
-    };
 
     // Remove existing listeners to prevent duplicates
     window.socket.off("Notification");
-    // window.socket.off("CommentNotification");
 
     // Add new listeners
     window.socket.on("Notification", handleNotification);
-    // window.socket.on("Notification", handleNotification);
 
     // Cleanup function
     return () => {
       if (window.socket) {
         window.socket.off("Notification");
-        // window.socket.off("CommentNotification");
       }
     };
   }, []);
