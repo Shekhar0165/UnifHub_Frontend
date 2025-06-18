@@ -1,6 +1,18 @@
 'use client'
-import React, { useState, useEffect, useId } from 'react';
-import { Bell, Check, X, Clock, MessageSquare, Heart, Share2, AlertCircle, CheckCircle2, Info, User, UserPlus, Menu } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Bell, Check, CheckCheck, X, Clock, MessageSquare, Heart, Share2, AlertCircle, CheckCircle2, Info, User, UserPlus, Menu,
+  MessageCircle,
+  Server,
+  AlertTriangle,
+  BellRing,
+  XCircle,
+  Users,
+  Ban,
+  PartyPopper,
+  RefreshCcw
+
+} from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,174 +22,393 @@ import Header from '../Components/Header/Header';
 import UserProfile from '../Components/Feed/UserProfile';
 import UserSuggestions from '../Components/UserProfile/UserSuggestions';
 import axios from 'axios';
+import Link from 'next/link';
 
 export default function NotificationPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'like',
-      title: 'New Like',
-      message: 'Sarah liked your post "Getting started with React"',
-      time: '2 minutes ago',
-      read: false,
-      avatar: '👩‍💻',
-      icon: Heart
-    },
-    {
-      id: 2,
-      type: 'comment',
-      title: 'New Comment',
-      message: 'John commented on your article about web development',
-      time: '15 minutes ago',
-      read: false,
-      avatar: '👨‍💼',
-      icon: MessageSquare
-    },
-    {
-      id: 3,
-      type: 'share',
-      title: 'Post Shared',
-      message: 'Alex shared your tutorial with their network',
-      time: '1 hour ago',
-      read: true,
-      avatar: '👨‍🎨',
-      icon: Share2
-    },
-    {
-      id: 4,
-      type: 'system',
-      title: 'System Update',
-      message: 'Your profile has been successfully updated',
-      time: '2 hours ago',
-      read: true,
-      avatar: '⚙️',
-      icon: CheckCircle2
-    },
-    {
-      id: 5,
-      type: 'warning',
-      title: 'Security Alert',
-      message: 'New login detected from a different device',
-      time: '3 hours ago',
-      read: false,
-      avatar: '🔒',
-      icon: AlertCircle
-    },
-    {
-      id: 6,
-      type: 'info',
-      title: 'Feature Update',
-      message: 'Check out our new dark mode feature!',
-      time: '1 day ago',
-      read: true,
-      avatar: '🌙',
-      icon: Info
-    },
-    // Add more notifications for testing scroll
-    {
-      id: 7,
-      type: 'like',
-      title: 'Another Like',
-      message: 'Emma liked your recent post about TypeScript',
-      time: '2 days ago',
-      read: true,
-      avatar: '👩‍🎨',
-      icon: Heart
-    },
-    {
-      id: 8,
-      type: 'comment',
-      title: 'New Comment',
-      message: 'Michael replied to your comment on the React discussion',
-      time: '3 days ago',
-      read: true,
-      avatar: '👨‍🔬',
-      icon: MessageSquare
+  const [notifications, setNotifications] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalNotifications, setTotalNotifications] = useState(0);
+
+  // Helper function to refresh tokens (implement according to your auth system)
+  const refreshTokens = async () => {
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API}/auth/refresh`, {}, {
+        withCredentials: true
+      });
+      return response.data.accessToken;
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      return null;
     }
-  ]);
+  };
 
-   useEffect(() => {
-    const fetchUserData = async () => {
+
+  // Updated fetchNotifications function for infinite scroll
+  const fetchNotifications = async (page = 1, append = false) => {
+    try {
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      console.log(`Fetching notifications - Page: ${page}`);
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API}/notification/all`, {
+        params: { page, limit: 10 },
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log('Notifications response:', res.data);
+      const newNotifications = res.data.notifications || [];
+      const paginationData = res.data.pagination || {};
+
+      if (append && page > 1) {
+        // Append new notifications to existing ones
+        setNotifications(prev => [...prev, ...newNotifications]);
+      } else {
+        // Replace notifications (first load)
+        setNotifications(newNotifications);
+      }
+
+      setCurrentPage(page);
+      setHasMore(paginationData.hasNextPage || false);
+      setTotalNotifications(paginationData.totalNotifications || 0);
+
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+
+      // If unauthorized, try to refresh token and retry
+      if (error.response && error.response.status === 401) {
         try {
-            setLoading(true);
-            const userid = localStorage.getItem('UserId');
-            console.log(userid);
-
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/user/profile/${userid}`, {
-                withCredentials: true,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+          const newAccessToken = await refreshTokens();
+          if (newAccessToken) {
+            const retryResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/notification/all`, {
+              params: { page, limit: 10 },
+              withCredentials: true,
+              headers: {
+                'Content-Type': 'application/json',
+              }
             });
 
-            setUser(response.data);
-        } catch (error) {
-            console.error('Error fetching user data:', error);
+            console.log('Retry notifications response:', retryResponse.data);
+            const newNotifications = retryResponse.data.notifications || [];
+            const paginationData = retryResponse.data.pagination || {};
 
-            // If unauthorized, try to refresh token and retry
-            if (error.response && error.response.status === 401) {
-                try {
-                    const newAccessToken = await refreshTokens();
-                    if (newAccessToken) {
-                        const retryResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/user/profile/${userid}`, {
-                            withCredentials: true,
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                        });
-
-                        setUser(retryResponse.data);
-                    }
-                } catch (retryError) {
-                    console.error('Failed to fetch user data after refreshing token:', retryError);
-                }
+            if (append && page > 1) {
+              setNotifications(prev => [...prev, ...newNotifications]);
+            } else {
+              setNotifications(newNotifications);
             }
-        } finally {
-            setLoading(false);
+
+            setCurrentPage(page);
+            setHasMore(paginationData.hasNextPage || false);
+            setTotalNotifications(paginationData.totalNotifications || 0);
+          }
+        } catch (retryError) {
+          console.error('Failed to fetch notifications after refreshing token:', retryError);
         }
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Load more notifications (for infinite scroll)
+  const loadMoreNotifications = () => {
+    if (!loadingMore && hasMore) {
+      fetchNotifications(currentPage + 1, true);
+    }
+  };
+
+  // Infinite scroll hook
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if user scrolled near bottom (within 100px)
+      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 100) {
+        loadMoreNotifications();
+      }
     };
 
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScroll);
+
+    // Cleanup
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadingMore, hasMore, currentPage]);
+
+  // Update the initial data fetch useEffect
+  useEffect(() => {
     fetchUserData();
-}, []);
+    fetchNotifications(1, false); // Start with page 1, don't append
+  }, []);
 
-  const markAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
+  // Reset notifications when new real-time notification arrives
+  useEffect(() => {
+    // When new notifications come via socket, reset to page 1
+    if (notifications.length > 0) {
+      // Reset pagination state when new notifications arrive
+      setCurrentPage(1);
+      setHasMore(true);
+    }
+  }, [refreshKey]);
+
+  // Loading more component
+  const LoadingMore = () => {
+    if (!loadingMore || !hasMore) return null;
+
+    return (
+      <div className="flex items-center justify-center py-6">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2"></div>
+        <span className="text-muted-foreground">Loading more notifications...</span>
+      </div>
     );
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, read: true }))
+  // End of notifications indicator
+  const EndOfNotifications = () => {
+    if (hasMore || notifications.length === 0) return null;
+
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">You've reached the end!</p>
+          <p className="text-xs text-muted-foreground">No more notifications to load</p>
+        </div>
+      </div>
     );
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  // Fetch user data
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const userid = localStorage.getItem('UserId');
+      console.log('User ID:', userid);
+
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API}/user/profile/${userid}`, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      setUser(response.data);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+
+      // If unauthorized, try to refresh token and retry
+      if (error.response && error.response.status === 401) {
+        try {
+          const newAccessToken = await refreshTokens();
+          if (newAccessToken) {
+            const userid = localStorage.getItem('UserId');
+            const retryResponse = await axios.get(`${process.env.NEXT_PUBLIC_API}/user/profile/${userid}`, {
+              withCredentials: true,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+
+            setUser(retryResponse.data);
+          }
+        } catch (retryError) {
+          console.error('Failed to fetch user data after refreshing token:', retryError);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchUserData();
+    fetchNotifications();
+  }, []);
+
+  // Helper function to get icon component from icon name string
+  const getIconComponent = (iconName) => {
+  const iconMap = {
+    'Heart': Heart,
+    'MessageSquare': MessageSquare,
+    'Share2': Share2,
+    'AlertCircle': AlertCircle,
+    'CheckCircle2': CheckCircle2,
+    'Info': Info,
+    'User': User,
+    'UserPlus': UserPlus,
+    'CheckCircle': CheckCircle2,
+    'XCircle': XCircle,
+    'PartyPopper': PartyPopper,
+    'BellRing': BellRing,
+    'Bell': Bell,
+  };
+  return iconMap[iconName] || Bell;
+};
+
+  // Helper function to format time from Date string
+  const formatTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+      if (diffInMinutes < 1) return 'just now';
+      if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+      return `${Math.floor(diffInMinutes / 1440)} days ago`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'some time ago';
+    }
+  };
+
+  // Socket connection and real-time notifications
+  useEffect(() => {
+    // Check if socket is available
+    if (!window.socket) {
+      console.warn('Socket not available yet. Notifications will not work in real-time.');
+      return;
+    }
+
+
+    // Handle like notifications
+    const handleNotification = (data) => {
+      console.log("Like notification received:", data);
+
+      // Process the notification data from backend
+      const processedNotification = {
+        ...data,
+        // time: formatTime(data.time),
+      };
+
+
+      setNotifications(prev => {
+        const newNotifications = [processedNotification, ...prev];
+        console.log('Updated notifications after like:', newNotifications);
+        return newNotifications;
+      });
+
+      // Force re-render
+      setRefreshKey(prevKey => prevKey + 1);
+    };
+
+    // Handle comment notifications
+    const handleCommentNotification = (data) => {
+      console.log("Comment notification received:", data);
+
+      // Process the notification data from backend
+      const processedNotification = {
+        ...data,
+        // time: formatTime(data.time),
+      };
+
+      setNotifications(prev => {
+        const newNotifications = [processedNotification, ...prev];
+        console.log('Updated notifications after comment:', newNotifications);
+        return newNotifications;
+      });
+
+      // Force re-render
+      setRefreshKey(prevKey => prevKey + 1);
+    };
+
+    // Remove existing listeners to prevent duplicates
+    window.socket.off("Notification");
+    // window.socket.off("CommentNotification");
+
+    // Add new listeners
+    window.socket.on("Notification", handleNotification);
+    // window.socket.on("Notification", handleNotification);
+
+    // Cleanup function
+    return () => {
+      if (window.socket) {
+        window.socket.off("Notification");
+        // window.socket.off("CommentNotification");
+      }
+    };
+  }, []);
+
+  // Mark a single notification as read
+  const markAsRead = async (id) => {
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API}/notification/mark-as-read/${id}`, {}, {
+        withCredentials: true
+      });
+      setNotifications(prev => prev.map(notif => notif._id === id ? { ...notif, read: true } : notif));
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
+  };
+
+  // Mark all as read
+  const markAllAsRead = async () => {
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API}/notification/mark-all-read`, {}, {
+        withCredentials: true
+      });
+      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
+  // Delete notification
+  const deleteNotification = async (id) => {
+    try {
+      await axios.delete(`${process.env.NEXT_PUBLIC_API}/notification/delete/${id}`, {
+        withCredentials: true
+      });
+
+      // Update state - React will re-render
+      setNotifications(prev => prev.filter(notif => notif._id !== id));
+
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const getNotificationColor = (type) => {
-    switch (type) {
+    switch (type?.toLowerCase()) {
       case 'like': return 'text-red-500';
       case 'comment': return 'text-blue-500';
       case 'share': return 'text-green-500';
+      case 'follow': return 'text-purple-500';
       case 'system': return 'text-purple-500';
       case 'warning': return 'text-orange-500';
+      case 'alert': return 'text-red-600';
+      case 'error': return 'text-red-600';
       case 'info': return 'text-cyan-500';
+      case 'join': return 'text-green-500';
+      case 'confirm': return 'text-teal-500';
+      case 'success': return 'text-emerald-500';
+      case 'reject': return 'text-rose-500';
+      case 'canceled': return 'text-yellow-600';
+      case 'congratulation': return 'text-amber-500';
+      case 'update': return 'text-indigo-500';
       default: return 'text-gray-500';
     }
   };
 
+
   const renderNotifications = (notificationList) => {
+
     if (notificationList.length === 0) {
       return (
-        <Card>
+        <Card key={`empty-${refreshKey}`}>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Bell className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No notifications</h3>
@@ -189,66 +420,70 @@ export default function NotificationPage() {
       );
     }
 
-    return notificationList.map((notification) => {
-      const IconComponent = notification.icon;
+    return notificationList.map((notification, index) => {
+      // Handle icon component
+      const IconComponent = getIconComponent(notification.icon);
+
       return (
-        <Card key={notification.id} className={`transition-all hover:shadow-md ${!notification.read ? 'ring-2 ring-primary/20 bg-primary/5' : ''}`}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-lg">
-                    {notification.avatar}
-                  </div>
-                  <div className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-background flex items-center justify-center ${getNotificationColor(notification.type)}`}>
-                    <IconComponent className="h-3 w-3" />
+        <Card key={notification._id} className={`transition-all my-2 hover:shadow-md `}>
+          <CardContent className="p-4 hover:bg-primary/10 rounded-lg transition-all ease-in-out duration-150">
+            <Link href={notification.link}>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-lg">
+                      {notification.avatar || '👤'}
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-background flex items-center justify-center ${getNotificationColor(notification.type)}`}>
+                      <IconComponent className="h-3 w-3" />
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h4 className="font-semibold text-foreground truncate">
-                    {notification.title}
-                  </h4>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {notification.time}
-                    </span>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h4 className="font-semibold text-foreground truncate">
+                      {notification.title}
+                    </h4>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTime(notification.time)}
+                      </span>
+                      {!notification.read && (
+                        <div className="h-2 w-2 bg-primary rounded-full"></div>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {notification.message}
+                  </p>
+
+                  <div className="flex items-center gap-2 flex-wrap">
                     {!notification.read && (
-                      <div className="h-2 w-2 bg-primary rounded-full"></div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => markAsRead(notification._id)}
+                        className="gap-1 h-7"
+                      >
+                        <Check className="h-3 w-3" />
+                        <span className="hidden sm:inline">Mark Read</span>
+                      </Button>
                     )}
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {notification.message}
-                </p>
-                
-                <div className="flex items-center gap-2 flex-wrap">
-                  {!notification.read && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => markAsRead(notification.id)}
-                      className="gap-1 h-7"
+                      variant="ghost"
+                      onClick={() => deleteNotification(notification._id)}
+                      className="gap-1 h-7 text-muted-foreground hover:text-destructive"
                     >
-                      <Check className="h-3 w-3" />
-                      <span className="hidden sm:inline">Mark Read</span>
+                      <X className="h-3 w-3" />
+                      <span className="hidden sm:inline">Delete</span>
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => deleteNotification(notification.id)}
-                    className="gap-1 h-7 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                    <span className="hidden sm:inline">Delete</span>
-                  </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           </CardContent>
         </Card>
       );
@@ -256,16 +491,15 @@ export default function NotificationPage() {
   };
 
 
-
   return (
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-6">
         <div className="flex gap-6">
           {/* Left Sidebar - Profile (sticky on desktop) */}
           <div className="hidden lg:block flex-shrink-0">
-            {<UserProfile user={user}/>}
+            {user && <UserProfile user={user} />}
           </div>
 
           {/* Main Content - Notifications */}
@@ -288,7 +522,7 @@ export default function NotificationPage() {
                   </p>
                 </div>
               </div>
-              
+
               {unreadCount > 0 && (
                 <Button onClick={markAllAsRead} variant="outline" size="sm" className="gap-2">
                   <CheckCircle2 className="h-4 w-4" />
@@ -298,37 +532,55 @@ export default function NotificationPage() {
               )}
             </div>
 
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            )}
+
             {/* Notifications Tabs */}
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="all" className="text-sm">
-                  All Notifications
-                </TabsTrigger>
-                <TabsTrigger value="unread" className="text-sm">
-                  Unread {unreadCount > 0 && `(${unreadCount})`}
-                </TabsTrigger>
-              </TabsList>
+            {/* Notifications Tabs */}
+            {!loading && (
+              <Tabs defaultValue="unread" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="unread" className="text-sm">
+                    Unread {unreadCount > 0 && `(${unreadCount})`}
+                  </TabsTrigger>
+                  <TabsTrigger value="all" className="text-sm">
+                    All Notifications ({totalNotifications})
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="all" className="space-y-4">
-                {renderNotifications(notifications)}
-              </TabsContent>
+                <TabsContent value="unread" className="space-y-4">
+                  {notifications.filter(n => !n.read).length === 0 ? (
+                    <Card key={`unread-empty-${refreshKey}`}>
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">All caught up!</h3>
+                        <p className="text-muted-foreground text-center">
+                          No unread notifications. You're doing great!
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div key={`unread-list-${refreshKey}`}>
+                      {renderNotifications(notifications.filter(n => !n.read))}
+                    </div>
+                  )}
+                </TabsContent>
 
-              <TabsContent value="unread" className="space-y-4">
-                {notifications.filter(n => !n.read).length === 0 ? (
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                      <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-                      <h3 className="text-lg font-semibold text-foreground mb-2">All caught up!</h3>
-                      <p className="text-muted-foreground text-center">
-                        No unread notifications. You're doing great!
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  renderNotifications(notifications.filter(n => !n.read))
-                )}
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="all" className="space-y-4">
+                  <div key={`all-notifications-${refreshKey}`}>
+                    {renderNotifications(notifications)}
+                  </div>
+                  {/* Loading more indicator */}
+                  <LoadingMore />
+                  {/* End of notifications indicator */}
+                  <EndOfNotifications />
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
 
           {/* Right Sidebar - User Suggestions (sticky on desktop) */}

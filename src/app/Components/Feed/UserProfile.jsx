@@ -1,12 +1,19 @@
 'use client';
 
 import { LinkIcon, MapPin, UserCircle } from 'lucide-react'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from "next/navigation";
 
 
 
 export default function UserProfile({user}) {
+    const [usertype,setusertype] =  useState('')
+    const router = useRouter()
+
+    useEffect(()=>{
+        const userType = localStorage.getItem('UserType');
+        setusertype(userType === 'Organization' ? 'organization':'user')
+    },[])
     return (
         <>
             <div className="w-64 flex-shrink-0 hidden md:block">
@@ -83,7 +90,7 @@ export default function UserProfile({user}) {
                     {/* Call to action */}
                     <div className="border-t p-4">
                         <button
-                            onClick={() => { router.push(`/user/${user.userid}`) }}
+                            onClick={() => {router.push(`/${usertype}/${user.userid}`)}}
                             className="w-full font-medium py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                             View Complete Profile

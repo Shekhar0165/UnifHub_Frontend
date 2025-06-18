@@ -152,7 +152,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
 
             // Create FormData for multipart/form-data submission
             const formData = new FormData();
-            formData.append('title', "fsasdf");
+            // formData.append('title', "fsasdf");
             formData.append('content', postContent);
             formData.append('description', htmlContent);
             // formData.append('achievementid', null);

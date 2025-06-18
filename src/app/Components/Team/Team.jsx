@@ -83,8 +83,8 @@ export default function TeamManagement({ OrgId }) {
         try {
             setLoading(true);
             const response = await axios.get(`${api}/team/${OrgId}`, {
-                withCredentials: true, 
-            });            
+                withCredentials: true,
+            });
             setTeams(response.data);
         } catch (error) {
             toast({
@@ -105,7 +105,7 @@ export default function TeamManagement({ OrgId }) {
 
         try {
             const response = await axios.get(
-                `${api}/user/members/search?query=${encodeURIComponent(query)}`,
+                `${api}/user/members/search/user?query=${encodeURIComponent(query)}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -178,7 +178,6 @@ export default function TeamManagement({ OrgId }) {
 
     const handleAddTeam = async () => {
         try {
-            const authToken = localStorage.getItem('accessToken');
             if (!newTeam.teamName) {
                 return toast({
                     title: "Error",
@@ -203,18 +202,20 @@ export default function TeamManagement({ OrgId }) {
                 });
             }
 
+            // Fixed: Added auth header and corrected axios config structure
+            const authToken = localStorage.getItem('accessToken');
             const response = await axios.post(`${api}/team/add`, {
                 teamName: newTeam.teamName,
                 teamLeader: newTeam.teamLeader,
                 OrganizationId: OrgId,
                 teamMembers: newTeam.teamMembers
             }, {
-                headers: { "Content-Type": "application/json"},
-            },
-            {
-                withCredentials: true
-            }
-        );
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${authToken}` // Added auth header
+                },
+                withCredentials: true // Moved inside config object
+            });
 
             toast({
                 title: "Success",
@@ -224,9 +225,10 @@ export default function TeamManagement({ OrgId }) {
             resetNewTeam();
             fetchTeams();
         } catch (error) {
+            console.error('Add team error:', error);
             toast({
                 title: "Error",
-                description: error.response?.data || 'Failed to create team',
+                description: error.response?.data?.message || error.response?.data || 'Failed to create team',
                 variant: "destructive",
             });
         }
@@ -234,7 +236,6 @@ export default function TeamManagement({ OrgId }) {
 
     const handleUpdateTeam = async () => {
         try {
-            const authToken = localStorage.getItem('accessToken');
             if (!currentTeam?._id) return;
 
             if (!currentTeam.teamName) {
@@ -261,11 +262,19 @@ export default function TeamManagement({ OrgId }) {
                 });
             }
 
+            // Fixed: Added auth header and corrected axios config structure
+            const authToken = localStorage.getItem('accessToken');
             const response = await axios.put(`${api}/team/update/${OrgId}`, {
                 teamid: currentTeam._id,
                 teamName: currentTeam.teamName,
                 teamLeader: currentTeam.teamLeader,
                 teamMembers: currentTeam.teamMembers
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${authToken}` // Added auth header
+                },
+                withCredentials: true // Moved inside config object
             });
 
             toast({
@@ -275,6 +284,7 @@ export default function TeamManagement({ OrgId }) {
             setIsEditTeamOpen(false);
             fetchTeams();
         } catch (error) {
+            console.error('Update team error:', error);
             toast({
                 title: "Error",
                 description: error.response?.data?.message || 'Failed to update team',
@@ -288,14 +298,18 @@ export default function TeamManagement({ OrgId }) {
 
         try {
             const authToken = localStorage.getItem('accessToken');
+
+            // Fixed: Corrected axios delete config structure
             await axios.delete(`${api}/team/delete`, {
                 headers: {
-                    Authorization: `Bearer ${authToken}`
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${authToken}` // Added auth header
                 },
                 data: {
                     teamid: teamId,
                     organizationId: OrgId
-                }
+                },
+                withCredentials: true // Added withCredentials
             });
 
             toast({
@@ -304,6 +318,7 @@ export default function TeamManagement({ OrgId }) {
             });
             fetchTeams();
         } catch (error) {
+            console.error('Delete team error:', error);
             toast({
                 title: "Error",
                 description: error.response?.data?.message || 'Failed to delete team',
@@ -311,6 +326,7 @@ export default function TeamManagement({ OrgId }) {
             });
         }
     };
+
 
     // Add member to current team being edited
     const handleAddMember = (userId, userName, userImage) => {
