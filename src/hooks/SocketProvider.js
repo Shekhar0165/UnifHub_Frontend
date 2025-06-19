@@ -61,32 +61,24 @@ export default function SocketProvider() {
       }, 100);
     });
 
-    // socket.on('disconnect', () => {
-    //   console.log("❌ Socket disconnected");
-    // });
+    const handleNotification = (data) => {
+      console.log("sattart", data)
+      setNotificationall({
+        ...data,
+      });
 
-    socket.on('reconnect', () => {
-      socket.emit('user-connected', userid);
-    });
+      setTimeout(() => {
+        setNotificationall(null);
+      }, 100);
+    };
 
+
+    socket.off("Notification");
+    socket.on("Notification", handleNotification);
     const handleBeforeUnload = () => {
       socket.emit('user-disconnect', userid);
       socket.disconnect();
     };
-
-    const handleNotification = (data) => {
-    console.log("sattart")
-    setNotificationall({
-      ...data,
-    });
-
-    setTimeout(() => {
-      setNotificationall(null);
-    }, 100);
-  };
-
-  window.socket.off("Notification");
-  window.socket.on("Notification", handleNotification);
 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -97,6 +89,7 @@ export default function SocketProvider() {
       delete window.socket;
     };
   }, [userid]);
+
 
 
   return (
