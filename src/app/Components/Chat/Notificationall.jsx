@@ -19,7 +19,10 @@ import {
   User,
   XCircle,
   PartyPopper,
-  BellRing
+  BellRing,
+  RefreshCw,
+  Pencil,
+  MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -44,6 +47,9 @@ const Notificationall = ({ data, onDismiss }) => {
       'PartyPopper': PartyPopper,
       'BellRing': BellRing,
       'Bell': Bell,
+      'RefreshCw':RefreshCw,
+      'posts':Pencil,
+      'message':MessageCircle
     };
     return iconMap[iconName] || Bell;
   };
@@ -54,7 +60,7 @@ const Notificationall = ({ data, onDismiss }) => {
       case 'like': return 'text-red-500';
       case 'comment': return 'text-blue-500';
       case 'share': return 'text-green-500';
-      case 'follow': return 'text-purple-500';
+      case 'follows': return 'text-purple-500';
       case 'system': return 'text-purple-500';
       case 'warning': return 'text-orange-500';
       case 'alert': return 'text-red-600';
@@ -67,6 +73,8 @@ const Notificationall = ({ data, onDismiss }) => {
       case 'canceled': return 'text-yellow-600';
       case 'congratulation': return 'text-amber-500';
       case 'update': return 'text-indigo-500';
+      case 'posts': return 'text-blue-500';
+      case 'message': return 'text-yello-500';
       default: return 'text-gray-500';
     }
   };
@@ -75,9 +83,10 @@ const Notificationall = ({ data, onDismiss }) => {
   const getBackgroundColor = (type) => {
     switch (type?.toLowerCase()) {
       case 'like': return 'bg-red-50 border-red-200';
+      case 'message': return 'bg-red-50 border-yellow-200';
       case 'comment': return 'bg-blue-50 border-blue-200';
       case 'share': return 'bg-green-50 border-green-200';
-      case 'follow': return 'bg-purple-50 border-purple-200';
+      case 'follows': return 'bg-purple-50 border-purple-200';
       case 'system': return 'bg-purple-50 border-purple-200';
       case 'warning': return 'bg-orange-50 border-orange-200';
       case 'alert': return 'bg-red-50 border-red-200';
@@ -120,7 +129,7 @@ const Notificationall = ({ data, onDismiss }) => {
         case 'share':
           frequencies = [800, 600];
           break;
-        case 'follow':
+        case 'follows':
         case 'join':
           frequencies = [659, 784];
           break;

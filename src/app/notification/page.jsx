@@ -33,7 +33,7 @@ export default function NotificationPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalNotifications, setTotalNotifications] = useState(0);
-   const [notificationData, setNotificationData] = useState(null);
+  const [notificationData, setNotificationData] = useState(null);
 
   // Helper function to refresh tokens (implement according to your auth system)
   const refreshTokens = async () => {
@@ -239,23 +239,23 @@ export default function NotificationPage() {
 
   // Helper function to get icon component from icon name string
   const getIconComponent = (iconName) => {
-  const iconMap = {
-    'Heart': Heart,
-    'MessageSquare': MessageSquare,
-    'Share2': Share2,
-    'AlertCircle': AlertCircle,
-    'CheckCircle2': CheckCircle2,
-    'Info': Info,
-    'User': User,
-    'UserPlus': UserPlus,
-    'CheckCircle': CheckCircle2,
-    'XCircle': XCircle,
-    'PartyPopper': PartyPopper,
-    'BellRing': BellRing,
-    'Bell': Bell,
+    const iconMap = {
+      'Heart': Heart,
+      'MessageSquare': MessageSquare,
+      'Share2': Share2,
+      'AlertCircle': AlertCircle,
+      'CheckCircle2': CheckCircle2,
+      'Info': Info,
+      'User': User,
+      'UserPlus': UserPlus,
+      'CheckCircle': CheckCircle2,
+      'XCircle': XCircle,
+      'PartyPopper': PartyPopper,
+      'BellRing': BellRing,
+      'Bell': Bell,
+    };
+    return iconMap[iconName] || Bell;
   };
-  return iconMap[iconName] || Bell;
-};
 
   // Helper function to format time from Date string
   const formatTime = (dateString) => {
@@ -339,6 +339,19 @@ export default function NotificationPage() {
     }
   };
 
+  // DeleteAllNotification  
+  const DeleteAllNotification = async () => {
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API}/notification/delete-all`, {}, {
+        withCredentials: true
+      });
+      setNotifications([]);
+      setTotalNotifications(0)
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
   // Delete notification
   const deleteNotification = async (id) => {
     try {
@@ -354,7 +367,7 @@ export default function NotificationPage() {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  let unreadCount = notifications.filter(n => !n.read).length;
 
   const getNotificationColor = (type) => {
     switch (type?.toLowerCase()) {
@@ -497,14 +510,22 @@ export default function NotificationPage() {
                   </p>
                 </div>
               </div>
-
-              {unreadCount > 0 && (
-                <Button onClick={markAllAsRead} variant="outline" size="sm" className="gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Mark All Read</span>
-                  <span className="sm:hidden">Mark All</span>
-                </Button>
-              )}
+              <div>
+                {unreadCount > 0 && (
+                  <Button onClick={DeleteAllNotification} variant="outline" size="sm" className="gap-2 mx-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Delete All Notifications</span>
+                    <span className="sm:hidden">Delete All</span>
+                  </Button>
+                )}
+                {unreadCount > 0 && (
+                  <Button onClick={markAllAsRead} variant="outline" size="sm" className="gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Mark All Read</span>
+                    <span className="sm:hidden">Mark All</span>
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Loading State */}

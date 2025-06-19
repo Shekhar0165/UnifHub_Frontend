@@ -1,29 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { Award, ArrowUp, Search, Check, X, Save, AlertTriangle } from 'lucide-react';
+import { Award, ArrowUp, Search, Check, X, Save, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Toaster } from '@/components/ui/toaster';
-import axios from 'axios';
+
+// Custom confirmation dialog component
+const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, description, confirmText = "Confirm", cancelText = "Cancel" }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+            <Card className="w-full max-w-md mx-4">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-orange-500" />
+                        {title}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground mb-6">{description}</p>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={onClose}>
+                            {cancelText}
+                        </Button>
+                        <Button onClick={onConfirm}>
+                            {confirmText}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
 
 const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
     const [participants, setParticipants] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [duplicatePositions, setDuplicatePositions] = useState([]);
-    const { toast } = useToast();
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [error, setError] = useState("");
+    const [hasExistingResults, setHasExistingResults] = useState(false);
+
+    // Toast function - replace with your actual toast implementation
+    const toast = ({ title, description, variant }) => {
+        console.log(`Toast: ${title} - ${description} (${variant})`);
+        // For demo purposes, using alert - replace with your actual toast
+        if (variant === "destructive") {
+            alert(`Error: ${description}`);
+        } else {
+            alert(`${title}: ${description}`);
+        }
+    };
 
     useEffect(() => {
         const fetchParticipants = async () => {
             if (!selectedResult?._id) return;
 
             setIsLoading(true);
+            setError("");
             try {
                 const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API}/Participants/for-events/${selectedResult._id}`,
@@ -39,12 +79,20 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                 if (!response.ok) throw new Error('Failed to fetch participants');
 
                 const data = await response.json();
-                setParticipants(data.participants || []);
+                const participantsList = data.participants || [];
+                setParticipants(participantsList);
+
+                // Check if results are already declared
+                const hasResults = participantsList.some(participant => participant.position && participant.position > 0);
+                setHasExistingResults(hasResults);
+
             } catch (error) {
                 console.error("Error fetching participants:", error);
+                const errorMsg = "Could not load participants. Please try again.";
+                setError(errorMsg);
                 toast({
                     title: "Error",
-                    description: "Could not load participants. Please try again.",
+                    description: errorMsg,
                     variant: "destructive",
                 });
             } finally {
@@ -53,11 +101,10 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
         };
 
         fetchParticipants();
-    }, [selectedResult?._id, toast]);
+    }, [selectedResult?._id]);
 
     // Check for duplicate positions whenever participants change
     useEffect(() => {
-        // Find duplicate positions
         const positionCounts = {};
         const duplicates = [];
 
@@ -77,7 +124,6 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
     if (!selectedResult) return null;
 
     const sortedParticipants = [...participants].sort((a, b) => (a.position || 999) - (b.position || 999));
-
     const rankedTeams = sortedParticipants.filter(team => team.position);
     const unrankedTeams = sortedParticipants.filter(team => !team.position);
 
@@ -97,11 +143,15 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
 
     // Handle position change for individual team
     const handlePositionChange = (teamId, newPosition) => {
+        setError(""); // Clear any existing errors
+
         // If position is already taken by another team, show toast warning
         if (newPosition && isPositionTaken(newPosition, teamId)) {
+            const errorMsg = `Position ${newPosition} is already assigned to another team. Each position must be unique.`;
+            setError(errorMsg);
             toast({
                 title: "Position Already Taken",
-                description: `Position ${newPosition} is already assigned to another team. Each position must be unique.`,
+                description: errorMsg,
                 variant: "destructive",
             });
             return;
@@ -115,132 +165,190 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
         setHasUnsavedChanges(true);
     };
 
-    // Save all positions at once
-    const saveAllPositions = async () => {
+    // Handle save button click - show confirmation first
+    const handleSaveClick = () => {
+        setError(""); // Clear any existing errors
+
         // Check for duplicate positions first
         if (duplicatePositions.length > 0) {
+            const errorMsg = `Positions must be unique. Please fix duplicate positions: ${duplicatePositions.join(', ')}`;
+            setError(errorMsg);
             toast({
                 title: "Duplicate Positions",
-                description: `Positions must be unique. Please fix duplicate positions: ${duplicatePositions.join(', ')}`,
+                description: errorMsg,
                 variant: "destructive",
             });
             return;
         }
 
-        // Prepare data in the format expected by backend
         const validTeams = participants.filter(team => team.position !== null && team.position !== undefined);
 
-        // Format data according to the backend API
-        const results = validTeams.map(team => ({
-            teamName: team.teamName,
-            position: team.position
-        }));
-
-        const requestData = {
-            eventid: selectedResult._id,
-            results: results
-        };
-
-        console.log("Saving positions data:", requestData);
-
-        if (results.length === 0) {
+        if (validTeams.length === 0) {
+            const errorMsg = "No positions have been assigned to any teams";
+            setError(errorMsg);
             toast({
                 title: "Warning",
-                description: "No positions have been assigned to any teams",
+                description: errorMsg,
                 variant: "destructive",
             });
             return;
         }
 
-        setIsLoading(true);
+        // Show confirmation dialog
+        setShowConfirmation(true);
+    };
+
+    // Save all positions at once
+    const saveAllPositions = async () => {
+        setShowConfirmation(false);
+        setIsSaving(true);
+        setError("");
+
         try {
-            const response = await axios.post(
+            // Prepare data in the format expected by backend
+            const validTeams = participants.filter(team => team.position !== null && team.position !== undefined);
+
+            // Format data according to the backend API
+            const results = validTeams.map(team => ({
+                teamName: team.teamName,
+                position: team.position
+            }));
+
+            const requestData = {
+                eventid: selectedResult._id,
+                results: results
+            };
+
+            console.log("Saving positions data:", requestData);
+
+            const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API}/Participants/declareResult`,
-                requestData,
                 {
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json",
+                        'Content-Type': 'application/json',
                     },
-                    withCredentials: true,
+                    credentials: 'include',
+                    body: JSON.stringify(requestData)
                 }
             );
 
-            if (!response.data.success) {
-                throw new Error(response.data.message || "Failed to save positions");
+            const responseData = await response.json();
+
+            // Handle backend errors
+            if (!response.ok || responseData.success === false) {
+                throw new Error(responseData.message || "Failed to save positions");
             }
 
-            if (response.data.message) {
-                toast({
-                    title: "Save Failed",
-                    description: response.data.message,
-                });
-            }
-
-
+            // Show success message
+            const successMsg = responseData.message || `Updated positions for ${results.length} teams`;
             toast({
                 title: "Positions Saved",
-                description: `Updated positions for ${results.length} teams`,
+                description: successMsg,
             });
 
             setHasUnsavedChanges(false);
 
             // Close the popup after successful save
-            closeResultPopup();
+            setTimeout(() => {
+                closeResultPopup();
+            }, 1500);
+
         } catch (error) {
             console.error("Error saving positions:", error);
+            
+            // Extract and show the actual backend error message
+            let errorMessage = "Could not update team positions. Please try again.";
+            if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setError(errorMessage);
             toast({
                 title: "Save Failed",
-                description: error.response.data.message || "Could not update team positions. Please try again.",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     };
 
+    console.log('hasExistingResults',hasExistingResults)
+
+    // Handle close with unsaved changes check
+    const handleClosePopup = () => {
+        if (hasUnsavedChanges) {
+            const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to close without saving?");
+            if (!confirmClose) return;
+        }
+        closeResultPopup();
+    };
+
     const renderTable = (teams) => (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead className="w-20">Rank</TableHead>
-                    <TableHead>Team Name</TableHead>
-                    <TableHead className="text-right">Position</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {teams.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
-                            {isLoading ? "Loading teams..." : "No teams found"}
-                        </TableCell>
-                    </TableRow>
-                ) : (
-                    teams.map((team) => (
-                        <TableRow key={team._id} className={duplicatePositions.includes(team.position) ? "bg-red-50" : ""}>
-                            <TableCell>
-                                {team.position || "-"}
-                            </TableCell>
-                            <TableCell>{team.teamName}</TableCell>
-                            <TableCell className="text-right">
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    placeholder="Position"
-                                    value={team.position || ""}
-                                    onChange={(e) => handlePositionChange(team._id, e.target.value)}
-                                    className={`w-24 inline-block ${duplicatePositions.includes(team.position) ? "border-red-500" : ""}`}
-                                />
-                            </TableCell>
-                        </TableRow>
-                    ))
-                )}
-            </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+            <table className="w-full">
+                <thead>
+                    <tr className="border-b">
+                        <th className="text-left p-2 w-20">Rank</th>
+                        <th className="text-left p-2">Team Name</th>
+                        <th className="text-right p-2">Position</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {teams.length === 0 ? (
+                        <tr>
+                            <td colSpan={3} className="text-center text-muted-foreground py-6">
+                                {isLoading ? "Loading teams..." : "No teams found"}
+                            </td>
+                        </tr>
+                    ) : (
+                        teams.map((team) => (
+                            <tr key={team._id} className={`border-b ${duplicatePositions.includes(team.position) ? "bg-red-50" : ""}`}>
+                                <td className="p-2">
+                                    {team.position || "-"}
+                                </td>
+                                <td className="p-2">{team.teamName}</td>
+                                <td className="p-2 text-right">
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        placeholder="Position"
+                                        value={team.position || ""}
+                                        onChange={(e) => handlePositionChange(team._id, e.target.value)}
+                                        className={`w-24 inline-block ${duplicatePositions.includes(team.position) ? "border-red-500" : ""}`}
+                                        disabled={isSaving}
+                                    />
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
     );
+
+    // Get confirmation dialog configuration
+    const getConfirmationConfig = () => {
+        if (hasExistingResults) {
+            return {
+                title: "Update Results",
+                description: "Are you sure you want to update the results? This will modify the existing rankings for this event.",
+                confirmText: "Update Results"
+            };
+        } else {
+            return {
+                title: "Declare Results",
+                description: "Are you sure you want to declare results for this event? Once declared, the event will be marked as completed and achievements will be awarded to participants. After then you are not able change it",
+                confirmText: "Declare Results"
+            };
+        }
+    };
+
+    const confirmationConfig = getConfirmationConfig();
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Toaster />
             <Card className="w-full max-w-4xl shadow-xl">
                 <CardHeader className="pb-2 border-b">
                     <div className="flex justify-between items-center">
@@ -248,13 +356,27 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                             <Award className="h-5 w-5" />
                             Team Rankings
                         </CardTitle>
-                        <Button variant="ghost" size="icon" onClick={closeResultPopup}>
+                        <Button variant="ghost" size="icon" onClick={handleClosePopup} disabled={isSaving}>
                             <X className="h-5 w-5" />
                         </Button>
                     </div>
+                    {hasExistingResults && (
+                        <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded mt-2">
+                            ℹ️ Results are already declared for this event. You can update the positions.
+                        </div>
+                    )}
                 </CardHeader>
 
                 <CardContent className="p-6">
+                    {/* Error Alert - Show backend errors */}
+                    {error && (
+                        <Alert variant="destructive" className="mb-4">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* Duplicate Positions Alert */}
                     {duplicatePositions.length > 0 && (
                         <Alert variant="destructive" className="mb-4">
                             <AlertTriangle className="h-4 w-4" />
@@ -271,6 +393,7 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="max-w-sm"
+                            disabled={isSaving}
                         />
                     </div>
 
@@ -312,24 +435,45 @@ const EventResultPopup = ({ selectedResult, closeResultPopup }) => {
                     <div className="flex justify-between">
                         <Button
                             variant="default"
-                            onClick={saveAllPositions}
-                            disabled={isLoading || !hasUnsavedChanges || duplicatePositions.length > 0}
+                            onClick={handleSaveClick}
+                            disabled={isLoading || !hasUnsavedChanges || duplicatePositions.length > 0 || isSaving || hasExistingResults}
                             className="px-6 gap-2"
                         >
-                            <Save className="h-4 w-4" />
-                            Save All Positions
+                            {isSaving ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    Save All Positions
+                                </>
+                            )}
                         </Button>
 
                         <Button
                             variant="outline"
-                            onClick={closeResultPopup}
+                            onClick={handleClosePopup}
                             className="px-6"
+                            disabled={isSaving}
                         >
                             Close
                         </Button>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isOpen={showConfirmation}
+                onClose={() => setShowConfirmation(false)}
+                onConfirm={saveAllPositions}
+                title={confirmationConfig.title}
+                description={confirmationConfig.description}
+                confirmText={confirmationConfig.confirmText}
+                cancelText="Cancel"
+            />
         </div>
     );
 };

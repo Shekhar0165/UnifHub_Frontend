@@ -362,7 +362,7 @@ const EventComponent = ({ user }) => {
                                                         size="sm"
                                                         variant="default"
                                                         className={`flex items-center gap-1 w-full sm:w-auto ${new Date(event.eventDate).toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10) ? 'hidden' : ''} `}
-                                                        disabled={new Date(event.eventDate).toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10)}
+                                                        disabled={new Date(event.eventDate).toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10) || event.Result}
                                                     >
                                                         Declare Results
                                                     </Button>
