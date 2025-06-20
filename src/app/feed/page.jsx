@@ -273,8 +273,8 @@ export default function page() {
         <div className="min-h-screen">
             <Header />
 
-            <main className="container mx-auto px-4 py-6">
-                <div className="flex gap-4">
+            <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+                <div className="flex gap-4 lg:gap-6 relative">
                     {/* Left Sidebar - Profile */}
                     <UserProfile user={user} />
 

@@ -556,13 +556,13 @@ export default function PostCard({ post, isLastPost, lastPostElementRef, user })
           )}
         </div>
 
-        {/* Post Image (if available) */}
+        {/* Post Image (if available) - UPDATED TO SHOW FULL IMAGE */}
         {postData?.image_path && (
-          <div className="aspect-video relative">
+          <div className="w-full">
             <img
               src={postData.image_path}
               alt={postData.title || "Post image"}
-              className="w-full h-full object-cover"
+              className="w-full h-auto object-contain"
               loading="lazy"
             />
           </div>
