@@ -43,6 +43,8 @@ export default function RegisterPage() {
         const response = await axios.post(`${process.env.NEXT_PUBLIC_API}/login/google`, {
           token: auth['code'],
           accountType: userType
+        },{
+          withCredentials:true
         });
         if (response.data.success) {
           // document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;

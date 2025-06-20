@@ -78,6 +78,8 @@ export default function Page() {
         const response = await axios.post(`${process.env.NEXT_PUBLIC_API}/login/google`, {
           token: auth['code'],
           accountType: null
+        },{
+          withCredentials:true
         });
         console.log(response.data);
         if (response.data.isNewAccount) {
