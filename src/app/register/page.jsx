@@ -45,10 +45,10 @@ export default function RegisterPage() {
           accountType: userType
         });
         if (response.data.success) {
-          document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
-          document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
-          document.cookie = `UserType=${response.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
-          document.cookie = `UserId=${response.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+          // document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+          // document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+          // document.cookie = `UserType=${response.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+          // document.cookie = `UserId=${response.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
 
           localStorage.setItem("UserType", response.data.user.usertype);
           localStorage.setItem("UserId", response.data.user.userid);
@@ -214,10 +214,10 @@ export default function RegisterPage() {
       );
       // Check if response contains required data
 
-      document.cookie = `accessToken=${res.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
-      document.cookie = `refreshToken=${res.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
-      document.cookie = `UserType=${res.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
-      document.cookie = `UserId=${res.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+      // document.cookie = `accessToken=${res.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+      // document.cookie = `refreshToken=${res.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+      // document.cookie = `UserType=${res.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+      // document.cookie = `UserId=${res.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
 
       // Store in localStorage as fallback
       localStorage.setItem('UserType', res.data.user.userType);
