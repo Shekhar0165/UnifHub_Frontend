@@ -79,8 +79,6 @@ export default function Page() {
           token: auth['code'],
           accountType: null
         });
-        console.log("Google Login Response:", response.data.isNewAccount);
-        console.log("Google Login Response Data:", response.data);
         if (response.data.isNewAccount) {
           console.log("New account detected, redirecting to registration page.");
           toast({

@@ -35,7 +35,7 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           {/* <Navbar/> */}
-          <GoogleOAuthProvider clientId='961663688534-4i2gh3euu2mujp6snhku9pvr63rr9l8n.apps.googleusercontent.com'>
+          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
             {children}
           </GoogleOAuthProvider>
           {/* <Footer/> */}
