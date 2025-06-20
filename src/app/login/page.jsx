@@ -35,10 +35,10 @@ export default function Page() {
       const data = await response.json();
 
       if (response.ok) {
-        document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
-        document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
-        document.cookie = `UserType=${data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
-        document.cookie = `UserId=${data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+        // document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+        // document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+        // document.cookie = `UserType=${data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+        // document.cookie = `UserId=${data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
 
         localStorage.setItem("UserType", data.user.usertype);
         localStorage.setItem("UserId", data.user.userid);
@@ -92,10 +92,10 @@ export default function Page() {
           return;
         }
         if (response.data.success) {
-          document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
-          document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
-          document.cookie = `UserType=${response.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
-          document.cookie = `UserId=${response.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+          // document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+          // document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+          // document.cookie = `UserType=${response.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+          // document.cookie = `UserId=${response.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
 
           localStorage.setItem("UserType", response.data.user.usertype);
           localStorage.setItem("UserId", response.data.user.userid);
