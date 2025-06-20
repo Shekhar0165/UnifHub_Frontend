@@ -10,6 +10,7 @@ import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import axios from "axios";
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -34,6 +35,54 @@ export default function RegisterPage() {
     setUserType(type);
     setStep(2);
   };
+
+
+  const ResponseGoogle = async (auth) => {
+    try {
+      if (auth['code']) {
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_API}/login/google`, {
+          token: auth['code'],
+          accountType: userType
+        });
+        if (response.data.success) {
+          document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+          document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+          document.cookie = `UserType=${response.data.user.usertype}; path=/; max-age=86400; SameSite=Strict`;
+          document.cookie = `UserId=${response.data.user.userid}; path=/; max-age=86400; SameSite=Strict`;
+
+          localStorage.setItem("UserType", response.data.user.usertype);
+          localStorage.setItem("UserId", response.data.user.userid);
+
+          toast({
+            title: "Login successful!",
+            description: response.data.message || "Redirecting you to events page...",
+            duration: 2000,
+            variant: "default",
+            icon: <CheckCircle className="h-4 w-4 text-green-500" />
+          });
+
+          window.location.href = "/";
+        }
+      }
+      if (response.data.error) {
+        toast({
+          title: "Google Login Error",
+          description: response.data.error || "An error occurred during Google login.",
+          variant: "destructive",
+          icon: <AlertCircle className="h-4 w-4" />
+        });
+        return;
+      }
+    } catch (error) {
+      console.error("Google Login Error:", error);
+    }
+  };
+
+  const handleGoogleRegister = useGoogleLogin({
+    onSuccess: ResponseGoogle,
+    onError: ResponseGoogle,
+    flow: 'auth-code'
+  });
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -196,23 +245,21 @@ export default function RegisterPage() {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Toaster />
       <div className="w-full max-w-md space-y-6">
-
         <Card className="border-none shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
               {step === 1 && "Account Type"}
-              {step === 2 && "Email Verification"}
+              {step === 2 && "Email & Registration"}
               {step === 3 && "Enter OTP"}
               {step === 4 && "Create Account"}
             </CardTitle>
             <CardDescription>
               {step === 1 && "First, tell us who you are"}
-              {step === 2 && "Let's verify your email address"}
+              {step === 2 && "Enter your email and choose your registration method"}
               {step === 3 && "Enter the verification code sent to your email"}
               {step === 4 && userType === 'individual'
                 ? "Complete your profile to join amazing events"
@@ -241,7 +288,47 @@ export default function RegisterPage() {
             )}
 
             {step === 2 && (
-              <form onSubmit={handleSendOtp} className="space-y-4">
+              <div className="space-y-4">
+
+                {/* Google Registration Button */}
+                <Button
+                  onClick={handleGoogleRegister}
+                  variant="outline"
+                  className="w-full border-gray-300 "
+                  disabled={isLoading}
+                >
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Continue with Google
+                </Button>
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with email
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <Input
@@ -255,7 +342,13 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+
+                {/* Traditional Registration Button */}
+                <Button
+                  onClick={handleSendOtp}
+                  className="w-full"
+                  disabled={isLoading || !formData.email}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -265,7 +358,7 @@ export default function RegisterPage() {
                     "Send Verification Code"
                   )}
                 </Button>
-              </form>
+              </div>
             )}
 
             {step === 3 && (
@@ -334,22 +427,6 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
-
-
-                {/* <div className="space-y-2">
-                  <Label htmlFor="university">
-                    {userType === 'individual' ? "University" : "Organization Type"}
-                  </Label>
-                  <Input
-                    id="university"
-                    name="university"
-                    placeholder={userType === 'individual' ? "Enter your university" : "e.g., Club, Company, Non-profit"}
-                    value={formData.university}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div> */}
-
 
                 <Separator className="my-2" />
 

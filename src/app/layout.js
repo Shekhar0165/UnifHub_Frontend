@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import SocketProvider from '@/hooks/SocketProvider';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 
 const geistSans = Geist({
@@ -28,15 +29,17 @@ export default function RootLayout({ children }) {
       >
         <SocketProvider />
         <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {/* <Navbar/> */}
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {/* <Navbar/> */}
+          <GoogleOAuthProvider clientId='961663688534-4i2gh3euu2mujp6snhku9pvr63rr9l8n.apps.googleusercontent.com'>
             {children}
-            {/* <Footer/> */}
-          </ThemeProvider>
+          </GoogleOAuthProvider>
+          {/* <Footer/> */}
+        </ThemeProvider>
       </body>
     </html>
   );
