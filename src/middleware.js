@@ -14,5 +14,5 @@ export function middleware(request) {
 
 // See "Matching Paths" below to learn more
 export const config = {
-  matcher: ['/events/:path*','/in/:path*', "/user/:path*","/organization/:path*", "/profile/:path*","/feed/:path*"],
+  matcher: ['/events/:path*','/in/:path*', "/user/:path*","/organization/:path*", "/profile/:path*","/feed/:path*",'/settings/:path*','/notification/:path*'],
 }
