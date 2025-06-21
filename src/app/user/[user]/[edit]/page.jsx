@@ -16,6 +16,53 @@ import Header from '@/app/Components/Header/Header';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 
+// Helper function to preprocess and compress images for mobile compatibility
+const preprocessMobileImage = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('No file provided'));
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new window.Image();
+    img.onload = () => {
+      // Resize logic (max 1200px)
+      let { width, height } = img;
+      const maxDim = 1200;
+      if (width > height && width > maxDim) {
+        height = (height * maxDim) / width;
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = (width * maxDim) / height;
+        height = maxDim;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(processedFile);
+          } else {
+            reject(new Error('Failed to compress image'));
+          }
+        },
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 const ProfileEditForm = () => {
   const { toast } = useToast();
   const router = useRouter();
@@ -38,6 +85,7 @@ const ProfileEditForm = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [newSkill, setNewSkill] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   // For education fields
   const [educationField, setEducationField] = useState({
@@ -101,15 +149,39 @@ const ProfileEditForm = () => {
     }
   };
 
-  // Handle file changes
-  const handleFileChange = (e) => {
+  // Handle file changes with mobile image preprocessing
+  const handleFileChange = async (e) => {
     const { name, files } = e.target;
-    if (name === 'profileImage') {
-      setProfileImage(files[0]);
-      setUser(prevUser => ({ ...prevUser, profileImage: files[0].name }));
-    } else if (name === 'coverImage') {
-      setCoverImage(files[0]);
-      setUser(prevUser => ({ ...prevUser, coverImage: files[0].name }));
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    // Accept HEIC/HEIF and convert to JPEG
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (!validTypes.includes(file.type) && !/\.(heic|heif)$/i.test(file.name)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a valid image file (JPG, PNG, WebP, HEIC)",
+        variant: "destructive",
+      });
+      return;
+    }
+    setImageUploading(true);
+    try {
+      const processedFile = await preprocessMobileImage(file);
+      if (name === 'profileImage') {
+        setProfileImage(processedFile);
+        setUser(prevUser => ({ ...prevUser, profileImage: processedFile.name }));
+      } else if (name === 'coverImage') {
+        setCoverImage(processedFile);
+        setUser(prevUser => ({ ...prevUser, coverImage: processedFile.name }));
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process image. Try a different image.",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploading(false);
     }
   };
   // Handle adding a new skill

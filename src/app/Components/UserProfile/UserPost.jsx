@@ -650,6 +650,7 @@ export const UserPosts = ({ user }) => {
           title: "Post Created",
           description: "Your post has been successfully created.",
         });
+        location.reload();
       }
     } catch (error) {
       console.error('Error creating post:', error);
@@ -725,6 +726,7 @@ export const UserPosts = ({ user }) => {
           title: "Post Updated",
           description: "Your post has been successfully updated.",
         });
+        location.reload();
       }
     } catch (error) {
       console.error('Error updating post:', error);
