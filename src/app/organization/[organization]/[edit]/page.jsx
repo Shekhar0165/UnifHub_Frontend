@@ -88,17 +88,17 @@ const OrganizationProfileEditForm = () => {
         }
     };
 
-    // Handle file changes
+
     const handleFileChange = (e) => {
-        const { name, files } = e.target;
-        if (name === 'profileImage') {
-            setProfileImage(files[0]);
-            organization.profileImage = files[0].name;
-        } else if (name === 'coverImage') {
-            setCoverImage(files[0]);
-            organization.coverImage = files[0].name;
-        }
-    };
+    const { name, files } = e.target;
+    if (name === 'profileImage') {
+      setProfileImage(files[0]);
+      setUser(prevUser => ({ ...prevUser, profileImage: files[0].name }));
+    } else if (name === 'coverImage') {
+      setCoverImage(files[0]);
+      setUser(prevUser => ({ ...prevUser, coverImage: files[0].name }));
+    }
+  };
 
     // Handle form submission
     const handleSubmit = async (e) => {
