@@ -29,6 +29,53 @@ import { marked } from 'marked';
 import axios from 'axios';
 import { UserPosts } from './UserPost';
 
+// Helper function to preprocess and compress images for mobile compatibility
+const preprocessMobileImage = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('No file provided'));
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new window.Image();
+    img.onload = () => {
+      // Resize logic (max 1200px)
+      let { width, height } = img;
+      const maxDim = 1200;
+      if (width > height && width > maxDim) {
+        height = (height * maxDim) / width;
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = (width * maxDim) / height;
+        height = maxDim;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(processedFile);
+          } else {
+            reject(new Error('Failed to compress image'));
+          }
+        },
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 // Component for creating normal posts and achievement posts
 export const CreatePost = ({ user, onPostCreated }) => {
     const [activeTab, setActiveTab] = useState('normal');
@@ -41,6 +88,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [imageUploading, setImageUploading] = useState(false);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
 
@@ -119,16 +167,29 @@ export const CreatePost = ({ user, onPostCreated }) => {
         setIsAchievementDialogOpen(true);
     };
 
-    const handleImageSelect = (e) => {
+    const handleImageSelect = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            setSelectedImage(file);
+        if (!file) return;
+        // Accept HEIC/HEIF and convert to JPEG
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+        if (!validTypes.includes(file.type) && !/\.(heic|heif)$/i.test(file.name)) {
+            alert('Please select a valid image file (JPG, PNG, GIF, WebP, HEIC)');
+            return;
+        }
+        setImageUploading(true);
+        try {
+            const processedFile = await preprocessMobileImage(file);
+            setSelectedImage(processedFile);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result);
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(processedFile);
             setShowImageUpload(true);
+        } catch (error) {
+            alert('Failed to process image. Try a different image.');
+        } finally {
+            setImageUploading(false);
         }
     };
 
@@ -417,7 +478,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                                 type="file"
                                                 ref={fileInputRef}
                                                 onChange={handleImageSelect}
-                                                accept="image/*"
+                                                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif"
                                                 className="hidden" // Hide the actual file input
                                                 id="post-image-upload"
                                             />
@@ -596,7 +657,7 @@ export const CreatePost = ({ user, onPostCreated }) => {
                                                         type="file"
                                                         ref={fileInputRef}
                                                         onChange={handleImageSelect}
-                                                        accept="image/*"
+                                                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif"
                                                         className="hidden" // Hide the actual file input
                                                         id="post-image-upload"
                                                     />

@@ -486,11 +486,37 @@ export const UserPosts = ({ user }) => {
   };
 
   // Handle image selection
-  const handleImageSelect = (e) => {
+  const handleImageSelect = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setPostImage(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    // Acceptable types
+    const validTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please select a valid image file (JPEG, PNG, GIF, WEBP, HEIC, HEIF).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Preprocess image (convert HEIC/HEIF, compress, etc.)
+      const processedFile = await preprocessMobileImage(file);
+      setPostImage(processedFile);
+      setImagePreview(URL.createObjectURL(processedFile));
+    } catch (err) {
+      setPostImage(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      toast({
+        title: 'Invalid Image',
+        description: err.message || 'Please select a valid image file.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -916,7 +942,7 @@ export const UserPosts = ({ user }) => {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageSelect}
-                        accept="image/*"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif"
                         className="hidden"
                         id="post-image-upload"
                       />
@@ -1180,3 +1206,42 @@ export const UserPosts = ({ user }) => {
     </>
   );
 };
+
+// Helper: preprocessMobileImage (HEIC/HEIF conversion & JPEG compression)
+async function preprocessMobileImage(file) {
+  // Only process if image
+  if (!file || !file.type.startsWith('image/')) return file;
+
+  // Acceptable types for direct upload
+  const acceptedTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'
+  ];
+  if (acceptedTypes.includes(file.type)) {
+    // Optionally compress large images
+    if (file.size < 2 * 1024 * 1024) return file; // <2MB, skip
+  }
+
+  // Dynamically import heic2any if needed
+  let imageBitmap, canvas, ctx, blob;
+  try {
+    if (file.type === 'image/heic' || file.type === 'image/heif') {
+      const heic2any = (await import('heic2any')).default;
+      const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      file = new File([converted], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+    }
+    // Use createImageBitmap for all images
+    imageBitmap = await createImageBitmap(file);
+    canvas = document.createElement('canvas');
+    canvas.width = imageBitmap.width;
+    canvas.height = imageBitmap.height;
+    ctx = canvas.getContext('2d');
+    ctx.drawImage(imageBitmap, 0, 0);
+    // Compress to JPEG (quality 0.8)
+    blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
+    if (!blob) throw new Error('Image compression failed');
+    return new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+  } catch (err) {
+    // If any error, fallback to original file
+    return file;
+  }
+}

@@ -49,6 +49,53 @@ const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
   ssr: false
 })
 
+// Helper function to preprocess and compress images for mobile compatibility
+const preprocessMobileImage = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('No file provided'));
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new window.Image();
+    img.onload = () => {
+      // Resize logic (max 1200px)
+      let { width, height } = img;
+      const maxDim = 1200;
+      if (width > height && width > maxDim) {
+        height = (height * maxDim) / width;
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = (width * maxDim) / height;
+        height = maxDim;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(processedFile);
+          } else {
+            reject(new Error('Failed to compress image'));
+          }
+        },
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 // Preview component to display event details
 const Preview = ({ preview, open, onOpenChange }) => {
   const [orgName, setOrgName] = useState('');
@@ -280,41 +327,51 @@ const AddEventForm = () => {
     }
   })
 
-  // Handle image selection
-  const handleImageChange = (e) => {
+  // Handle image selection with mobile preprocessing
+  const handleImageChange = async (e) => {
     const file = e.target.files[0]
-    if (file) {
-      // Validate file type and size
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
-      const maxSize = 5 * 1024 * 1024 // 5MB
+    if (!file) return;
+    // Validate file type and size
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
+    const maxSize = 5 * 1024 * 1024 // 5MB
 
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          variant: "destructive",
-          title: "Invalid file type",
-          description: "Please upload JPEG, PNG, or GIF file formats only.",
-        })
-        return
-      }
+    if (!allowedTypes.includes(file.type) && !/\.(heic|heif)$/i.test(file.name)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Please upload JPEG, PNG, GIF, WebP, or HEIC file formats only.",
+      })
+      return
+    }
 
-      if (file.size > maxSize) {
-        toast({
-          variant: "destructive",
-          title: "File too large",
-          description: "Maximum file size is 5MB. Please upload a smaller image.",
-        })
-        return
-      }
+    if (file.size > maxSize) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Maximum file size is 5MB. Please upload a smaller image.",
+      })
+      return
+    }
 
+    setImageUploading(true)
+    try {
+      const processedFile = await preprocessMobileImage(file)
       // Create image preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result)
       }
-      reader.readAsDataURL(file)
-
+      reader.readAsDataURL(processedFile)
       // Set image in form
-      form.setValue('image', file)
+      form.setValue('image', processedFile)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Image processing failed",
+        description: "Could not process image. Try a different image.",
+      })
+    } finally {
+      setImageUploading(false)
     }
   }
 
@@ -556,7 +613,7 @@ const AddEventForm = () => {
                                   <input
                                     type="file"
                                     id="image-upload"
-                                    accept="image/jpeg,image/png,image/gif"
+                                    accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif"
                                     onChange={handleImageChange}
                                     className="hidden"
                                   />
@@ -571,7 +628,7 @@ const AddEventForm = () => {
                                       Click to upload event image
                                     </p>
                                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-                                      JPEG, PNG or GIF (Max 5MB)
+                                      JPEG, PNG, GIF, WebP, or HEIC (Max 5MB)
                                     </p>
                                   </label>
                                 </div>
