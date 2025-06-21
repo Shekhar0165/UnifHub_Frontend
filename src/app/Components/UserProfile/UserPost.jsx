@@ -746,13 +746,13 @@ export const UserPosts = ({ user }) => {
         setPostContent('');
         setPostImage(null);
         setImagePreview(null);
-        setIsPostDialogOpen(false);
+        setIsPostDialogOpen(false); // This closes the popup
 
         toast({
           title: "Post Updated",
           description: "Your post has been successfully updated.",
         });
-        location.reload();
+        // No reload: UI will update from state
       }
     } catch (error) {
       console.error('Error updating post:', error);
