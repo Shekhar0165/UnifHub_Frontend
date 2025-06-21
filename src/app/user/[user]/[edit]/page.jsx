@@ -103,16 +103,15 @@ const ProfileEditForm = () => {
 
   // Handle file changes
   const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    if (name === 'profileImage') {
-      setProfileImage(files[0]);
-      user.profileImage = files[0].name
-    } else if (name === 'coverImage') {
-      setCoverImage(files[0]);
-      user.coverImage = files[0].name
-    }
-  };
-
+  const { name, files } = e.target;
+  if (name === 'profileImage') {
+    setProfileImage(files[0]);
+    setUser(prevUser => ({ ...prevUser, profileImage: files[0].name }));
+  } else if (name === 'coverImage') {
+    setCoverImage(files[0]);
+    setUser(prevUser => ({ ...prevUser, coverImage: files[0].name }));
+  }
+};
   // Handle adding a new skill
   const handleAddSkill = () => {
     if (newSkill.trim() !== '' && !user.skills.includes(newSkill.trim())) {
